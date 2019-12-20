@@ -9,7 +9,7 @@ vignette: >
   %\VignetteKeywords{MassSpectrometry, Signal processing, PTR-TOF-MS}
 output:
   BiocStyle::html_document:
-    toc_float: true
+    toc_float: true 
 ---
 
 ```{r style, echo = FALSE, results = 'asis'}
