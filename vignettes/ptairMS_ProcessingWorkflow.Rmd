@@ -1,0 +1,420 @@
+---
+title: "ptairMS: Processing and analysis of PTR-TOF-MS data"
+author: "Camille Roquencourt, Paul Zang, Pierrick Roger and Etienne Thevenot"
+package: "`r pkg_ver('ptairMS')`"
+bibliography: "ptairMS.bib"
+vignette: >
+  %\VignetteIndexEntry{ptairMS: Processing and analysis of PTR-TOF-MS data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteKeywords{MassSpectrometry, Signal processing, PTR-TOF-MS}
+output:
+  BiocStyle::html_document:
+    toc_float: true
+---
+
+
+# Introduction
+The _**ptairMS**_ package provides a workflow to process PTR-TOF-MS raw data in the open Hierarchical Data Format 5 ([HDF5](https://www.hdfgroup.org/); .h5 extension), and generate the peak table as an `ExpressionSet` object for subsequent data analysis with the many methods and packages available in [R](https://www.r-project.org/). Applications include the analysis of exhaled air, headspace or ambient air. The package offers several features to check the raw data and tune the few processing parameters. It also enables to include new samples in a study without re-processing all the previous data, providing a convenient management for cohort studies. 
+
+Proton Transfer Reaction - Mass Spectrometry (PTR-MS) has emerged with excellent sensitivity and specificity for VOC analysis in a wide range of applications, including environment, food quality, and biology [@blake_proton-transfer_2009]. In the area of health and care, PTR-MS opens up unique opportunities for real-time analysis “at the patient's bedside”.
+
+The three described approaches for the preprocessing of PTR-TOF-MS data to date, i.e. PTR-MS Viewer (Ionicon; commercial), PTR-TOF Data Analyzer [@muller_new_2013], and PTRwid [@holzinger_ptrwid_2015], do not address the untargeted analysis of exhaled breath because i) they are either limited to targeted analysis or require very long computation time, ii) the have been developed for continuous environmental monitoring and do not take into account the time dimension, and iii) the algorithms cannot be accessed, nor modified, and such modules cannot be integrated into comprehensive bioinformatics workflows.
+
+
+# Volatolomics
+Characterization of volatile organic compounds (VOCs) emitted by living organisms is of major interest in medicine, food sciences, and ecology. As an example, thousands of VOCs have been identified in the exhaled breath, resulting from normal metabolism or pathological processes [@de_lacy_costello_review_2014]. The main advantage of breath analysis in medicine is that the sampling is non-invasive [@devillier_metabolomics_2017]. Methods based on mass spectrometry (MS) are the reference technologies for VOC analysis because of their sensitivity and large dynamic range.
+
+# Workflow
+
+![](figures/permanent/ptairMS_workflow.JPG)
+
+First, a `ptrSet` object is generated with the function `createPtrSet` from the directory containing the raw files, possibly grouped into subfolders according to classes of samples. The object will contain all information about the study: the sample metadata, one peak list for each samples, and several quality metrics about the files. Second, the peak lists are aligned between samples and an `ExpressionSet` (`Biobase` package object) object is returned , containing the peak table, sample metadata, and feature metadata. Missing values in the dataMatrix can be replaced by the integrated signal in the expected raw data region. The features can be annotated with the `annotateVOC` function, based on the database described in [@de_lacy_costello_review_2014]. 
+
+
+# `ptairData` package
+
+Two real PTR-TOF-MS raw data sets are available on the `ptairData` package.
+
+- exhaled air of two healthy individal: three acquisitions per individual on diffrents day with two exprirations
+
+- mycobateria culture air analysis: two replicates of two species and control (culture medium)
+
+For memory reasons, the raw data are truncate in mass axis at the range: $[20.4,21.6] U [50 , 150]$ for individual, and $ [20.4 ; 21.6] U  [56.4 ; 90.6]$ for mycobacteria.
+
+# Hands on
+
+```{r setup, message = FALSE, warning = FALSE,eval=TRUE}
+library(ptairMS)
+library(ptairData)
+```
+
+## Checking raw data andsetting parameters
+
+Start the analysis from a raw data directory. For this example, we use one of the `ptairData` package:
+
+```{r ptairData}
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+```
+
+Before processing data, there is two important steps: 
+
+- calibrate the mass axis 
+
+- determine the interest acquisition time periods (expirations or head space analysis for our examples).
+
+To perform and check the quality of this steps, we first use the `createPtrSet` function, that will indivadually for each file read the raw data, calibrate the mass axis with `mzCalibRef` parameter, determine expirations or head space analysis limits that depend on `fracMaxTIC` parameter (see Determine expirations or head spaces analysis limits section), and provide a default sampleMetadata based on the tree structure of the directory.
+
+This function creates a `ptrSet` object that contains all necessary information about the files in the study directory: calibration prameters, time limits, peak lists (as this step it is empty), and primary ion quanitfication. It can be update if new files are added are deleted from the directory with the function `updatePtrSet` (see update section).  
+
+To create a `ptrSet` object form the raw data directory:
+```{r createPtrSet,eval=TRUE}
+exhaledSet <- createPtrSet(dirRaw,
+                     setName="exhaledSet",
+                     mzCalibRef = c(21.022, 60.0525),
+                     fracMaxTIC = 0.7,
+                     saveDir = NULL )
+```
+
+```{r,eval=TRUE}
+exhaledSet
+```
+
+To get the list of file names in your directory (at the last time the ptrSet was created or updated), use \code{getFileNames}:
+```{r getFileNames}
+getFileNames(exhaledSet)
+```
+
+We will now quickly explain each steps of this function, and show how to choose and check the quality of `mzCalibRef` and  `fracMaxTIC` parameters. 
+
+### Calibration of mass axis
+
+To convert Time Of Flight (TOF) axis to mass/charge ratio (mz) axis, the following formula is used (@muller_new_2013):
+
+- $mz = \Big (\frac{TOF-b}{a} \Big)^2$
+
+To estimate parameters `(a , b) `, reference peaks with known masses (and without overlapping peaks) are needed. For optimal results the mass axis calibration peaks have to be well distributed over the entire m/z. Set those masses in the `mzCalibRef` parameter. For exhaled air, we propose for addition masses of ionicon: 
+
+```{r calib table}
+calib_table<-read.csv(system.file("extdata", "reference_tables/calib_table.tsv", package = "ptairMS"),sep="\t")
+knitr::kable(calib_table)
+```
+Other reference masses (at least two) can be provided by the user. 
+
+
+To check the calibration accurancy, you can use the `plot` method of ptrSet, that provides trhee plot `calibError` the calibration error boxplot in ppm, an estimation of the resolution $\frac{m}{\Delta_m}$ for the  `mzCalibRef` peaks and average normalized peak shape of the `mzCalibRef`.
+
+```{r plot }
+plot(exhaledSet)
+```
+
+If a masses contains one or several files outlier (error > 20 ppm), you can check those files with the function `plotCalib`, that plot for selected files the total ion spectrum around all the `mzCalibRef` (with the exact masses as red vertical lines). 
+
+```{r calibration}
+plotCalib(exhaledSet,fileNames=getFileNames(exhaledSet)[5])
+```
+
+You can then choose to keep or delete this masses from `mzCalibRef`. To change it, use `calibration` function on the ptrSte object.
+
+Since we have truncate the mass axis, we can't use masses all the masses listed above. To calibrate with at least three masses, we add the peak 75.04406 ([C3H6O2+H]+,Hydroxyacetone). 
+
+```{r plotCalib}
+exhaledSet <- calibration(exhaledSet, mzCalibRef =  c(21.022, 60.0525,75.04406))
+```
+
+It will return the same object, with the calibration parameters updated.
+```{r}
+plot(exhaledSet,type="calibError")
+```
+
+
+### Determine expirations or head spaces analysis limits
+
+The expirations or head space analysis are determined on the Total Ion Chromatogram. There correspond to the part of the TIC where intensity is higher than `fracMaxTIC * max(TIC)` with baseline removal. To analyze the entire spectrum (ambiant air), set `fracMaxTIC` to 0.
+
+Example of expirations detetcion at `fracMaxTIC = 0.5` 
+```{r timeLimits1,echo=FALSE}
+samplePath <-list.files(dirRaw,recursive = T,full.names = T,pattern = ".h5$")[1]
+sampleRaw <- readRaw(samplePath, calibTIS = F)
+expirationLimit <- timeLimits(sampleRaw,fracMaxTIC =  0.5,plotDel = T)
+```
+
+Example of expirations detetcion at `fracMaxTIC = 0.9` 
+```{r timelimit2, echo=FALSE}
+expirationLimit <- timeLimits(sampleRaw,fracMaxTIC =  0.9,plotDel = T)
+```
+
+To see the expiration limits on all files in the `ptrSet` use `plotTIC` function: 
+
+- `plotTIC`: This function plot the Total Ion Spectrum for several files. By default, when `fileNames` is `NULL`, all TICs files are plotted. A pdf file is generated with the `pdfFile` argument by give an absolute file path with the pdf extension. Finally, you can remove the baseline by set `baselineRm = TRUE`, and add the time limits to the plot by set `showLimits = TRUE`. A coloration by a column of the sampleMetadat is also posible by set the column name in `colorBy` parameter. 
+
+```{r plotTIC1,echo=FALSE}
+plotTIC(object = exhaledSet,showLimits = TRUE)
+```
+
+```{r plotTICNotEval, eval=FALSE}
+plotTIC(object = exhaledSet, showLimits = TRUE, pdfFile="AllTIC.pdf")
+```
+
+```{r plotTIC2}
+plotTIC(object = exhaledSet, showLimits = TRUE,fileNames=getFileNames(exhaledSet)[1],type = "ggplot")
+```
+
+To change the `fracMaxTIC` paramter, use `timeLimits` function :
+
+```{r timelimitPtrSet}
+exhaledSet<-timeLimits(exhaledSet,fracMaxTIC = 0.8)
+```
+
+An interface to manually change the limit of expiration is in progress. 
+
+### Managing sample metadata
+
+The `createPtrSet` function automatically generrates a default sampleMetadata 'data.frame'. It contains file names in row names, and a column named 'subfolder' when the files are organized into subfolders in the parent directory.=. To get this data.frame, use the `getSampleMetadata` method. Row names of the `sampleMetadata` must always contains all file names from the directory. 
+
+```{r getSampleMetadata}
+getSampleMetadata(exhaledSet)
+```
+
+You can at any moment obtain this default sample metada data with the function `resetSampleMetadata(exhaledSet)`
+
+To modify the sample metadata, there exist two diffrent ways: 
+
+- `setSampleMetadata`method: modify the `data.frame` and put it into the `ptrSet` object. 
+
+```{r setSampleMetadata}
+sampleMD <- getSampleMetadata(exhaledSet)
+colnames(sampleMD)[1] <- "individual"  
+
+exhaledSet <- setSampleMetadata(exhaledSet,sampleMD)
+getSampleMetadata(exhaledSet)
+```
+
+- `exportSampleMetada` and `importSampleMetadata` methods:`exportSampleMetada` save the data.frame in .tsv format in the directory of your choice. Parameter `saveFile` must be in `.tsv` extension.  You can open and modify it on any spreadsheet editor, but never change the row names: if is missing one file in row names, there will an error. Once the .tsv file has been modified, it can be imported back into the `ptrSet` object, with the function `importSampleMetadata`. It return the same ptrSet object, but with with the updated sampleMetadata.
+
+```{r exportSampleMetada,eval=FALSE}
+exportSampleMetada(exhaledSet, saveFile = paste(DirBacteria,"sampleMetadata.tsv",sep="/"))
+exhaledSet <- importSampleMetadata(exhaledSet, file = paste(DirBacteria,"sampleMetadata.tsv",sep="/"))
+```
+
+
+### Saving
+
+Finally, the function saves the object as `.Rdata` in `saveDir` directory if it is not `NULL`, with `setName` as name. Then, to import the saved `ptrSet` object, use `load` base function.
+
+### Plot raw data
+
+There exist two functions for plotting the raw data:
+
+- `plotRaw`: Displays for a file the image of the matrix of intensities, the EIC, the sum spectrum, for the selected m/z and time ranges and annotation of known VOC possibly contains in the mz range (just for infomation, no peak detection have been done as this step). 
+```{r plotRaw_ptrSet}
+plotRaw(exhaledSet, mzRange = 59 , fileNames = getFileNames(exhaledSet)[1],showVocDB = T)
+```
+
+- `plotFeatures`: for all selected files, the average spectrum for all time periods is plotted, with the background superimposed as a dashed line. As `plotTIC` function, you can choose type `plotly` or `ggplot`, and coloring spectrum by a column name of the sample Metadata
+
+```{r plotFeatures}
+plotFeatures(exhaledSet,mz=21.022)
+plotFeatures(exhaledSet,mz=59.049,type="ggplot",colorBy = "individual")
+```
+
+## update the ptrSet 
+
+If you want to delete or added files to the directory after created the ptrSet, modify in the directory and run `updatePtrSet` function.
+```{r, update}
+exhaledSet <- updatePtrSet(exhaledSet)
+```
+
+## Peak detection 
+
+Now we checked if the calibration is efficient, and if the expiration or head space are well determining. The, we can process all files with the `detectPeak` function. 
+
+For each file in the data set, this function :
+
+- calibrates each expiration and ambiant air
+
+- detects peak in each expiration and ambiant air (see annex 1 for peak detection algorithm)
+
+- aligns features between the background and diffrents analyticaltime periods (i.e. headspace or expirations)
+
+- keeps features present in at leat fracGroup % of expirations (if exhaled air)
+
+- if `normalize=TRUE`, normalizes with the primary ion (devided all features by the quantity of H3(O18)+ *488), and converts in ppb if the ptr reaction information are available in the h5 file (voltage, temperature and pressure of the drift) 
+
+The peakList is then written in the ptrSet object: a list of `data.table`, which contains for each file all peaks detected, with quantification of analytical time periods and background (ambient air).  
+
+```{r Detect peak}
+exhaledSet <- detectPeak(exhaledSet ,  mzNominal = NULL,fracGroup=1,normalize = T)
+```
+
+If you want to restrinct the detection to few nominal mass, set them in `mzNominal`, for example `exhaledSet <- detectPeak(exhaledSet ,  mzNominal = c(21,59))`. 
+
+This step can take few times if there are many files and a large mz range. You can then parallelize the algorithm by set `parallel = TRUE` and give the number of cores in `nbCores` (the number of files that will be processed simultaneous). To see the number of CPU cores available in your computer, use `parallel::detectCores()`.
+
+To see the resulting peak lists, use `getPeakList` method. It return a list with two elements:
+
+- raw: contains the peak List obtained of each expiration and background contatened, with the following column :
+
+    * mz: the mass of the peak center
+    * quanti: the concentration in count per extraction 
+    * delta_mz: the FWHM (Full Weigth Half Maximum) of the peak in Da
+    * resultion: mz/delta_mz
+    * group: the label of the analitycal time period:  0 for background, and 1, 2 ... for the expirations/headSpace number
+
+- aligned: contains the peak list obtained after alignment beteween background and time periods:
+
+    * mz: the mass of the peak center
+    * quanti: the mean of the quantification over all time periods
+    * delta_mz: the mean FWHM (Full Weigth Half Maximum) over all time periods
+    * fracExp: percentage of times periods that contains this peak
+    * background: the quantification in the ambiant air
+
+if `fracMaxTIC` is set to zero at the begining, ranw and aligned peakList are the same
+
+
+```{r getPeakList}
+peakList<-getPeakList(exhaledSet)
+head(peakList$aligned$`individual4-1.h5`)
+```
+
+## How to update `ptrSet` peakList
+The ptairMs package allow to update the `ptrSet` object linked to a directory, as the data is acquired. When you acquire new data in the directory, first apply `updatePtrSet` function to the object, reset the sample metadata or complet it, and then apply `detectPeak` function.
+
+```{r updatePtrSet,eval=FALSE}
+exhaledSet<-updatePtrSet(exhaledSet)
+exhaledSet<-setSampleMetadata(exhaledSet,resetSampleMetadata(exhaledSet))
+exhaledSet<-detectPeak(exhaledSet)
+```
+
+## Aligning samples
+
+The alignment between samples (i.e. matching of variables between the peak lists of the samples) is performed by using a kernel gaussian density [@delabriere_profia_2017]. 
+At this stage, the table of peak intensities has been built, and will be handled together with the sample meta data (from ptrSet) and variable meta data containing the background peak table, as an `ExpressionSet` object. 
+
+It is possible to apply two filters:
+
+- On the background: only variables with intensities greater than `bgThreshold * background` are kept 
+
+- On samples reproducibility: only variables which are detected in more than $fracGroup$ % of samples are kept.
+
+If you do not want to apply those filters, set `fracGroup` and `bgThreshold` to 0.
+
+```{r Align patient}
+eSet <- alignSamples(exhaledSet, group="individual", fracGroup = 1, bgThreshold = 4 )
+```
+
+To see those three tables contains in the `ExpressionSet`:
+```{r}
+knitr::kable(head(Biobase::exprs(eSet)))
+knitr::kable(head(Biobase::fData(eSet)))
+knitr::kable(head(Biobase::pData(eSet)))
+```
+
+
+## Imputation 
+To imputue missing values, `ptairMS` returns back to the raw data, and compute with the same method as `detectPeak` the missing values without limit of detection. 
+
+```{r imputue, message=FALSE}
+eSet <- ptairMS::impute(eSet,  exhaledSet)
+```
+
+## Annotation
+`ptairMS` propose a putative annotation based on the database described in [@de_lacy_costello_review_2014],with the annotateVOC function. Applied to an expression set, it write in the features metadata all possible formulas and names found.  
+
+```{r}
+annotateVOC(59.049)
+eSet<-annotateVOC(eSet)
+knitr::kable(head(Biobase::fData(eSet)))
+```
+
+Then you can export the expressionSet with the function `writeEset` into 3 tabulated files 'dataMatrix.tsv', sampleMetadata.tsv', and 'variableMetadata.tsv':
+
+```{r,eval=FALSE}
+writeEset(eset, dirC = file.path(getwd(), "processed_dataset"))
+```
+
+## Statistical analysis 
+
+You can now use known package as `ropls` to performs PCA or further statistical analysis.
+```{r imageF}
+X<-Biobase::exprs(eSet)
+SMD<-Biobase::pData(eSet)
+features<-Biobase::fData(eSet)
+ropls::view(log2(X),printL = FALSE)
+```
+
+```{r}
+pca<-ropls::opls(t(log2(X)),crossvalI=5,info.txtC="none",fig.pdfC="none")
+plot(pca,type="overview",parAsColFcVn=SMD$individual)
+plot(pca,type="x-score",parAsColFcVn=SMD$individual)
+plot(pca,type="x-loading")
+
+dim1<-ropls::getLoadingMN(pca)[,1]
+barplot(sort(abs(dim1),decreasing = T))
+knitr::kable(features[names(sort(abs(dim1),decreasing = T)),c("vocDB_formula_Hplus","vocDB_cas.name")])
+```
+
+## Processing only one raw file
+
+To read and access to the entire raw data of one file, use  `readRaw` function. It opens the data from a absolute file path whith `rhdf5` library, and returns a `ptrRaw` object containing the raw data matrix, the time axis, the m/z axis obtained after calibration if `calibTIS = TRUE`, and information contained in the h5 file (transmission curve, drift temperature, ...).
+
+To get a absolute file path of one file:
+```{r readRaw}
+samplePath <-list.files(dirRaw,recursive = T,full.names = T,pattern = ".h5$")[1]
+```
+
+To read the file :
+```{r}
+sampleRaw <- readRaw(samplePath, calibTIS = F)
+sampleRaw
+```
+
+After that, you can use same method as ptrSet object: calibration, timeLimits, plotCalib, plotTIC, plotRaw, and detectPeak. 
+
+# Acknowledgements
+This research was developed within the Data Sciences for Deep Phenotyping and Precision Medicine team at CEA (C. Roquencourt, P. Zheng, P. Roger-Mele and E. Thévenot) in collaboration with the Exhalomics platform from the Foch Hospital (S. Grassin-Delyle, P. Devillier, H. Salvator, E. Naline and L.-J. Couderc) within the SoftwAiR project supported by the Agence Nationale de la Recherche (ANR-18-CE45-0017 grant).
+
+This research was supported by the Agence Nationale de la Recherche (ANR-18-CE45-0017 grant).
+
+# Annex
+##Peak detection and quanitfication methods
+
+For each nominal mass m/z:
+
+- Selection of the m/z range: [m/z - 0.6, m/z + 0.6] and definition of m/z windows for noise ([m/z - 0.6, m/z - 0.4] U [m/z + 0.4, m/z + 0.6]) and signal ([m/z - 0.4, m/z + 0.4])
+
+- Removing baseline [@clayton_snip_nodate]
+
+- Smoothing the signal with  Savitzky Golay windows [@savitzky_smoothing_1964] computed by using noise autocorrelation [@vivo-truyols_automatic_2006] 
+
+- Detection of peak maxima by using the derivatives of Savitzky Golay filter (all concave regions are determined with the second derivative, and the maxima correspond in each of those regions to the point with the first deriative closest to zero)
+
+- Thresholding to the noise maximum arround the mass 
+  
+- Iterrative fit function sech2: $peak_i(h_i,m_i,\Delta_{1i},\Delta_{2i}) = {h_i}/{(cosh(\Delta_{1i}*(x-m_i))^2*(x<=m_i)+cosh(\Delta_{2i}*(x-m_i))^2*(x>m_i))}$, with initialisation and constains:
+    
+    + m : mass of the peak maxima detected \in $+- [\Delta/4]$
+    + $\Delta_1$= $\Delta_2$ = m/5000 (resolution mean)
+    + h = intensity of the peak at the center
+    
+
+- Quantification by summing the fitted peaks over a range of 10*$\Delta_i$
+
+
+```{r PeakList}
+peakList<-PeakList(sampleRaw, mzNominal = c(63), 
+                                plotFinal=TRUE ,plotAll =TRUE)
+peakList$peak
+```
+
+
+# Session Info
+
+Here is the output of `sessionInfo()` on the system on which this document was
+compiled:
+
+```{r sessionInfo, echo=FALSE}
+sessionInfo()
+```
+
+# Bibliography
