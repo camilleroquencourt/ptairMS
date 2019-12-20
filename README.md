@@ -6,6 +6,6 @@ The _**ptairMS**_ package provides a workflow to process PTR-TOF-MS raw data in 
 # Volatolomics
 Characterization of volatile organic compounds (VOCs) emitted by living organisms is of major interest in medicine, food sciences, and ecology. As an example, thousands of VOCs have been identified in the exhaled breath, resulting from normal metabolism or pathological processes (de lacy costello 2014). The main advantage of breath analysis in medicine is that the sampling is non-invasive (devillier, 2017). Methods based on mass spectrometry (MS) are the reference technologies for VOC analysis because of their sensitivity and large dynamic range.
 
-#Installation 
+# Installation 
 
 `devtools::install_github("camilleroquencourt/ptairMS")`
