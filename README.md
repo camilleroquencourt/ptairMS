@@ -9,3 +9,8 @@ Characterization of volatile organic compounds (VOCs) emitted by living organism
 # Installation 
 
 `devtools::install_github("camilleroquencourt/ptairMS")`
+
+# Acknowledgements
+This research was developed within the Data Sciences for Deep Phenotyping and Precision Medicine team at CEA (C. Roquencourt, P. Zheng, P. Roger-Mele and E. Thévenot) in collaboration with the Exhalomics platform from the Foch Hospital (S. Grassin-Delyle, P. Devillier, H. Salvator, E. Naline and L.-J. Couderc) within the SoftwAiR project supported by the Agence Nationale de la Recherche (ANR-18-CE45-0017 grant).
+
+This research was supported by the Agence Nationale de la Recherche (ANR-18-CE45-0017 grant).
