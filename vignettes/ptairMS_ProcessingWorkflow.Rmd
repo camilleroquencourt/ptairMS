@@ -49,7 +49,7 @@ library(ptairMS)
 library(ptairData)
 ```
 
-## Checking raw data andsetting parameters
+## Checking raw data and setting parameters
 
 Start the analysis from a raw data directory. For this example, we use one of the `ptairData` package:
 
@@ -144,7 +144,12 @@ Example of expirations detetcion at `fracMaxTIC = 0.9`
 expirationLimit <- timeLimits(sampleRaw,fracMaxTIC =  0.9,plotDel = T)
 ```
 
-To see the expiration limits on all files in the `ptrSet` use `plotTIC` function: 
+To see and change time limits, use `changeTimeLimits` function, that opened an interface `Shiny` application. 
+```{r shinny app, eval=FALSE}
+exhaledSet <- changeTimeLimits(exhaledSet)
+```
+
+You can also see the expiration limits on all files in the `ptrSet` use `plotTIC` function: 
 
 - `plotTIC`: This function plot the Total Ion Spectrum for several files. By default, when `fileNames` is `NULL`, all TICs files are plotted. A pdf file is generated with the `pdfFile` argument by give an absolute file path with the pdf extension. Finally, you can remove the baseline by set `baselineRm = TRUE`, and add the time limits to the plot by set `showLimits = TRUE`. A coloration by a column of the sampleMetadat is also posible by set the column name in `colorBy` parameter. 
 
@@ -166,7 +171,7 @@ To change the `fracMaxTIC` paramter, use `timeLimits` function :
 exhaledSet<-timeLimits(exhaledSet,fracMaxTIC = 0.8)
 ```
 
-An interface to manually change the limit of expiration is in progress. 
+
 
 ### Managing sample metadata
 

@@ -1,5 +1,5 @@
 PKG_VERSION=$(shell grep '^Version:' DESCRIPTION | sed 's/^Version: //')
-ZIPPED_PKG=PTAiR_$(PKG_VERSION).tar.gz
+ZIPPED_PKG=ptairMS_$(PKG_VERSION).tar.gz
 
 # Set testthat reporter
 ifndef TESTTHAT_REPORTER

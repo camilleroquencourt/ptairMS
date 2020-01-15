@@ -13,7 +13,7 @@ test_delimitTime<-function(){
   
   testthat::expect_is(res,'matrix')
   testthat::expect_identical(c("start","end"),row.names(res))
-  testthat::expect_equal(c(res),c(8,19,55,69))
+  testthat::expect_equal(c(res),c(11,22,31,45))
   
   # Bad ratio input 
   testthat::expect_error(timeLimits(file,intensityFrac = 2))

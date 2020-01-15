@@ -74,13 +74,18 @@ This function performs for each files :
 - provides a default sampleMetadata based on the tree structure of the directory 
 
 A summary plot to check the calibration error and reference calibration peak average shape:  
-```{r}
+```{r plotSummary}
 plot(exhaledSet)
 ```
 
 Interactive plot to see Total Ion Spectrum and expirations limits: 
-```{r}
+```{r plotTIC}
 plotTIC(exhaledSet,showLimits = T,baselineRm = T)
+```
+
+An interactive interface to see and change expirations limits :
+```{r shinny app, eval=FALSE}
+exhaledSet <- changeTimeLimits(exhaledSet)
 ```
 
 ## detecting peak
