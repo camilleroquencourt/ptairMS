@@ -1,3 +1,5 @@
+utils::globalVariables(c("error","name","out","intervalRef","signal","signal0","signal1","Mz"))
+
 ###plot----
 #'ptrSet object
 #'
@@ -8,6 +10,7 @@
 #' a empty character if you want all. 
 #' @param saveFile a file path if you want to save the plot. Three extensions are possible : 
 #' pdf, png ar jpeg. If is \code{NULL}, the plot will not be saved. 
+#' @return plot 
 #' @rdname plot
 #' @export
 #' @examples 
@@ -47,8 +50,7 @@ setMethod(f = "plot",
             if(!is.null(saveFile)) dev.off()
           })
 
-#'plot resolution boxplot for a ptrSet
-#'@param set a ptrSet object
+# plot resolution boxplot for a ptrSet
 plotResolution<-function(set){
             mzCalibRef <- set@parameter$mzCalibRef
             resolution <- set@resolution
@@ -65,40 +67,40 @@ plotResolution<-function(set){
             
             #concatenate
             resolutiontemp<-lapply(resolution,function(x){
-              mat<-cbind(resolution=x,mz=as.numeric(names(x)))
+              mat<-cbind(resolution=x,Mz=as.numeric(names(x)))
               rownames(mat)<-NULL
               mat
             } )
             
-            resolMat<-do.call(rbind,resolutiontemp)
-            resolMat<-as.data.table(resolMat)
-            resolMat[,mz:=factor(mz)]
-            resolMat<-cbind(resolMat,name=rep(names(resolution),each=nlevels(resolMat$mz)))
+            resolMat <- do.call(rbind,resolutiontemp)
+            resolMat <- data.table::as.data.table(resolMat)
+            `:=` <- data.table::`:=`
+            resolMat[,Mz := factor(Mz)]
+            resolMat <- cbind(resolMat,name=rep(names(resolution),each=nlevels(resolMat$Mz)))
             
             #identify outliers 
             resolMat<-resolMat[!is.na(resolMat$resolution),]
-            resolMat<-resolMat[,.(resolution,name,out=ifelse(is_outlier(resolution), resolution, as.numeric(NA))),by=mz]
+            resolMat<-resolMat[,.(resolution,name,out=ifelse(is_outlier(resolution), resolution, as.numeric(NA))),by=Mz]
 
             # boxplot with outlier labels 
-            g<-ggplot2::ggplot(subset(resolMat, !is.na(resolution)), ggplot2::aes(y=resolution, x=mz)) + 
+            g<-ggplot2::ggplot(subset(resolMat, !is.na(resolution)), ggplot2::aes(y=resolution, x=Mz)) + 
               ggplot2::geom_boxplot() +
               ggplot2::geom_text(data=resolMat[!is.na(out),],
-                                 ggplot2::aes(x=mz,y=resolution,label = name),vjust = -.5,size=3) +
+                                 ggplot2::aes(x=Mz,y=resolution,label = name),vjust = -.5,size=3) +
               ggplot2::ggtitle("resolution m/Delta(m)")+
               ggplot2::ylab("m/delta(m)")
             
             info<-gridExtra::tableGrob(
-              data.frame(res=round(c(min=min(na.omit(resolMat$resolution)),
-                                              mean=mean(na.omit(resolMat$resolution)),
-                                              max=max(na.omit(resolMat$resolution))
+              data.frame(res=round(c(min=min(stats::na.omit(resolMat$resolution)),
+                                              mean=mean(stats::na.omit(resolMat$resolution)),
+                                              max=max(stats::na.omit(resolMat$resolution))
                                             ))),
               theme = gridExtra::ttheme_minimal(base_size = 12))
             
             return(list(plot=g,table=info))
           }
         
-#'plot the calibration error bowplot for a ptrSet
-#'@param set ptrSet object     
+    
 plotCalibError<- function(set){
             massCalib<-set@mzCalibRef
             errorList<- set@errorCalibPpm
@@ -130,39 +132,38 @@ plotCalibError<- function(set){
             
             #concatenate
             errorListemp<-lapply(errorList,function(x){
-              mat<-cbind(error=x,mz=as.numeric(names(x)))
+              mat<-cbind(error=x,Mz=as.numeric(names(x)))
               rownames(mat)<-NULL
               mat
             } )
             
             calibErrorMat<-do.call(rbind,errorListemp)
-            calibErrorMat<-as.data.table(calibErrorMat)
-            calibErrorMat[,mz:=factor(mz)]
-            calibErrorMat<-cbind(calibErrorMat,name=rep(names(errorList),each=nlevels(calibErrorMat$mz)))
+            calibErrorMat<-data.table::as.data.table(calibErrorMat)
+            `:=` <- data.table::`:=`
+            calibErrorMat[,Mz:=factor(Mz)]
+            calibErrorMat<-cbind(calibErrorMat,name=rep(names(errorList),each=nlevels(calibErrorMat$Mz)))
 
             #identify outliers   
             calibErrorMat<-calibErrorMat[!is.na(calibErrorMat$error),]
-            calibErrorMat<-calibErrorMat[,.(error,name,out=ifelse(is_outlier(error), error, as.numeric(NA))),by=mz]
+            calibErrorMat<-calibErrorMat[,.(error,name,out=ifelse(is_outlier(error), error, as.numeric(NA))),by=Mz]
             
             # boxplot with labels 
-            p<-ggplot2::ggplot(subset(calibErrorMat, !is.na(error)), ggplot2::aes(y=error, x=mz)) + 
+            p<-ggplot2::ggplot(subset(calibErrorMat, !is.na(error)), ggplot2::aes(y=error, x=Mz)) + 
               ggplot2::geom_boxplot() + 
               ggplot2::geom_text(data=calibErrorMat[!is.na(out),],
-                                 ggplot2::aes(x=mz,y=error,
+                                 ggplot2::aes(x=Mz,y=error,
                                               label = name),vjust = -.5,size=3.5) +
               ggplot2::ggtitle("Calibration error") + ggplot2::ylab("ppm")
             
             return(p)
 }
 
-#'compute outlier like ggplot2 boxplot 
-#'@param x a numeric vector
+
 is_outlier <- function(x) {
-  return(x < quantile(x, 0.25,na.rm=T) - 1.5 * IQR(x,na.rm=T) | x > quantile(x, 0.75,na.rm = T) + 1.5 * IQR(x,na.rm=T))
+  return(x < stats::quantile(x, 0.25,na.rm=TRUE) - 1.5 *  stats::IQR(x,na.rm=TRUE) | x > stats::quantile(x, 0.75,na.rm = TRUE) + 1.5 * stats::IQR(x,na.rm=TRUE))
 }
 
-#'plot the average peak shape of reference calibration masses for a ptrSet
-#'@param set prSet object 
+#plot the average peak shape of reference calibration masses for a ptrSet
 plotPeakShape<-function(set){
           mzRef<-set@parameter$mzCalibRef
           n.files<-length(set@mzCalibRef)
@@ -173,13 +174,15 @@ plotPeakShape<-function(set){
           #loop over file
           peak_ref<-array(NA,dim = c(length(mzRef),n.files,npoints))
          
-          for (n.file in 1:n.files ){
+          for (n.file in seq_len(n.files) ){
               massRef <- set@mzCalibRef[[n.file]]
               interval <- set@signalCalibRef[[n.file]]
               names(interval)<-massRef
               n.mass<-length(interval)
-              delta<- sapply(interval, function(x) width(tof = x$mz,peak = x$signal)$delta)
-              t_centre<-sapply(massRef,function(x) {
+              delta<- vapply(interval, 
+                             function(x) width(tof = x$mz,peak = x$signal)$delta,
+                             FUN.VALUE = 1.1)
+              t_centre<-vapply(massRef,function(x) {
                 spectrum<-interval[[as.character(x)]]$signal
                 mz<-interval[[as.character(x)]]$mz
                 delta<-5000 * log(sqrt(2)+1)*2/x 
@@ -190,11 +193,11 @@ plotPeakShape<-function(set){
                                                           x= mz , y = spectrum))
                 center<-fit$par$m
                 return(center)
-                })
+                },FUN.VALUE = 1.1)
               
               #normalization of intreval
               interval.n<-list()
-              for (j in 1:n.mass){
+              for (j in seq_len(n.mass)){
                 interval.n[[j]]<-(interval[[j]]$mz-t_centre[j])/delta[j]
               }
              names(interval.n)<-massRef
@@ -202,17 +205,17 @@ plotPeakShape<-function(set){
               
               peak <- matrix(0,ncol=n.mass,nrow=length(interval.ref))
             
-              for (i in (1:(n.mass))){
+              for (i in seq_len(n.mass)){
                
                 #interpolation 
-                interpolation<-spline(interval.n[[i]],interval[[i]]$signal,xout = interval.ref)
+                interpolation<-stats::spline(interval.n[[i]],interval[[i]]$signal,xout = interval.ref)
                 
                 #baseline correction 
                 interpolation$y <- interpolation$y - snipBase(interpolation$y,widthI = 4)
                 
                 #normalization
                 indexPeakRef<-which(massRef==massRef[i])
-                peak_ref[indexPeakRef,n.file,]<-interpolation$y/spline(interval.ref,interpolation$y,xout = 0)$y
+                peak_ref[indexPeakRef,n.file,]<-interpolation$y/stats::spline(interval.ref,interpolation$y,xout = 0)$y
                 #cumsum(interpolation$y)/sum(interpolation$y)
               }
               
@@ -224,20 +227,20 @@ plotPeakShape<-function(set){
           peaks<-apply(peak_ref,1,function(x){
             if(all(is.na(x))) return(rep(NA,4*npoints))
             peak<-apply(x,2,function(x) mean(x,na.rm=TRUE))
-            peak<-spline(interval.ref,peak,n=4*npoints)
+            peak<-stats::spline(interval.ref,peak,n=4*npoints)
             return(peak$y)
           }) 
        
           interval.ref2<-seq(-3,3,length=4*npoints)
           peaks<-matrix(peaks,ncol=1)
           
-          peakData<-data.frame(y=peaks,
-                                mz=as.factor(rep(mzRef,each=4*npoints)),
-                                  x=rep(interval.ref2,length(mzRef)))
-          peakData<-peakData[!is.na(peakData$y),]
+          peakData<-data.frame(signal=peaks,
+                                Mz=as.factor(rep(mzRef,each=4*npoints)),
+                                  intervalRef=rep(interval.ref2,length(mzRef)))
+          peakData<-peakData[!is.na(peakData$signal),]
           #plot
           p<-ggplot2::ggplot(data=peakData) + 
-            ggplot2::geom_line(ggplot2::aes(x=x,y=y,group=mz,colour=mz),size=1) +
+            ggplot2::geom_line(ggplot2::aes(x=intervalRef,y=signal,group=Mz,colour=Mz),size=1) +
             ggplot2::ggtitle("Average normalized peak shape") +
               ggplot2::xlab('Mz interval normalized')+
               ggplot2::ylab("Intenisty normalized")
@@ -247,29 +250,29 @@ plotPeakShape<-function(set){
             #confidence interval 
             peaksUp<-apply(peak_ref,1,function(x){
               if(all(is.na(x))) return(rep(NA,4*npoints))
-              peak<-apply(x,2,function(y) mean(y,na.rm=TRUE)+qnorm(0.975)*sd(y,na.rm=TRUE)/sqrt(length(y)))
-              peak<-spline(interval.ref,peak,n=4*npoints)
+              peak<-apply(x,2,function(y) mean(y,na.rm=TRUE)+stats::qnorm(0.975)*stats::sd(y,na.rm=TRUE)/sqrt(length(y)))
+              peak<-stats::spline(interval.ref,peak,n=4*npoints)
               return(peak$y)
             }) 
             
             peaksDown<-apply(peak_ref,1,function(x){
               if(all(is.na(x))) return(rep(NA,4*npoints))
-              peak<-apply(x,2,function(y) mean(y,na.rm=TRUE)-qnorm(0.975)*sd(y,na.rm=TRUE)/sqrt(length(y)))
-              peak<-spline(interval.ref,peak,n=4*npoints)
+              peak<-apply(x,2,function(y) mean(y,na.rm=TRUE)-stats::qnorm(0.975)*stats::sd(y,na.rm=TRUE)/sqrt(length(y)))
+              peak<-stats::spline(interval.ref,peak,n=4*npoints)
               return(peak$y)
             }) 
             
             peaksUp<-matrix(peaksUp,ncol=1)
             peaksDown<-matrix(peaksDown,ncol=1)
             
-            peakData<-data.frame(y0=peaksDown,y1=peaksUp,
-                                 mz=as.factor(rep(mzRef,each=4*npoints)),
-                                 x=rep(interval.ref2,length(mzRef)))
-            peakData<-peakData[!is.na(peakData$y0),]
+            peakData<-data.frame(signal0=peaksDown,signal1=peaksUp,
+                                 Mz=as.factor(rep(mzRef,each=4*npoints)),
+                                 intervalRef=rep(interval.ref2,length(mzRef)))
+            peakData<-peakData[!is.na(peakData$signal0),]
             p<-p +
-              ggplot2::geom_line(data=peakData,ggplot2::aes(x=x,y=y0,group=mz,colour=mz),size=0.6,
+              ggplot2::geom_line(data=peakData,ggplot2::aes(x=intervalRef,y=signal0,group=Mz,colour=Mz),size=0.6,
                                  linetype = "dashed")+
-              ggplot2::geom_line(data=peakData,ggplot2::aes(x=x,y=y1,group=mz,colour=mz),size=0.6,
+              ggplot2::geom_line(data=peakData,ggplot2::aes(x=intervalRef,y=signal1,group=Mz,colour=Mz),size=0.6,
                                  linetype = "dashed")
           }
           
@@ -286,6 +289,7 @@ plotPeakShape<-function(set){
 #' @param fileNames the name of the files in the ptrSet object to plot. If \code{NULL}, all files will be
 #' plotted
 #' @param ... not used
+#' @return plot 
 #' @export
 #' @rdname plotCalib
 #' @examples 
@@ -333,7 +337,7 @@ setMethod(f="plotCalib",
             
             # plot all masses use for calibration for each files
               #loop over files
-              for (i in 1:length(massCalib)){
+              for (i in seq_along(massCalib)){
                 
                 error <- errorList[[i]]
                 
@@ -342,10 +346,10 @@ setMethod(f="plotCalib",
                 nb_col<- min(3,nb_plot) 
                 nb_row <- ceiling(nb_plot/nb_col)
                 
-                par(oma = c(0, 0, 3, 0))
+                graphics::par(oma = c(0, 0, 3, 0))
                 layout(matrix(seq(1,nb_row*nb_col), nrow = nb_row, ncol = nb_col, byrow = TRUE))
               
-                for (j in 1:length(massCalib[[i]])){
+                for (j in seq_along(massCalib[[i]])){
                   m <- massCalib[[i]][j]
                   th<- m*(ppm/2)/10^6
                   mz <- spectrCalib[[i]][[j]]$mz
@@ -361,7 +365,7 @@ setMethod(f="plotCalib",
               } #end loop files
               
               if(!is.null(pdfFile)) dev.off()
-            par(oma = c(0, 0, 0, 0))
+            graphics::par(oma = c(0, 0, 0, 0))
           })
 
 
@@ -441,7 +445,7 @@ setMethod(f="plotTIC",
               }
               p<-ggplot2::ggplot()  
                
-              for (j in 1:length(TIC)){
+              for (j in seq_along(TIC)){
                 if(!is.null(pdfFile)) {
                   plot<- ggplot2::qplot(x=as.numeric(names(TIC[[j]])),y=TIC[[j]],
                         xlab="time",ylab="intensity",main=paste(j,names(TIC)[j],sep=" - "),size=0.8) 
@@ -573,13 +577,13 @@ setMethod(f="plotRaw",signature = "ptrSet",
       stop("'plotly display is only available in the 'interactive' mode currently.",
            call. = FALSE)
     filenameSplitVc <- unlist(strsplit(basename(figure.pdf), ".", fixed = TRUE))
-    extC <- tail(filenameSplitVc, 1)
+    extC <- utils::tail(filenameSplitVc, 1)
     if (extC == "pdf") {
       pdf(figure.pdf)
     } else
       stop("The extension of the 'figure.pdf' filename argument should be 'pdf'",
            call. = FALSE)
-  }  else if (is.null(fileNames) ) par(ask=TRUE)
+  }  else if (is.null(fileNames) ) graphics::par(ask=TRUE)
 
   for (file in fileNames){
 
@@ -612,7 +616,7 @@ setMethod(f="plotRaw",signature = "ptrSet",
     #formate object matix
     rawSubMN <- matrix(object,
                        nrow = dim(object)[1],
-                       ncol = prod(tail(dim(object),2)))
+                       ncol = prod(utils::tail(dim(object),2)))
     
     rawSubMN<-rawSubMN[,indexTime]
     
@@ -630,7 +634,7 @@ setMethod(f="plotRaw",signature = "ptrSet",
           #                           1,
           #                           function(matVi) {
           #                             matVl <- as.logical(matVi)
-          #                             if (sum(matVl,na.rm = T) == 0) {
+          #                             if (sum(matVl,na.rm = TRUE) == 0) {
           #                               return("")
           #                             } else {
           #                               return(paste(vocMatrixVc[matVl], collapse = ", "))
@@ -648,13 +652,13 @@ setMethod(f="plotRaw",signature = "ptrSet",
            
            classical = {
              
-             imageMN <- t(rawSubMN)[, 1:nrow(rawSubMN), drop = FALSE]
+             imageMN <- t(rawSubMN)[, seq_len(nrow(rawSubMN)), drop = FALSE]
              rownames(imageMN) <- round(as.numeric(rownames(imageMN)))
              colnames(imageMN) <- round(as.numeric(colnames(imageMN)), 4)
              
              paletteVc <- .palette(palette = palette)
              
-             currentParLs <- par()
+             currentParLs <- graphics::par()
              for (parC in c("cin", "cra", "csi", "cxy", "din", "page"))
                currentParLs[[parC]] <- NULL   
              
@@ -663,7 +667,7 @@ setMethod(f="plotRaw",signature = "ptrSet",
                            ima = c(4.1, 4.1, 0, 0),
                            spe = c(4.1, 0.6, 0, 1.1))
              
-             par(font = 2,
+             graphics::par(font = 2,
                  font.axis = 2,
                  font.lab = 2,
                  pch = 18)
@@ -677,7 +681,7 @@ setMethod(f="plotRaw",signature = "ptrSet",
              
              ## chr: Chromatogram
              
-             par(mar = marLs[["chr"]])
+             graphics::par(mar = marLs[["chr"]])
              
              chromVn <- apply(rawSubMN, 2,
                               function(intVn)
@@ -692,35 +696,36 @@ setMethod(f="plotRaw",signature = "ptrSet",
                   xaxt = "n",
                   yaxs = "i")
              
-             mtext("Mean of intensity",
+             graphics::mtext("Mean of intensity",
                    cex = 0.8,
                    side = 2,
                    line = 2.5)
              
              ## sca: Color scale
              
-             par(mar = marLs[["sca"]])
+             graphics::par(mar = marLs[["sca"]])
              
              .drawScale(imageMN = imageMN,
                         paletteVc = paletteVc)
              
              ## ima: Image
              
-             par(mar = marLs[["ima"]])
+             graphics::par(mar = marLs[["ima"]])
              
              .drawImage(imageMN = imageMN, paletteVc = paletteVc)
              
              if (showVocDB && !is.null(vocdbDF)) {
                mzImaVn <- as.numeric(colnames(imageMN))
-               abline(h = sapply(vocdbDF[, "mz_Hplus"],
+               abline(h = vapply(vocdbDF[, "mz_Hplus"],
                                  function(mzN)
-                                   (mzN - min(mzImaVn))/diff(range(mzImaVn)) * ncol(imageMN) + par("usr")[1]),
+                                   (mzN - min(mzImaVn))/diff(range(mzImaVn)) * ncol(imageMN) + par("usr")[1],
+                                 FUN.VALUE = 1.1),
                       lty = "dotted")
              }
              
              ## spe: Spectrum
              
-             par(mar = marLs[["spe"]])
+             graphics::par(mar = marLs[["spe"]])
              
              specVn <- apply(rawSubMN, 1,
                              function(intVn)
@@ -736,7 +741,7 @@ setMethod(f="plotRaw",signature = "ptrSet",
                   yaxs = "i",
                   yaxt = "n")
              
-             mtext("Mean of intensity",
+             graphics::mtext("Mean of intensity",
                    cex = 0.8,
                    side = 1,
                    line = 2.5)
@@ -749,7 +754,7 @@ setMethod(f="plotRaw",signature = "ptrSet",
              
              title(main=basename(file), outer = TRUE, line =-2,cex.main=2)
              
-             par(currentParLs)
+             graphics::par(currentParLs)
              
            },
            
@@ -797,7 +802,7 @@ setMethod(f="plotRaw",signature = "ptrSet",
    }#end loop file
   
   #reset parameter plot
-  par(ask=FALSE)
+  graphics::par(ask=FALSE)
   
   #close pdf
   if (figure.pdf != "interactive")
@@ -873,7 +878,7 @@ setMethod(f="plotFeatures",
                 mzAxis.j <- mzAxis[indexMz]
                 rawMn <- matrix(raw,
                                 nrow = dim(raw)[1],
-                                ncol = prod(tail(dim(raw),2))) #* 0.2 ns / 2.9 (single ion signal) if convert to cps
+                                ncol = prod(utils::tail(dim(raw),2))) #* 0.2 ns / 2.9 (single ion signal) if convert to cps
                 
                 FirstcalibCoef <- rhdf5::h5read(file,"FullSpectra/MassCalibration",index=list(NULL,1))
                 tof <- sqrt(mzAxis.j)*FirstcalibCoef[1,1] + FirstcalibCoef[2,1]
@@ -888,7 +893,7 @@ setMethod(f="plotFeatures",
                #plot mean spectrum for expriration/time periods
                 plotFile<-ggplot2::ggplot()
                 indexTimeVec<-NULL
-                for(i in 1:n.limit){
+                for(i in seq_len(n.limit)){
                   #get index of the time period
                   indexTime<-seq(indLim["start", i], indLim["end", i])
                   indexTimeVec<-c(indexTimeVec,indexTime)
@@ -910,7 +915,7 @@ setMethod(f="plotFeatures",
                                                    )
                                            )
                                     )
-                indLimBg <- seq(1:ncol(rawMn))[-indExpLarge]
+                indLimBg <- seq(1,ncol(rawMn))[-indExpLarge]
                 background<-rowSums(rawMn[,indLimBg])/length(indLimBg)
                 data=data.frame(mz=mzNew[indexSub], intensity=background[indexSub], timePeriods="background")
                 
@@ -927,7 +932,7 @@ setMethod(f="plotFeatures",
                 spectrum <- rowSums(rawMn[, indexTimeVec]) / length(indexTimeVec)
                 
                 # spline intrepolation for spectrum
-                splineInterpol<- splinefun(mzNew, spectrum)
+                splineInterpol<- stats::splinefun(mzNew, spectrum)
                
                 #plot spectrum
                 if(colorBy=="rownames"){
@@ -944,7 +949,7 @@ setMethod(f="plotFeatures",
                                          fun=splineInterpol ,n = 1000,size=1)
                 
                 # spline interpolation for background
-                splineInterpol<- splinefun(mzNew,background)
+                splineInterpol<- stats::splinefun(mzNew,background)
                 
                 #plot background
                 data= data.frame(mz = mzNew[indexSub], Legend = colour)
@@ -961,7 +966,7 @@ setMethod(f="plotFeatures",
                                                    subtitle = paste(annotateVOC(mz)[2:3],collapse = " ") )
               
               if(!is.null(pdfFile)){
-                for (j in 1:length(listPlotFile)) print(listPlotFile[[j]])
+                for (j in seq_along(listPlotFile)) print(listPlotFile[[j]])
                 dev.off()
               }
               
@@ -1020,6 +1025,7 @@ resetSampleMetadata<-function(ptrset){
 
 #' get sampleMetadata of a ptrSet
 #' @param set a ptrSet object
+#' @return a data.frame 
 #' @export
 #' @examples 
 #' library(ptairData)
@@ -1028,7 +1034,7 @@ resetSampleMetadata<-function(ptrset){
 #'SMD<-getSampleMetadata(mycobacteria)
 getSampleMetadata<- function(set){
   
-  if(!is(set,"ptrSet")) stop("set is not a ptrSet object")
+  if(!methods::is(set,"ptrSet")) stop("set is not a ptrSet object")
   
   sampleMetadata<- set@sampleMetadata
   return(sampleMetadata)
@@ -1049,7 +1055,7 @@ getSampleMetadata<- function(set){
 setSampleMetadata<- function(set, sampleMetadata){
   
   #check if set is ptrSet
-  if(!is(set,"ptrSet")) stop("set is not a ptrSet object")
+  if(!methods::is(set,"ptrSet")) stop("set is not a ptrSet object")
   
     # check if row names contains all files 
             files <-set@parameter$listFile
@@ -1073,16 +1079,17 @@ setSampleMetadata<- function(set, sampleMetadata){
 #' export sampleMetadata
 #' @param set a ptrSet object
 #' @param saveFile a file path in tsv extension where the data.frame will be exported
+#' @return nothing
 #' @export
 #' @examples 
 #' library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 #' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
 #' saveFile<-file.path(directory,"sampleMetadata.tsv")
 #' #exportSampleMetada(mycobacteria,saveFile)
 exportSampleMetada<-function(set, saveFile){
   
-  if(!is(set,"ptrSet")) stop("set is not a ptrSet object")
+  if(!methods::is(set,"ptrSet")) stop("set is not a ptrSet object")
             if(tools::file_ext(saveFile) != "tsv") stop("saveFile must be in .tsv extension" )
             
             #get sampleMetadata
@@ -1091,6 +1098,7 @@ exportSampleMetada<-function(set, saveFile){
             # write the data.frame in a tsv file
             utils::write.table(sampleMetadata, file=saveFile,
                         sep="\t", col.names=NA)
+            
           }
 
 #' import a sampleMetadata from a tsv file to a ptrSet object 
@@ -1107,7 +1115,7 @@ exportSampleMetada<-function(set, saveFile){
 #' #exportSampleMetada(mycobacteria,saveFile)
 #' #mycobacteria<-importSampleMetadata(mycobacteria,saveFile)
 importSampleMetadata<-function(set,file){
-  if(!is(set,"ptrSet")) stop("set is not a ptrSet object")
+  if(!methods::is(set,"ptrSet")) stop("set is not a ptrSet object")
             sampleMetadata <- try(utils::read.table(file = file, sep="\t",
                                              header = TRUE, row.names = 1,quote = ""))
             
@@ -1198,8 +1206,14 @@ setMethod(f = "calibration",
           } )
 ## other ----
 #'get the files diretory of a ptrSet
-#'@param ptrSet ptrSte object 
-#'@export
+#' @param ptrSet ptrSte object 
+#' @return the directory in absolute path as character
+#' @examples 
+#' library(ptairData)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' ptrSet<-createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049))
+#' getDirectory(ptrSet)
+#' @export
 getDirectory<-function(ptrSet) return(ptrSet@parameter$dir)
 
 #' remove the peakList of an ptrSet object 
@@ -1208,6 +1222,7 @@ getDirectory<-function(ptrSet) return(ptrSet@parameter$dir)
 #' peak function. First delete the peakLIst with \code{rmPeakList}, and apply \code{detectPeak}
 #' with the new parameters.
 #' @param object ptrSet object 
+#' @return a ptrSet
 #' @export
 #' @examples 
 #' library(ptairData)
@@ -1226,7 +1241,8 @@ rmPeakList<-function(object){
 #' It indicates the directory, the numer of files taht contain teh directory at the moment, and teh number of processed files.
 #' The two numbers are diffrents, use \code{updatePtrSet} function.
 #' @param object a ptrSet object
-#'@export 
+#' @return nothing
+#' @export 
 setMethod("show","ptrSet",
           function(object){
             nFiles <- length(list.files(object@parameter$dir, recursive = TRUE, pattern="\\.h5$"))
@@ -1248,6 +1264,13 @@ setMethod("show","ptrSet",
 #' \item raw: for each files a list of peak list for each time periods and background, if \code{fracMaxTic} is zero
 # 'in the \code{createPtrSet} function, then there is just one peak list per file 
 #' \item aligned: for each file the peak List after aligning between time periods and removing background threshold}
+#' @examples 
+#' library(ptairData)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' dirSet <- createPtrSet(directory,setName="test",mzCalibRef=c(21.022,59.049))
+#' dirSet <- detectPeak(dirSet , mzNominal=59)
+#' getPeakList(dirSet)$aligned
+#' getPeakList(dirSet)$raw
 #' @export
 getPeakList<-function(set){
             return(list(aligned=set@peakListAligned,raw=set@peakListRaw))}
@@ -1257,6 +1280,12 @@ getPeakList<-function(set){
 #'@param object ptrSet object 
 #'@param fullNames logical: if \code{TRUE}, it return the the directory path is 
 #'prepended to the file names.
+#'@return a vector of character that contains all file names
+#' @examples 
+#' library(ptairData)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' ptrSet<-createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049))
+#' getFileNames(ptrSet)
 #'@rdname getFileNames
 #'@export
 setMethod("getFileNames",signature = "ptrSet",

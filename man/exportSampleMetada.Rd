@@ -11,6 +11,9 @@ exportSampleMetada(set, saveFile)
 
 \item{saveFile}{a file path in tsv extension where the data.frame will be exported}
 }
+\value{
+nothing
+}
 \description{
 export sampleMetadata
 }

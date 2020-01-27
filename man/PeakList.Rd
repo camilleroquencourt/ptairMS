@@ -7,7 +7,7 @@
 \usage{
 PeakList(
   raw,
-  mzNominal = unique(round(mz)),
+  mzNominal = unique(round(raw@mz)),
   ppm = 130,
   minIntensity = 5,
   fctFit = c("Sech2", "average")[1],

@@ -11,6 +11,9 @@ TransmissionCurve(x, y)
 
 \item{y}{transmission data}
 }
+\value{
+a numeric vector
+}
 \description{
 Estimation of the transmisison curve
 }

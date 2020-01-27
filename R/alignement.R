@@ -1,3 +1,5 @@
+utils::globalVariables(c("Mz","quanti","group","delta_mz","background","."))
+
 #' Alignment with kernel gaussian density
 #'
 #' @param peakTab table with comlumn : mass, quantification, and groups number to aligned
@@ -6,7 +8,7 @@
 #' @return A list containing groups formed by alignment.
 align <- function(peakTab, ppmGroup=70, dmzGroup=0.001){
   ### faire un test si c'est null renvoyer nul 
-  porder <- order( peakTab[ , "mz"] )
+  porder <- order( peakTab[ , "Mz"] )
   peaksL <- peakTab[ porder , ,drop=FALSE]
   
   #delete the unit in col names
@@ -45,7 +47,7 @@ align <- function(peakTab, ppmGroup=70, dmzGroup=0.001){
 
     # calculated the density 
     bw <- max(massInter[i] * ppmGroup / (10 ^ 6), dmzGroup) # Determining the base of the signal to skip for a resolution.
-    den <- density(subpeakl[, "mz"], bw,
+    den <- stats::density(subpeakl[, "Mz"], bw,
                    from = massInter[i] -  bw , to = massInter[i + 1] + bw, n = 1024)
     maxy <- max(den$y)
     den$y[which(den$y <= bw * maxy)] <- 0
@@ -78,8 +80,8 @@ align <- function(peakTab, ppmGroup=70, dmzGroup=0.001){
 #' @return the sub peakgroup  
 makeSubGroup <- function(subpeakl,den,plim) {
   
-  selectedPGroup <- which(subpeakl[, "mz"] >= den$x[plim$linflex] &
-                            subpeakl[, "mz"] <= den$x[plim$rinflex])
+  selectedPGroup <- which(subpeakl[, "Mz"] >= den$x[plim$linflex] &
+                            subpeakl[, "Mz"] <= den$x[plim$rinflex])
   
   subpeakl.group<-subpeakl[selectedPGroup,,drop=FALSE]
   
@@ -87,12 +89,12 @@ makeSubGroup <- function(subpeakl,den,plim) {
   if( ( length(unique(subpeakl.group[,"group"])) < dim(subpeakl.group)[1] ) ){
     subpeakl.group <- data.table::as.data.table(subpeakl.group)
     if("background" %in% colnames(subpeakl.group)){
-      subpeakl.group<-as.matrix(subpeakl.group[,.(mz=mz[which.max(quanti)], 
+      subpeakl.group<-as.matrix(subpeakl.group[,.(`Mz`=`Mz`[which.max(quanti)], 
                                                   quanti=sum(quanti),
                                                   background =  sum(background),
                                                   delta_mz=max(delta_mz)), 
                                                by=group] )
-    } else subpeakl.group<-as.matrix(subpeakl.group[,.(mz=mz[which.max(quanti)], 
+    } else subpeakl.group<-as.matrix(subpeakl.group[,.(`Mz`=`Mz`[which.max(quanti)], 
                                                        quanti=sum(quanti),
                                                        delta_mz=max(delta_mz)), 
                                                     by=group] )
@@ -119,7 +121,7 @@ alignExpirations <- function(PeakMat, ppmGroup = 70, fracGroup=0.8,
 
   #test if there is several group
   if(length(unique(PeakMat$group))==1) {
-  PeakMat<-data.table(PeakMat[,c("mz","quanti","delta_mz")])
+  PeakMat<-data.table::data.table(PeakMat[,c("Mz","quanti","delta_mz")])
   PeakMat$fracExp<-rep(1,nrow(PeakMat))
   PeakMat$background<-rep(NA,nrow(PeakMat))
   cat(nrow(PeakMat),"peaks detected \n")
@@ -144,20 +146,19 @@ alignExpirations <- function(PeakMat, ppmGroup = 70, fracGroup=0.8,
   return(aligExpMat)
 }
 
+
 #' aggregate peakgroup for alignExpirations function  
 #' @param subGroupPeak teh group tp aggregate
 #' @param n.exp number of expirations done in the file
 #' @return a mtrix with the mediane of mz, mean of ppb, ppb in background, 
 #'  and percentage of expiration where th epeak is detected
-#' @import data.table
 aggregate <- function(subGroupPeak, n.exp) {
-  
   if(nrow(subGroupPeak) == 0) return(subGroupPeak) #empty data frame
   subGroupPeak <- data.table::data.table(subGroupPeak)
-  subGroupPeak<-subGroupPeak[,.(mz=mean(mz),quanti=mean(quanti[group!=0]),
-                  delta_mz=mean(delta_mz[group!=0]),fracExp= round( sum(group!=0) /n.exp, 1 ),
-                  background=mean(quanti[group==0]))]
-  if(is.na(subGroupPeak[,quanti])) return(NULL)
+  subGroupPeak<-subGroupPeak[,`.`(Mz=mean(Mz),quanti=mean(`quanti`[`group`!=0]),
+                  delta_mz=mean(`delta_mz`[group!=0]),fracExp= round( sum(`group`!=0) /n.exp, 1 ),
+                  background=mean(`quanti`[group==0]))]
+  if(is.na(subGroupPeak[,`quanti`])) return(NULL)
   
   return(subGroupPeak)
 }
@@ -240,12 +241,12 @@ setMethod(f="alignSamples",signature = "data.frame",
           })
 
 
-alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100, fracGroup=0.8, group=NULL, 
-                 dmzGroup=0.001,bgThreshold=2){
+alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100, 
+                             fracGroup=0.8, group=NULL, dmzGroup=0.001,bgThreshold=2){
   
   ## add column group with Samples group number
   mat<-NULL
-  for(i in 1:length(peakList)){
+  for(i in seq_along(peakList)){
     mat_temp <- cbind(peakList[[i]], group = i)
     mat <- rbind(mat,mat_temp)
   }
@@ -262,7 +263,7 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100, fracGroup=0.
   groupMat <- do.call(rbind, lapply( groupList, 
                                      function(y){
                                        y<-data.table::as.data.table(y)
-                                       y <- y[,.(mz= median(mz), 
+                                       y <- y[,.(`Mz`= stats::median(`Mz`), 
                                                  quanti= paste(quanti,collapse = "_"),
                                                  background = if("background" %in% colnames(y)) paste(background,collapse = "_"),
                                                  Samples=paste(group,collapse="_"),
@@ -287,16 +288,17 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100, fracGroup=0.
   })
   
   X <- t(matrix(mat.final.Exp, nrow = nSample)) # matrix function for the case of one sample and mat.final is an array
-  rownames(X) <- round(groupMat[,mz],4)
+  rownames(X) <- round(groupMat[,`Mz`],4)
   colnames(X) <- names(peakList)
   
   #filter on samples frenquency
   if(!is.null(group)){
     groupFac <- as.factor(sampleMetadata[,group])
     test <- apply(X,1,
-                  function(x) sapply(levels(groupFac),
+                  function(x) vapply(levels(groupFac),
                                      function(y) 
-                                       sum(!is.na(x[groupFac==y]))/length(x[groupFac==y]) >= fracGroup ))
+                                       sum(!is.na(x[groupFac==y]))/length(x[groupFac==y]) >= fracGroup,
+                                     TRUE))
     keepVar<-apply(test,2,any)
     
   }else {
@@ -340,9 +342,9 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100, fracGroup=0.
     ## fixed threshold
     if(bgThreshold!=0){
       rap<-Xbg/X
-      delete <- which(apply(rap,1,function(x) all( 1/bgThreshold <=x & x<= bgThreshold , na.rm=T) ))
-      X <- X[-delete,,drop=F]
-      Xbg<-Xbg[-delete,,drop=F]
+      delete <- which(apply(rap,1,function(x) all( 1/bgThreshold <=x & x<= bgThreshold , na.rm=TRUE) ))
+      X <- X[-delete,,drop=FALSE]
+      Xbg<-Xbg[-delete,,drop=FALSE]
       if( nrow(X)==0 ) {
         warning(paste("peakList is empty, there is no peak presents in more thant ", bgThreshold, "* background"))
         return(NULL)
@@ -360,7 +362,7 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100, fracGroup=0.
   cat(paste(nrow(X),"peaks aligned \n"))
  
   featureData <- Biobase::AnnotatedDataFrame(as.data.frame(Xbg))
-  sampleMetadata<-as.data.frame(sampleMetadata[colnames(X),,drop=F])
+  sampleMetadata<-as.data.frame(sampleMetadata[colnames(X),,drop=FALSE])
   return(Biobase::ExpressionSet(assayData=X,
                                 phenoData = Biobase::AnnotatedDataFrame(sampleMetadata),
                                 featureData = featureData)
@@ -408,7 +410,7 @@ impute <- function(eSet,ptrSet){
     j<-which(file==colnames(Biobase::exprs(eSet)))
     filesFullName.j<-filesFullName[which(basename(filesFullName)==file)]
     
-    mzMissing <- as.numeric(rownames(missingValues[missingValues[,"col"]==j,,drop=F]))
+    mzMissing <- as.numeric(rownames(missingValues[missingValues[,"col"]==j,,drop=FALSE]))
     
     #opense mz Axis 
     mzAxis <- rhdf5::h5read(filesFullName.j,name="FullSpectra/MassAxis")
@@ -428,7 +430,7 @@ impute <- function(eSet,ptrSet){
     
     rawMn <- matrix(raw,
                     nrow = dim(raw)[1],
-                    ncol = prod(tail(dim(raw),2))) #* 0.2 ns / 2.9 (single ion signal) if convert to cps
+                    ncol = prod(utils::tail(dim(raw),2))) #* 0.2 ns / 2.9 (single ion signal) if convert to cps
     
     # information for ppb convertion
     reaction <-  try(reaction<- rhdf5::h5read(filesFullName.j,"AddTraces/PTR-Reaction"))
@@ -509,7 +511,7 @@ impute <- function(eSet,ptrSet){
         quanti.m <- apply(par_estimated,2, function(x){
           th<-10*0.5*(log(sqrt(2)+1)/x[2]+log(sqrt(2)+1)/x[3])
           mz.x <- mzAxis.m[ x[1] - th < mz & mz < x[1]+th ]
-          sum(sech2(x[1],x[2],x[3],x[4],mz.x),na.rm =T)}) 
+          sum(sech2(x[1],x[2],x[3],x[4],mz.x),na.rm =TRUE)}) 
         
         list_peak<-cbind(mz,quanti=quanti.m)
         
@@ -529,7 +531,7 @@ impute <- function(eSet,ptrSet){
             
           } else {
             #normalize by primary ions
-            quanti.m <- quanti.m/(primaryIon[[basename(fullNamefile)]]*4.9*10^6)
+            quanti.m <- quanti.m/(primaryIon[[basename(file)]]*4.9*10^6)
           }
         }
 
@@ -538,7 +540,7 @@ impute <- function(eSet,ptrSet){
       Biobase::exprs(eSet)[as.character(mz),file] <- quanti.m
     }
     message(basename(file)," done")
-  }
+  }#end for file
   return(eSet)
 }
 
@@ -562,7 +564,7 @@ impute <- function(eSet,ptrSet){
 #     j<-which(file==colnames(Biobase::exprs(eSet)))
 #     filesFullName.j<-filesFullName[which(basename(filesFullName)==file)]
 #     
-#     mzMissing <- as.numeric(rownames(missingValues[missingValues[,"col"]==j,,drop=F]))
+#     mzMissing <- as.numeric(rownames(missingValues[missingValues[,"col"]==j,,drop=FALSE]))
 #    
 #     #opense mz Axis 
 #     mzAxis <- rhdf5::h5read(filesFullName.j,name="FullSpectra/MassAxis")
@@ -582,7 +584,7 @@ impute <- function(eSet,ptrSet){
 #     
 #     rawMn <- matrix(raw,
 #                     nrow = dim(raw)[1],
-#                     ncol = prod(tail(dim(raw),2))) #* 0.2 ns / 2.9 (single ion signal) if convert to cps
+#                     ncol = prod(utils::tail(dim(raw),2))) #* 0.2 ns / 2.9 (single ion signal) if convert to cps
 #     
 #     # information for ppb convertion
 #     reaction <-  try(reaction<- rhdf5::h5read(filesFullName.j,"AddTraces/PTR-Reaction"))

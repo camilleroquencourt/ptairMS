@@ -134,14 +134,14 @@ The expirations or head space analysis are determined on the Total Ion Chromatog
 
 Example of expirations detetcion at `fracMaxTIC = 0.5` 
 ```{r timeLimits1,echo=FALSE}
-samplePath <-list.files(dirRaw,recursive = T,full.names = T,pattern = ".h5$")[1]
-sampleRaw <- readRaw(samplePath, calibTIS = F)
-expirationLimit <- timeLimits(sampleRaw,fracMaxTIC =  0.5,plotDel = T)
+samplePath <-list.files(dirRaw,recursive = TRUE,full.names = TRUE,pattern = ".h5$")[1]
+sampleRaw <- readRaw(samplePath, calibTIS = FALSE)
+expirationLimit <- timeLimits(sampleRaw,fracMaxTIC =  0.5,plotDel = TRUE)
 ```
 
 Example of expirations detetcion at `fracMaxTIC = 0.9` 
 ```{r timelimit2, echo=FALSE}
-expirationLimit <- timeLimits(sampleRaw,fracMaxTIC =  0.9,plotDel = T)
+expirationLimit <- timeLimits(sampleRaw,fracMaxTIC =  0.9,plotDel = TRUE)
 ```
 
 To see and change time limits, use `changeTimeLimits` function, that opened an interface `Shiny` application. 
@@ -213,7 +213,7 @@ There exist two functions for plotting the raw data:
 
 - `plotRaw`: Displays for a file the image of the matrix of intensities, the EIC, the sum spectrum, for the selected m/z and time ranges and annotation of known VOC possibly contains in the mz range (just for infomation, no peak detection have been done as this step). 
 ```{r plotRaw_ptrSet}
-plotRaw(exhaledSet, mzRange = 59 , fileNames = getFileNames(exhaledSet)[1],showVocDB = T)
+plotRaw(exhaledSet, mzRange = 59 , fileNames = getFileNames(exhaledSet)[1],showVocDB = TRUE)
 ```
 
 - `plotFeatures`: for all selected files, the average spectrum for all time periods is plotted, with the background superimposed as a dashed line. As `plotTIC` function, you can choose type `plotly` or `ggplot`, and coloring spectrum by a column name of the sample Metadata
@@ -249,7 +249,7 @@ For each file in the data set, this function :
 The peakList is then written in the ptrSet object: a list of `data.table`, which contains for each file all peaks detected, with quantification of analytical time periods and background (ambient air).  
 
 ```{r Detect peak}
-exhaledSet <- detectPeak(exhaledSet ,  mzNominal = NULL,fracGroup=1,normalize = T)
+exhaledSet <- detectPeak(exhaledSet ,  mzNominal = NULL,fracGroup=1,normalize = TRUE)
 ```
 
 If you want to restrinct the detection to few nominal mass, set them in `mzNominal`, for example `exhaledSet <- detectPeak(exhaledSet ,  mzNominal = c(21,59))`. 
@@ -355,8 +355,8 @@ plot(pca,type="x-score",parAsColFcVn=SMD$individual)
 plot(pca,type="x-loading")
 
 dim1<-ropls::getLoadingMN(pca)[,1]
-barplot(sort(abs(dim1),decreasing = T))
-knitr::kable(features[names(sort(abs(dim1),decreasing = T)),c("vocDB_formula_Hplus","vocDB_cas.name")])
+barplot(sort(abs(dim1),decreasing = TRUE))
+knitr::kable(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_formula_Hplus","vocDB_cas.name")])
 ```
 
 ## Processing only one raw file
@@ -365,12 +365,12 @@ To read and access to the entire raw data of one file, use  `readRaw` function. 
 
 To get a absolute file path of one file:
 ```{r readRaw}
-samplePath <-list.files(dirRaw,recursive = T,full.names = T,pattern = ".h5$")[1]
+samplePath <-list.files(dirRaw,recursive = TRUE,full.names = TRUE,pattern = ".h5$")[1]
 ```
 
 To read the file :
 ```{r}
-sampleRaw <- readRaw(samplePath, calibTIS = F)
+sampleRaw <- readRaw(samplePath, calibTIS = FALSE)
 sampleRaw
 ```
 

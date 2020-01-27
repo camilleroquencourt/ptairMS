@@ -19,6 +19,9 @@ a empty character if you want all.}
 \item{saveFile}{a file path if you want to save the plot. Three extensions are possible : 
 pdf, png ar jpeg. If is \code{NULL}, the plot will not be saved.}
 }
+\value{
+plot
+}
 \description{
 ptrSet object
 }

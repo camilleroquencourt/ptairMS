@@ -25,7 +25,7 @@
 #' bacteria.ptrset <- ptairMS::detectPeak(bacteria.ptrset)
 #' eset <- ptairMS::alignSamples(bacteria.ptrset)
 #'\dontrun{
-#' writeEset(eset, dirC = file.path(getwd(), "processed_dataset"))
+#' writeEset(eset, dirName = file.path(getwd(), "processed_dataset"))
 #'}
 setMethod("writeEset", "ExpressionSet",
           function(x,
@@ -118,8 +118,9 @@ setMethod("writeEset", "ExpressionSet",
     if (length(datSamDifVc)) {
       if (infCw != "none")
         cat("The following samples were found in the dataMatrix column names but not in the sampleMetadata row names:\n", sep = "")
-      print(cbind.data.frame(col = as.numeric(sapply(datSamDifVc,
-                                                     function(samC) which(rownames(datMNw) == samC))),
+      print(cbind.data.frame(col = as.numeric(vapply(datSamDifVc,
+                                                     function(samC) which(rownames(datMNw) == samC),
+                                                     FUN.VALUE = 1)),
                              name = datSamDifVc))
       chkL <- FALSE
     }
@@ -130,7 +131,9 @@ setMethod("writeEset", "ExpressionSet",
       if (infCw != "none")
         cat("The following samples were found in the sampleMetadata row names but not in the dataMatrix column names:\n",
             sep = "")
-      print(cbind.data.frame(row = as.numeric(sapply(samDatDifVc, function(samC) which(rownames(samDFw) == samC))),
+      print(cbind.data.frame(row = as.numeric(vapply(samDatDifVc, 
+                                                     function(samC) which(rownames(samDFw) == samC),
+                                                     FUN.VALUE =1 )),
                              name = samDatDifVc))
       chkL <- FALSE
     }
@@ -157,7 +160,7 @@ setMethod("writeEset", "ExpressionSet",
     } else {
       if (infCw != "none")
         cat("The dataMatrix column names and the sampleMetadata row names are not identical:\n", sep = "")
-      print(cbind.data.frame(indice = 1:nrow(datMNw),
+      print(cbind.data.frame(indice = seq_len(nrow(datMNw)),
                              dataMatrix_columnnames = rownames(datMNw),
                              sampleMetadata_rownames = rownames(samDFw))[rownames(datMNw) != rownames(samDFw), , drop = FALSE])
       chkL <- FALSE
@@ -173,7 +176,9 @@ setMethod("writeEset", "ExpressionSet",
     if (length(datVarDifVc)) {
       if (infCw != "none")
         cat("The following variables were found in the dataMatrix row names but not in the variableMetadata row names:\n", sep = "")
-      print(cbind.data.frame(row = as.numeric(sapply(datVarDifVc, function(varC) which(colnames(datMNw) == varC))),
+      print(cbind.data.frame(row = as.numeric(vapply(datVarDifVc, 
+                                                     function(varC) which(colnames(datMNw) == varC),
+                                                     FUN.VALUE =1 )),
                              name = datVarDifVc))
       chkL <- FALSE
     }
@@ -183,7 +188,9 @@ setMethod("writeEset", "ExpressionSet",
     if (length(varDatDifVc)) {
       if (infCw != "none")
         cat("The following variables were found in the variableMetadata row names but not in the dataMatrix row names:\n", sep = "")
-      print(cbind.data.frame(row = as.numeric(sapply(varDatDifVc, function(varC) which(rownames(varDFw) == varC))),
+      print(cbind.data.frame(row = as.numeric(vapply(varDatDifVc, 
+                                                     function(varC) which(rownames(varDFw) == varC),
+                                                     FUN.VALUE = )),
                              name = varDatDifVc))
       chkL <- FALSE
     }
@@ -207,7 +214,7 @@ setMethod("writeEset", "ExpressionSet",
       if (infCw != "none")
         cat("\n\nThe dataMatrix row names and the variableMetadata row names are not identical:\n",
             sep = "")
-      print(cbind.data.frame(row = 1:ncol(datMNw),
+      print(cbind.data.frame(row = seq_len(ncol(datMNw)),
                              dataMatrix_rownames = colnames(datMNw),
                              variableMetadata_rownames = rownames(varDFw))[colnames(datMNw) != rownames(varDFw), , drop = FALSE])
       chkL <- FALSE

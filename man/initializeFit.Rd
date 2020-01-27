@@ -44,6 +44,9 @@ initializeFit(
 
 \item{c}{the number of current itteration}
 }
+\value{
+a list with fit input
+}
 \description{
 initialization for apply fit function in the spectrum
 }

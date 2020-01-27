@@ -1,1 +1,6 @@
+CHANGES IN VERSION 0.0.2
+------------------------------
 
+INTERNAL MODIFICATION
+
+    o a shiny application to view and delete selected expirations is added in the changeTimeLimits function 

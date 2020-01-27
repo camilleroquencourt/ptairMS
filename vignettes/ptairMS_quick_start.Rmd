@@ -80,7 +80,7 @@ plot(exhaledSet)
 
 Interactive plot to see Total Ion Spectrum and expirations limits: 
 ```{r plotTIC}
-plotTIC(exhaledSet,showLimits = T,baselineRm = T)
+plotTIC(exhaledSet,showLimits = TRUE,baselineRm = TRUE)
 ```
 
 An interactive interface to see and change expirations limits :
@@ -162,8 +162,8 @@ pca<-ropls::opls(t(log2(X)),crossvalI=5,info.txtC="none",fig.pdfC="none")
 plot(pca,type="x-score",parAsColFcVn=SMD$subfolder)
 
 dim1<-ropls::getLoadingMN(pca)[,1]
-barplot(sort(abs(dim1),decreasing = T))
-knitr::kable(head(features[names(sort(abs(dim1),decreasing = T)),c("vocDB_formula_Hplus","vocDB_cas.name")]))
+barplot(sort(abs(dim1),decreasing = TRUE))
+knitr::kable(head(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_formula_Hplus","vocDB_cas.name")]))
 ```
 
 `plotFeatures` plot for all files the average spectrum baseline corrected of all expirations, and background superimposed as a dashed line. 
@@ -194,7 +194,7 @@ plot(bacteriaSet)
 ```
 
 ```{r}
-plotTIC(bacteriaSet,showLimits = T,baselineRm = T)
+plotTIC(bacteriaSet,showLimits = TRUE,baselineRm = TRUE)
 ```
 
 ```{r }
@@ -223,11 +223,11 @@ ropls::view(log2(X),printL = FALSE)
 
 ```{r}
 pca<-ropls::opls(t(log2(X)),crossvalI=5,predI=2,info.txtC="none",fig.pdfC="none")
-plot(pca,type="x-score",parAsColFcVn=SMD$subfolder,parEllipsesL=F)
+plot(pca,type="x-score",parAsColFcVn=SMD$subfolder,parEllipsesL=FALSE)
 
 dim1<-ropls::getLoadingMN(pca)[,1]
-barplot(sort(abs(dim1),decreasing = T))
-knitr::kable(head(features[names(sort(abs(dim1),decreasing = T)),c("vocDB_formula_Hplus","vocDB_cas.name")]))
+barplot(sort(abs(dim1),decreasing = TRUE))
+knitr::kable(head(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_formula_Hplus","vocDB_cas.name")]))
 ```
 
 

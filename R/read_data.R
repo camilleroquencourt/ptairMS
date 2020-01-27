@@ -44,9 +44,9 @@ readRaw <- function(filePath, calibTIS=TRUE,
   
   #read information needed
   timVn <- rhdf5::h5read(filePath, "/TimingData/BufTimes", bit64conversion='bit64',
-                         index = list(NULL, 1:min(nbrWrite,NbrWriteMax)))
+                         index = list(NULL, seq_len(min(nbrWrite,NbrWriteMax))))
   rawAn <- rhdf5::h5read(filePath, "/FullSpectra/TofData",  
-                         index = list(NULL, NULL,NULL,1:min(nbrWrite,NbrWriteMax)), bit64conversion='bit64')
+                         index = list(NULL, NULL,NULL, seq_len(min(nbrWrite,NbrWriteMax))), bit64conversion='bit64')
   mzVn <- rhdf5::h5read(filePath, "FullSpectra/MassAxis", bit64conversion='bit64')
   reaction<- try(rhdf5::h5read(filePath,"AddTraces/PTR-Reaction"))
   transmission <- try(rhdf5::h5read(filePath,"PTR-Transmission"))
@@ -63,7 +63,7 @@ readRaw <- function(filePath, calibTIS=TRUE,
   mzVn <- c(mzVn)
   rawMn <- matrix(rawAn,
                    nrow = dim(rawAn)[1],
-                   ncol = prod(tail(dim(rawAn),2)),
+                   ncol = prod(utils::tail(dim(rawAn),2)),
                    dimnames = list(mzVn, timVn))  
   index_zero<-which(timVn==0)[-1] # remove index where timVn =0 except the first time
   if(length(index_zero)!=0){
@@ -72,7 +72,7 @@ readRaw <- function(filePath, calibTIS=TRUE,
   }
   
   #count ion conversion
-  #factor<-sampleInterval*1e9 /singleIon #* (SampleInterval,ns) / (single ion signal mV.ns) for convert to numbre a ion ion
+  #factor<-sampleInterval*1e9 /singleIon #* (SampleInterval,ns) / (single ion signal mV.ns) for convert to number of ion
   #rawMn<-rawMn*as.numeric(factor) 
   
   # calibration infomration
@@ -90,7 +90,7 @@ readRaw <- function(filePath, calibTIS=TRUE,
   }
   
   # write ptrRaw objet
-  raw <- new(Class = "ptrRaw", name= basename(filePath),rawM= rawMn, mz=mzVn, time=timVn,calibCoef=calibCoef,
+  raw <- methods::new(Class = "ptrRaw", name= basename(filePath),rawM= rawMn, mz=mzVn, time=timVn,calibCoef=calibCoef,
             calibMzToTof = calib_invFormula, calibToftoMz = calib_formula, calibError=0,
             calibMassRef= calibMassRef, calibSpectr= list(NULL),
             ptrTransmisison = transmission, prtReaction= reaction)
@@ -207,7 +207,7 @@ createPtrSet<-function(dir, setName,
   }
   
   # create ptrSet object
-  ptrSet <- new(Class = "ptrSet", parameter = parameter, sampleMetadata = sampleMetadata,
+  ptrSet <- methods::new(Class = "ptrSet", parameter = parameter, sampleMetadata = sampleMetadata,
               mzCalibRef= check$mzCalibRefList, timeLimit = check$timeLimit, signalCalibRef = check$signalCalibRef, 
               errorCalibPpm= check$errorCalibPpm, coefCalib= check$coefCalibList, primaryIon=check$primaryIon,
               resolution = check$resolution, TIC = check$TIC, peakListRaw = check$peakListRaw, 
@@ -240,7 +240,7 @@ createPtrSet<-function(dir, setName,
 #'mycobacteria<- updatePtrSet(mycobacteria)
 updatePtrSet<-function(ptrset){
 
-  if(!is(ptrset,"ptrSet")) stop("ptrset must be a ptrSet object. Use createPtrSet function")
+  if(! methods::is(ptrset,"ptrSet")) stop("ptrset must be a ptrSet object. Use createPtrSet function")
   
   # get information 
   parameter <- ptrset@parameter
@@ -268,7 +268,7 @@ updatePtrSet<-function(ptrset){
   #if there is deleted files
   if(length(deletedFilesIndex) >0) {
     #deleted in sample meta data
-    sampleMetadata<-data.frame(sampleMetadata[-deletedFilesIndex,,drop=F] )
+    sampleMetadata<-data.frame(sampleMetadata[-deletedFilesIndex,,drop=FALSE] )
     
     #deleted in ptrSet
     ptrset@sampleMetadata <- sampleMetadata
@@ -357,7 +357,7 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC){
   failed<-c()
   
   # loop over files
-  for (j in 1:length(files)){
+  for (j in seq_along(files)){
    
     # check reading and calibration of file
     raw <- try(readRaw(files[j], mzCalibRef = mzCalibRef) ) ## files en full name
@@ -385,7 +385,7 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC){
       mz<-raw@mz
       fit<-peakListNominalMass(21,mz,sp,ppmPeakMinSep=500, mzToTof= raw@calibMzToTof,
                                minPeakDetect=10, fitFunc="Sech2", maxIter=1, autocorNoiseMax=0.3 ,
-                               plotFinal=F, plotAll=F, thNoiseRate=1.1, thIntensityRate=0.01 ,
+                               plotFinal=FALSE, plotAll=FALSE, thNoiseRate=1.1, thIntensityRate=0.01 ,
                                countFacFWHM=10, daSeparation=0.1, d=3, windowSize=0.2 )
       primaryIon[[ fileName[j] ]]<- fit$peak[1,"quanti"]
     }
@@ -422,7 +422,10 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC){
 #' the \code{MSnbase} package
 #' @param file A .h5 file path
 #' @return cretae a mzML file in the same directory of the h5 iput file
-#' @importFrom MSnbase writeMSData
+#' @examples 
+#' library(ptairData)
+#' filePathRaw <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
+#' \dontrun{convert_to_mzML(filePathRaw)}
 #' @export
 convert_to_mzML<-function(file){
   data<-readRaw(file)
@@ -430,7 +433,7 @@ convert_to_mzML<-function(file){
   timVn<-data$time
   rawMN<-data$rawdata
   mzML<-apply(rawMN,2,function(x) matrix(c(mzVn[x!=0],x[x!=0]),ncol=2))
-  pk_count<- sapply(mzML, function(x) dim(x)[1])
+  pk_count<- vapply(mzML, function(x) dim(x)[1],FUN.VALUE = 1)
 
   hdr<-data.frame(matrix(0,ncol=26,nrow=dim(rawMN)[2]))
   names(hdr)<-c("seqNum","acquisitionNum","msLevel","polarity","peaksCount",
@@ -448,58 +451,15 @@ convert_to_mzML<-function(file){
   hdr$totIonCurrent<-colSums(rawMN) #TIC
   hdr$basePeakMZ<-apply(rawMN,2,function(x) mzVn[which.max(x)]) #les mz des plus grande intensitées par rt
   hdr$basePeakIntensity<-apply(rawMN,2,max) # max des intensité par rt
-  hdr$lowMZ<-sapply(mzML,function(x) min(x[,1])) # plus petite détécté mz par rt
-  hdr$hightMZ<-sapply(mzML,function(x) max(x[,1])) # plus grande mz détécté par rt
+  hdr$lowMZ<-vapply(mzML,function(x) min(x[,1]),FUN.VALUE = 1) # plus petite détécté mz par rt
+  hdr$hightMZ<-vapply(mzML,function(x) max(x[,1]),FUN.VALUE = 1) # plus grande mz détécté par rt
   hdr$filterString<-rep("NA",dim(rawMN)[2])
   hdr$centroided<-rep(FALSE,dim(rawMN)[2])
   hdr$ionMobilityDriftTime<-rep(1,dim(rawMN)[2])
   hdr$ionMobilityDriftTime<-rep(as.numeric(NA),dim(rawMN)[2])
-  for (j in (1:dim(rawMN)[2])){
+  for (j in seq_len(ncol(rawMN))){
     hdr$spectrumId[j]<-paste("spectrum=",j,sep="")
   }
   file_mzML<-gsub(".h5",".mzML",file)
-  writeMSData(object = mzML, file = file_mzML, header = hdr)
-}
-
-#' Calculate expiration limits on the Chromatogram
-#' 
-#' @param TIC the TIC vector
-#' @param fracMaxTIC between 0 and 1. Percentage of the maximum of the Chromatogram amplitude with baseline removal. 
-#' If you want a finer limitation, increase \code{fracMaxTIC}, indeed decrease
-#' @param minPoints minimum duration of an expiration (in index)
-#' @param plotDel boolean. If TRUE, the TIC is ploted with limits and threshold.
-#' @return a matrix of index, where each colomn correspond to one expriration, the first line its beginning 
-#' and the seconde the end. 
-timeLimitFunc<-function(TIC,fracMaxTIC=0.5, minPoints = 2, plotDel=FALSE){
-  
-  ## baseline corretion
-  bl <- try(snipBase(TIC))
-  if(is.null(attr(bl,"condition"))) TIC.blrm<-TIC - bl else TIC.blrm<-TIC
-  threshold<-max(TIC.blrm)*fracMaxTIC
-  
-  ## delimitation
-  hat <- which(TIC > (threshold+TIC[1]) )
-  if(length(hat)==0) {
-    warning("no limits detected")
-    plot(TIC,type='l',xlab="Time (s)",ylab="intensity",cex.lab=1.5, main = "Time limit") 
-    return(NULL)
-  }
-  
-  hat_end <- c(hat[which(diff(hat) !=1)],tail(hat,1))
-  hat_begin<-c(hat[1],hat[which(diff(hat) !=1)+1])
-  hat_lim<-unname(rbind(hat_begin,hat_end))
-  row.names(hat_lim)<-c("start","end")
-  
-  hat_lim<-hat_lim[, hat_lim["end",]- hat_lim["start",] >= minPoints,drop=FALSE]
-  
-  if(plotDel){
-   subtitle<-"TIC" 
-    plot(TIC,type='l',xlab="Time (s)",ylab="intensity",cex.lab=1.5, main = paste("Time limit",subtitle), 
-         ylim=c(min(TIC)-0.2*(max(TIC)-min(TIC)),max(TIC)),lwd=2)
-    abline(v=c(hat_lim),col="red",lty=2,lwd=2)
-    abline(h=threshold+TIC[1],lty=2)
-    legend("bottomleft",legend=c("threshold", "limit"),col=c("black","red"),lty=c(2,2),horiz = T)
-  }
-  
-  return(hat_lim)
+  MSnbase::writeMSData(object = mzML, file = file_mzML, header = hdr)
 }

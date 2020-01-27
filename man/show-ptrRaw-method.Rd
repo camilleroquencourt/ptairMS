@@ -9,6 +9,9 @@
 \arguments{
 \item{object}{a ptrRaw object}
 }
+\value{
+nothing
+}
 \description{
 It indicates the files, the mz range, time acquisition range, and calibration error.
 }

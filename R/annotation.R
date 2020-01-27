@@ -20,14 +20,13 @@
 #' the data.frame with additional columns) (resp. a data.frame with columns)
 #' containing the matched 'mz', 'formula', 'name', 'reference', and 'matrix' putative annotations
 #' @examples
-#' library(ptairMS)
 #' library(ptairData)
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' bacteria.ptrset <- ptairMS::createPtrSet(directory, setName = "bacteria",
+#' bacteria.ptrset <- createPtrSet(directory, setName = "bacteria",
 #' mzCalibRef = c(21.022,59.049))
-#' bacteria.ptrset <- ptairMS::detectPeak(bacteria.ptrset)
-#' bacteria.eset <- ptairMS::alignSamples(bacteria.ptrset)
-#' bacteria.eset <- ptairMS::annotateVOC(bacteria.eset)
+#' bacteria.ptrset <- detectPeak(bacteria.ptrset)
+#' bacteria.eset <- alignSamples(bacteria.ptrset)
+#' bacteria.eset <- annotateVOC(bacteria.eset)
 #' Biobase::fData(bacteria.eset)
 #' @rdname annotation
 #' @export
@@ -44,7 +43,7 @@ setMethod("annotateVOC", "ExpressionSet",
                               "chebi.monoisotopic.mass",
                               "chebi.name",
                               "chebi.inchi",
-                              "kegg.compound.id")[1:3],
+                              "kegg.compound.id")[c(1,2,3)],
                    ...) {
             
             fdataDF <- Biobase::fData(x)
@@ -146,7 +145,7 @@ setMethod("annotateVOC", "numeric",
                                  "chebi.monoisotopic.mass",
                                  "chebi.name",
                                  "chebi.inchi",
-                                 "kegg.compound.id")[1:3]) {
+                                 "kegg.compound.id")[c(1,2,3)]) {
   
   if (!is.numeric(mz_Hplus))
     stop("'mz_Hplus' must be of 'numeric' mode.", call. = FALSE)
@@ -173,7 +172,7 @@ setMethod("annotateVOC", "numeric",
   for (fieldC in fields)
     annotateDF[, paste0(prefix, fieldC)] <- character(nrow(annotateDF))
   
-  for (i in 1:nrow(annotateDF)) {
+  for (i in seq_len(nrow(annotateDF))) {
     
     mzN <- mz_Hplus[i]
     vocVi <- which(abs(mzN - vocdbDF[, "mz_Hplus"]) < ppm * 1e-6 * mzN)
@@ -186,7 +185,7 @@ setMethod("annotateVOC", "numeric",
           
           vocMatrixVc <- character()
           
-          for (k in 1:length(vocVi)) {
+          for (k in seq_along(vocVi)) {
             
             vocMatrixVl <- as.logical(vocdbDF[vocVi[k], matrixVc, drop = TRUE])
             vocMatrixVc <- c(vocMatrixVc, matrixVc[vocMatrixVl]) 
@@ -199,7 +198,7 @@ setMethod("annotateVOC", "numeric",
           
           vocFieldVc <- character()
           
-          for (k in 1:length(vocVi)) {
+          for (k in seq_along(vocVi)) {
             
             vocdbVc <- as.character(vocdbDF[vocVi[k], fieldC, drop = TRUE])
             
@@ -484,10 +483,10 @@ formula2mass <- function(formulaVc,
   elemVn <- elemDF[, "mass"]
   names(elemVn) <- elemDF[, "symbol"]
   
-  sapply(formulaVc,
+  vapply(formulaVc,
          function(formC) {
            .form2mass(formC, elemVn, protonizeL)
-         },
+         },FUN.VALUE = 1.01,
          USE.NAMES = FALSE)
   
 }
@@ -622,7 +621,7 @@ formula2mass <- function(formulaVc,
   
   element.df <- ciaaw.df[!is.na(ciaaw.df[, "Z"]), ]
   
-  element.df[, "mass"] <- sapply(element.df[, "mass"],
+  element.df[, "mass"] <- vapply(element.df[, "mass"],
          function(mass.c) {
            
            if (mass.c == " 12(exact") {
@@ -641,10 +640,10 @@ formula2mass <- function(formulaVc,
              
            }
            
-         })
+         },FUN.VALUE = 1.01)
   
   # adding supplementary information about electron, proton, and neutron
-  supp.df <- element.df[1:3, ]
+  supp.df <- element.df[c(1,2,3), ]
   supp.df[, "Z"] <- rep(NA_integer_, 3)
   supp.df[, "symbol"] <- c("electron", "proton", "neutron")
   supp.df[, "element"] <- rep("", 3)

@@ -17,6 +17,9 @@ fit_sech2(initMz, sp, mz.i, lower.cons, upper.cons)
 
 \item{upper.cons}{upper constrain of fit}
 }
+\value{
+list with fit result
+}
 \description{
 Fit peak with Sech2 function
 }

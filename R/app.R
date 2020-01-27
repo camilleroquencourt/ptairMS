@@ -18,37 +18,37 @@ changeTimeLimits<-function(ptrSet){
     #title
     shiny::titlePanel("View and modify time limits"),
     
-    shiny::fluidRow(p("Select a file (you can scroll with the up/down keys on the keyboard)")),
+    shiny::fluidRow(shiny::p("Select a file (you can scroll with the up/down keys on the keyboard)")),
     
     #choose file in the ptrSet
     shiny::fluidRow(
-      selectInput("fileName","File name:",as.list(names(ptrSet@TIC)),selectize=FALSE)
+      shiny::selectInput("fileName","File name:",as.list(names(ptrSet@TIC)),selectize=FALSE)
     ),
     
-    shiny::fluidRow(p("Select the periods (rows) that you want delete. It must stay at least one period.
+    shiny::fluidRow(shiny::p("Select the periods (rows) that you want delete. It must stay at least one period.
                       Press 'Reset time limits' to reestablish all time period in the current file.")),
     
     # TIC plot and timeLImit table
     shiny::sidebarLayout(
-      sidebarPanel(
+      shiny::sidebarPanel(
         DT::dataTableOutput("table")
       ),
-      mainPanel( 
+      shiny::mainPanel( 
         plotly::plotlyOutput("TIC")
       )
     ),
     
     # delete or reset expirations
     shiny::fluidRow(
-      p(class='text-center', shiny::actionButton('delete', 'Delete selected rows'),
+      shiny::p(class='text-center', shiny::actionButton('delete', 'Delete selected rows'),
         shiny::actionButton('reset', 'Reset time limits'))
     ),
     
-    shiny::fluidRow(p("When you have done all file, save the changes and the new ptrSet will be return, 
+    shiny::fluidRow(shiny::p("When you have done all file, save the changes and the new ptrSet will be return, 
                       and save in saveDir (set parameter of createPtrSet function) if it is not NULL.")),
     # save the ptrSet
     shiny::fluidRow(
-      p(class = 'text-center', shiny::actionButton('download', 'Save changed and exit app'))
+      shiny::p(class = 'text-center', shiny::actionButton('download', 'Save changed and exit app'))
     )
     
   )
@@ -70,7 +70,7 @@ changeTimeLimits<-function(ptrSet){
         if(length(rowNum) == nrow(rv$data)){
           shiny::showNotification(warning("At least one period must be selected"),duration = NULL,id="warnings" )
         }else {
-          removeNotification("warnings")
+          shiny::removeNotification("warnings")
           rv$data <- rv$data[-rowNum,,drop=FALSE]
           ptrSet<-ptrSetNew()
           ptrSet@timeLimit[[input$fileName]] <- t(rv$data)
@@ -81,7 +81,7 @@ changeTimeLimits<-function(ptrSet){
     
     # reset the expirations with timeLimit function
     shiny::observeEvent(input$reset, {
-      removeNotification("warnings")
+      shiny::removeNotification("warnings")
       rv$data <- t(timeLimitFun(ptrSet@TIC[[input$fileName]],fracMaxTIC = ptrSet@parameter$fracMaxTIC ))
       ptrSet<-ptrSetNew()
       ptrSet@timeLimit[[input$fileName]] <- t(rv$data)
@@ -105,16 +105,16 @@ changeTimeLimits<-function(ptrSet){
       indexTimeLimit <- t(rv$data)
       p <- ggplot2::qplot(x=time,y=TIC,
                           xlab="time",ylab="intensity",main=paste("TIC of",input$fileName))  +
-        geom_vline(aes(xintercept = time[c(indexTimeLimit)]))
+        ggplot2::geom_vline(ggplot2::aes(xintercept = time[c(indexTimeLimit)]))
       if( length(s) ){
         s <- s[s<=ncol(indexTimeLimit)] #to avoid warnings
-        if(length(s)) p <- p + geom_vline(aes(xintercept = time[c(indexTimeLimit[,s])],colour="selected"))
+        if(length(s)) p <- p + ggplot2::geom_vline(ggplot2::aes(xintercept = time[c(indexTimeLimit[,s])],colour="selected"))
       }
       plotly::ggplotly(p)
     })
     
     # save the ptrSet with change
-    observeEvent(input$download, {
+    shiny::observeEvent(input$download, {
       ptrSet <- ptrSetNew()
       saveDir<-ptrSet@parameter$saveDir
       if(!is.null(saveDir)){
@@ -124,11 +124,11 @@ changeTimeLimits<-function(ptrSet){
         eval(parse(text =  paste0( "save(" ,name ,",file= paste0( saveDir,'/', '",name,".RData '))")))
         message("ptrSet object save in: ", paste0( saveDir,'/', name,".RData"))
       }
-      stopApp(ptrSet)
+      shiny::stopApp(ptrSet)
     })
     
   }
   
-  ptrSetNew <- runApp(list(ui=ui,server=server))
+  ptrSetNew <- shiny::runApp(list(ui=ui,server=server))
   return(ptrSetNew)
 }

@@ -49,8 +49,8 @@ setGeneric("timeLimits",
 ## SetMethod
 setGeneric("PeakList",
            function(raw,
-                    mzNominal = unique(round(mz))
-                    , ppm = 130, 
+                    mzNominal = unique(round(raw@mz)), 
+                    ppm = 130, 
                     minIntensity=5, fctFit=c("Sech2","average")[1], maxIter=2, autocorNoiseMax = 0.3,
                     plotFinal=FALSE, plotAll=FALSE, thNoiseRate=1.1, thIntensityRate = 0.01,
                     countFacFWHM=10, daSeparation=0.005, d=3, windowSize=0.4){
@@ -77,6 +77,13 @@ setGeneric("plotTIC",
 #' @param pdfFile a file path to save a pdf with a individual plot per file
 #' @param fileNames vector of character. The file names you want to plot. If \code{NULL}, it plot all files
 #' @param colorBy character. A column name of sample metadata by which the line are colored. 
+#' @return a plotly or ggplot2 object 
+#' @examples 
+#' library(ptairData)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' ptrSet <- createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049))
+#' plotF <- plotFeatures(ptrSet,mz=59.049)
+#' print(plotF)
 #' @rdname plotFeatures
 #' @export
 setGeneric("plotFeatures",

@@ -12,7 +12,7 @@ test_readRaw <- function() {
   testthat::expect_error(readRaw('foo'))
 
   # Ouput 
-  ret <- readRaw(file,calibTIS = F)
+  ret <- readRaw(file,calibTIS = FALSE)
   mz <- rhdf5::h5read(file,"/FullSpectra/MassAxis")
   testthat::expect_is(ret, 'ptrRaw')
   testthat::expect_equal(length(ret@mz),length(mz))

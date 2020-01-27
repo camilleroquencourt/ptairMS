@@ -67,9 +67,10 @@ calibrationFun<-function(sp,mz,mzCalibRef,mzToTofFunc,tol){
   width.window<-0.4
   
   # check if mzCalibRef are in mz
-  outMz <- which(sapply(mzCalibRef, 
+  outMz <- which(vapply(mzCalibRef, 
                         function(x) !any( round(x) -width.window < mz & 
-                                            mz < round(x) + width.window)))
+                                            mz < round(x) + width.window),
+                        FUN.VALUE = TRUE ))
   if(length(outMz)!=0) {
     message(paste( paste(mzCalibRef[outMz],collapse = " "),
                    "excluded, not contains in the mass axis \n"))
@@ -105,7 +106,7 @@ calibrationFun<-function(sp,mz,mzCalibRef,mzToTofFunc,tol){
   if( length(mzCalibRef) < 2 ) stop("To few references masses for calibration")
   
   # calculate the tof of reference masses
-  tofMax <- sapply(spTronc, function(x) {
+  tofMax <- vapply(spTronc, function(x) {
     tofrange <- x$tof
     sp<- x$signal
     t<-tofrange[which.max(sp)]
@@ -121,7 +122,7 @@ calibrationFun<-function(sp,mz,mzCalibRef,mzToTofFunc,tol){
     #interpol<- stats::spline( tofrange, sp, n=1000*length(tofrange) )
     #tofMax<-interpol$x[ which.max(interpol$y)]
     return(tofMax)
-  })
+  },FUN.VALUE = 0.1)
   
   # re estimated calibration coefficient with reference masses
   regression <- stats::nls( rep(1,length(mzCalibRef))  ~  I( ( (tofMax - b) / a) ^ 2 /mzCalibRef ),
@@ -208,12 +209,12 @@ setMethod(f = "plotRaw",
                 vocdbDF[, "sample"] <- apply(as.matrix(vocdbDF[, vocMatrixVc]),
                                              1,
                                              function(matVc) {
-                                               matVl <- sapply(matVc,
+                                               matVl <- vapply(matVc,
                                                                function(matC) {
                                                                  sum(as.numeric(unlist(strsplit(matC, split = "|",
                                                                                                 fixed = TRUE)))) > 0
-                                                               })
-                                               if (sum(matVl,na.rm = T) == 0) {
+                                                               },FUN.VALUE = TRUE)
+                                               if (sum(matVl,na.rm = TRUE) == 0) {
                                                  return("")
                                                } else {
                                                  return(paste(vocMatrixVc[matVl], collapse = ", "))
@@ -232,7 +233,7 @@ setMethod(f = "plotRaw",
                 stop("'plotly display is only available in the 'interactive' mode currently.",
                      call. = FALSE)
               filenameSplitVc <- unlist(strsplit(basename(figure.pdf), ".", fixed = TRUE))
-              extC <- tail(filenameSplitVc, 1)
+              extC <- utils::tail(filenameSplitVc, 1)
               if (extC == "pdf") {
                 pdf(figure.pdf)
               } else
@@ -244,13 +245,13 @@ setMethod(f = "plotRaw",
                    
                    classical = {
                      
-                     imageMN <- t(rawSubMN)[, 1:nrow(rawSubMN), drop = FALSE]
+                     imageMN <- t(rawSubMN)[, seq_len(nrow(rawSubMN)), drop = FALSE]
                      rownames(imageMN) <- round(as.numeric(rownames(imageMN)))
                      colnames(imageMN) <- round(as.numeric(colnames(imageMN)), 4)
                      
                      paletteVc <- .palette(palette = palette)
                      
-                     currentParLs <- par()
+                     currentParLs <- graphics::par()
                      for (parC in c("cin", "cra", "csi", "cxy", "din", "page"))
                        currentParLs[[parC]] <- NULL   
                      
@@ -259,7 +260,7 @@ setMethod(f = "plotRaw",
                                    ima = c(4.1, 4.1, 0, 0),
                                    spe = c(4.1, 0.6, 0, 1.1))
                      
-                     par(font = 2,
+                     graphics::par(font = 2,
                          font.axis = 2,
                          font.lab = 2,
                          pch = 18)
@@ -273,7 +274,7 @@ setMethod(f = "plotRaw",
                      
                      ## chr: Chromatogram
                      
-                     par(mar = marLs[["chr"]])
+                     graphics::par(mar = marLs[["chr"]])
                      
                      chromVn <- apply(rawSubMN, 2,
                                       function(intVn)
@@ -288,35 +289,36 @@ setMethod(f = "plotRaw",
                           xaxt = "n",
                           yaxs = "i")
                      
-                     mtext("Mean of intensity",
+                     graphics::mtext("Mean of intensity",
                            cex = 0.8,
                            side = 2,
                            line = 2.5)
                      
                      ## sca: Color scale
                      
-                     par(mar = marLs[["sca"]])
+                     graphics::par(mar = marLs[["sca"]])
                      
                      .drawScale(imageMN = imageMN,
                                 paletteVc = paletteVc)
                      
                      ## ima: Image
                      
-                     par(mar = marLs[["ima"]])
+                     graphics::par(mar = marLs[["ima"]])
                      
                      .drawImage(imageMN = imageMN, paletteVc = paletteVc)
                      
                      if (showVocDB && !is.null(vocdbDF)) {
                        mzImaVn <- as.numeric(colnames(imageMN))
-                       abline(h = sapply(vocdbDF[, "mz_Hplus"],
+                       abline(h = vapply(vocdbDF[, "mz_Hplus"],
                                          function(mzN)
-                                           (mzN - min(mzImaVn))/diff(range(mzImaVn)) * ncol(imageMN) + par("usr")[1]),
+                                           (mzN - min(mzImaVn))/diff(range(mzImaVn)) * ncol(imageMN) + par("usr")[1],
+                                         FUN.VALUE =1.1 ),
                               lty = "dotted")
                      }
                      
                      ## spe: Spectrum
                      
-                     par(mar = marLs[["spe"]])
+                     graphics::par(mar = marLs[["spe"]])
                      
                      specVn <- apply(rawSubMN, 1,
                                      function(intVn)
@@ -332,7 +334,7 @@ setMethod(f = "plotRaw",
                           yaxs = "i",
                           yaxt = "n")
                      
-                     mtext("Mean of intensity",
+                     graphics::mtext("Mean of intensity",
                            cex = 0.8,
                            side = 1,
                            line = 2.5)
@@ -343,7 +345,7 @@ setMethod(f = "plotRaw",
                        
                      }
                      
-                     par(currentParLs)
+                     graphics::par(currentParLs)
                      
                      if (figure.pdf != "interactive")
                        dev.off()
@@ -403,12 +405,12 @@ setMethod(f = "plotRaw",
 .palette <- function(palette) {
   
   switch(palette,
-         heat = {return(rev(grDevices::rainbow(ceiling(256 * 1.5))[1:256]))},
-         revHeat = {return(grDevices::rainbow(ceiling(256 * 1.5))[1:256])},
+         heat = {return(rev(grDevices::rainbow(ceiling(256 * 1.5))[seq(1,256)]))},
+         revHeat = {return(grDevices::rainbow(ceiling(256 * 1.5))[seq(1,256)])},
          grey = {return(grDevices::grey((0:255) / 256))},
          revGrey = {return(rev(grDevices::grey((0:255) / 256)))},
          ramp = {return(grDevices::colorRampPalette(c("blue", "orange", "red"),
-                                                    space = "rgb")(256)[1:256])})
+                                                    space = "rgb")(256)[seq(1,256)])})
   
 }
 
@@ -418,7 +420,7 @@ setMethod(f = "plotRaw",
   
   ylimVn <- c(0, 256)
   ybottomVn <- 0:255
-  ytopVn <- 1:256
+  ytopVn <- seq_len(256)
   
   plot(x = 0,
        y = 0,
@@ -434,14 +436,14 @@ setMethod(f = "plotRaw",
        xaxt = "n",
        yaxt = "n")
   
-  rect(xleft = 0,
+  graphics::rect(xleft = 0,
        ybottom = ybottomVn,
        xright = 1,
        ytop = ytopVn,
        col = paletteVc,
        border = NA)
   
-  axis(at = .prettyAxis(range(imageMN, na.rm = TRUE), 256)$atVn,
+  graphics::axis(at = .prettyAxis(range(imageMN, na.rm = TRUE), 256)$atVn,
        font = 2,
        font.axis = 2,
        labels = .prettyAxis(range(imageMN, na.rm = TRUE), 256)$labelVn,
@@ -451,18 +453,18 @@ setMethod(f = "plotRaw",
        side = 4,
        xpd = TRUE)
   
-  graphics::arrows(par("usr")[2],
-                   par("usr")[4],
-                   par("usr")[2],
-                   par("usr")[3],
+  graphics::arrows(graphics::par("usr")[2],
+                   graphics::par("usr")[4],
+                   graphics::par("usr")[2],
+                   graphics::par("usr")[3],
                    code = 0,
                    lwd = 2,
                    xpd = TRUE)
   
-  graphics::arrows(par("usr")[1],
-                   par("usr")[4],
-                   par("usr")[1],
-                   par("usr")[3],
+  graphics::arrows(graphics::par("usr")[1],
+                   graphics::par("usr")[4],
+                   graphics::par("usr")[1],
+                   graphics::par("usr")[3],
                    code = 0,
                    lwd = 2,
                    xpd = TRUE)
@@ -497,7 +499,7 @@ setMethod(f = "plotRaw",
   
   prettyLabelsVn <- prettyAtVn <- c()
   
-  for (n in 1:length(prettyAxisValues))
+  for (n in seq_along(prettyAxisValues))
     if (min(axisValuesVn) < prettyAxisValues[n] && prettyAxisValues[n] < max(axisValuesVn)) {
       prettyLabelsVn <- c(prettyLabelsVn, prettyAxisValues[n])
       prettyAtVn <- c(prettyAtVn, which(abs(axisValuesVn - prettyAxisValues[n]) == min(abs(axisValuesVn - prettyAxisValues[n])))[1])
@@ -515,8 +517,8 @@ setMethod(f = "plotRaw",
 .drawImage <- function(imageMN,
                        paletteVc) {
   
-  graphics::image(x = 1:nrow(imageMN),
-                  y = 1:ncol(imageMN),
+  graphics::image(x = seq_len(nrow(imageMN)),
+                  y = seq_len(ncol(imageMN)),
                   z = imageMN,
                   col = paletteVc,
                   font.axis = 2,
@@ -533,11 +535,11 @@ setMethod(f = "plotRaw",
   prettyTimeVn <- prettyTimeVn[min(timeVn) <= prettyTimeVn &
                                  prettyTimeVn <= max(timeVn)]
   
-  prettyTimeVi <- sapply(seq_along(prettyTimeVn), function(k) {
+  prettyTimeVi <- vapply(seq_along(prettyTimeVn), function(k) {
     which(abs(timeVn - prettyTimeVn[k]) == min(abs(timeVn - prettyTimeVn[k])))[1]
-  })
+  },FUN.VALUE = 1)
   
-  axis(side = 1,
+  graphics::axis(side = 1,
        at = prettyTimeVi,
        font = 2,
        labels = prettyTimeVn)
@@ -549,25 +551,25 @@ setMethod(f = "plotRaw",
   prettyMzVn <- prettyMzVn[min(mzVn) <= prettyMzVn &
                              prettyMzVn <= max(mzVn)]
   
-  prettyMzVi <- sapply(seq_along(prettyMzVn), function(k) {
+  prettyMzVi <- vapply(seq_along(prettyMzVn), function(k) {
     which(abs(mzVn - prettyMzVn[k]) == min(abs(mzVn - prettyMzVn[k])))[1]
-  })
+  },FUN.VALUE = 1)
   
-  axis(side = 2,
+  graphics::axis(side = 2,
        at = prettyMzVi,
        font = 2,
        labels = prettyMzVn)
   
   ## xlab
   
-  mtext(line = 2.5,
+  graphics::mtext(line = 2.5,
         side = 2,
         text = "m/z",
         cex = 0.8)
   
   ## ylab
   
-  mtext(line = 2.5,
+  graphics::mtext(line = 2.5,
         side = 1,
         text = "time (s)",
         cex = 0.8)
@@ -595,11 +597,11 @@ setMethod(f="plotCalib",
         # plot in a window of 2000 ppm
         nb_plot<-length(mzCalibRef)
         nb_row <- ceiling(sqrt(nb_plot))
-        par(oma = c(0, 0, 3, 0))
+        graphics::par(oma = c(0, 0, 3, 0))
         layout(matrix(seq(1,(nb_row^2)),nrow=nb_row,byrow = TRUE))
         
         #loop over masses
-        for (i in 1:length(mzCalibRef)){
+        for (i in seq_along(mzCalibRef)){
           m <- mzCalibRef[i]
           th<- m*(ppm/2)/10^6
           mz <- calibSpectr[[i]]$mz
@@ -612,7 +614,7 @@ setMethod(f="plotCalib",
           abline(v=m, col="red", lwd=2)
       }
         title(main=raw@name,outer = TRUE,line =0.5,cex.main=2)
-        par(oma = c(0, 0, 0, 0))
+        graphics::par(oma = c(0, 0, 0, 0))
         layout(matrix(1))
 } )
 
@@ -740,7 +742,7 @@ timeLimitFun<-function(TIC,fracMaxTIC=0.5, traceMasses= NULL, minPoints = 3, plo
     return(NA)
   }
   
-  hat_end <- c(hat[which(diff(hat) !=1)],tail(hat,1))
+  hat_end <- c(hat[which(diff(hat) !=1)],utils::tail(hat,1))
   hat_begin<-c(hat[1],hat[which(diff(hat) !=1)+1])
   hat_lim<-unname(rbind(hat_begin,hat_end))
   row.names(hat_lim)<-c("start","end")
@@ -752,9 +754,9 @@ timeLimitFun<-function(TIC,fracMaxTIC=0.5, traceMasses= NULL, minPoints = 3, plo
     else subtitle <- paste("EIC mz:",paste(round(traceMasses,2),collapse = "-"))
     plot(TIC.blrm,type='l',xlab="Time (s)",ylab="intensity",cex.lab=1.5, main = paste("Time limit",subtitle), 
          ylim=c(min(TIC.blrm)-0.2*(max(TIC.blrm)-min(TIC.blrm)),max(TIC.blrm)),lwd=2)
-    abline(v=c(hat_lim),col="red",lty=2,lwd=2)
-    abline(h=threshold,lty=2)
-    legend("bottomleft",legend=c("threshold", "limit"),col=c("black","red"),lty=c(2,2),horiz = T)
+    graphics::abline(v=c(hat_lim),col="red",lty=2,lwd=2)
+    graphics::abline(h=threshold,lty=2)
+    graphics::legend("bottomleft",legend=c("threshold", "limit"),col=c("black","red"),lty=c(2,2),horiz = TRUE)
   }
   
   return(hat_lim)
@@ -787,7 +789,7 @@ bakgroundDetect<-function(TIC,derivThreshold=0.01,  minPoints = 4, plotDel=FALSE
     plot(TIC,type='l',xlab="Time (s)",ylab="intensity",cex.lab=1.5, main = paste("Background limit",subtitle), 
          ylim=c(min(TIC)-0.2*(max(TIC)-min(TIC)),max(TIC)),lwd=2)
     graphics::abline(v=c(limBg),col="red",lty=2,lwd=2)
-    graphics::legend("bottomleft",legend=c( "limit"),col=c("red"),lty=c(2),horiz = T)
+    graphics::legend("bottomleft",legend=c( "limit"),col=c("red"),lty=c(2),horiz = TRUE)
   }
   return(limBg)
 }
@@ -842,7 +844,7 @@ setMethod(f="PeakList",
                    countFacFWHM=10, daSeparation=0.005, d=3, windowSize=0.4) {
   
   #get raw element 
-  sp <- rowSums(raw@rawM)/dim(raw@rawM)[2] # average spectrum 
+  sp <- rowSums(raw@rawM)/(ncol(raw@rawM)*round(raw@time[2]-raw@time[1])) # average spectrum 
   mz <- raw@mz # mass axis
   mzCalibRef <- raw@calibMassRef 
   tofToMz <- raw@calibToftoMz 
@@ -850,7 +852,7 @@ setMethod(f="PeakList",
   
   if(fctFit=="average") l.shape<-determinePeakShape(sp,mz,massRef = mzCalibRef)
   
-  prePeaklist <- lapply(mzNominal, function(m) peakListNominalMass(m,mz,sp,ppm, mzToTof,
+  prePeaklist <- lapply(mzNominal, function(m) peakListNominalMass(m,mz,sp,ppm, mzToTof,tofToMz,
                                                                     minIntensity, fctFit, maxIter, autocorNoiseMax ,
                                                                     plotFinal, plotAll, thNoiseRate, thIntensityRate ,
                                                                     countFacFWHM, daSeparation, d, windowSize) )
@@ -878,7 +880,7 @@ setMethod(f="detectPeak",
           signature = "ptrRaw",
           function(x, 
                    mzNominal=NULL , ppm=130, ppmGroupBkg=50, fracGroup=0.8, minIntensity=10, 
-                   fctFit=c("Sech2","average")[1],normalize=T,fracMaxTIC=0.5,processFun=processFileSepExp,...)
+                   fctFit=c("Sech2","average")[1],normalize=TRUE,fracMaxTIC=0.5,processFun=processFileSepExp,...)
           {
             raw<-x
             #get infomration
@@ -892,7 +894,7 @@ setMethod(f="detectPeak",
                                      countFacFWHM=10, daSeparation=0.1, d=3, windowSize=0.2 )
             primaryIon<-max(fit$peak[,"quanti"]) #max in case of false positif detected
             
-            indTimeLim<- timeLimits(raw,fracMaxTIC = fracMaxTIC)
+            indTimeLim<- timeLimits(raw, fracMaxTIC = fracMaxTIC)
             
             peakLists<-processFun(raw,massCalib,primaryIon,indTimeLim, mzNominal,
                                                   ppm, ppmGroupBkg, fracGroup,minIntensity, 
@@ -901,9 +903,7 @@ setMethod(f="detectPeak",
             return(peakLists)
           } )
 
-#'estimate the resolution of a ptrRaw with reference calibration masses
-#'@param calibMassRef references mass for etsimate resolution
-#'@param calibSpectr list of mz and spectrum of reference masses
+
 estimateResol<-function(calibMassRef,calibSpectr){
               m <- calibMassRef
               
@@ -913,12 +913,12 @@ estimateResol<-function(calibMassRef,calibSpectr){
                 #half maximum 
                 hm <- max(spM)/2
                 #limits 
-                lim1 <- findEqualGreaterM(spM[1:which.max(spM)],hm)
+                lim1 <- findEqualGreaterM(spM[seq_len(which.max(spM))],hm)
                 lim2 <- unname(which.max(spM))+ FindEqualLess(spM[(which.max(spM)+1):length(spM)],hm)
-                # équation : (intrepolation linéaire entre lim et (lim-1)) = hm
-                deltaBorne<- sapply( c(lim1,lim2) ,
+                # equation : (intrepolation linéaire entre lim et (lim-1)) = hm
+                deltaBorne<- vapply( c(lim1,lim2) ,
                                       function(x) (hm*(mzM[x]-mzM[x-1])-(mzM[x]*spM[x-1]-mzM[x-1]*spM[x]))/
-                                           (spM[x]-spM[x-1]) )
+                                           (spM[x]-spM[x-1]),FUN.VALUE = 1.1 )
                 delta <- diff(deltaBorne) 
                 return(delta)
               }, FUN.VALUE = 0)
@@ -932,7 +932,8 @@ estimateResol<-function(calibMassRef,calibSpectr){
 #' 
 #' It indicates the files, the mz range, time acquisition range, and calibration error.
 #' @param object a ptrRaw object
-#'@export 
+#' @return nothing
+#' @export 
 setMethod("show","ptrRaw",
           function(object){
             cat(object@name,"\n")

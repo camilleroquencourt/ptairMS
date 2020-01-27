@@ -16,7 +16,7 @@ annotateVOC(x, ...)
   prefix = "vocDB_",
   fields = c("mz_Hplus", "formula_Hplus", "cas.name", "reference", "cas", "chebi",
     "chebi.formula", "chebi.monoisotopic.mass", "chebi.name", "chebi.inchi",
-    "kegg.compound.id")[1:3],
+    "kegg.compound.id")[c(1, 2, 3)],
   ...
 )
 
@@ -52,13 +52,12 @@ containing the matched 'mz', 'formula', 'name', 'reference', and 'matrix' putati
 Putatively annotate VOC mz by using the reference compilation from the literature
 }
 \examples{
-library(ptairMS)
 library(ptairData)
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-bacteria.ptrset <- ptairMS::createPtrSet(directory, setName = "bacteria",
+bacteria.ptrset <- createPtrSet(directory, setName = "bacteria",
 mzCalibRef = c(21.022,59.049))
-bacteria.ptrset <- ptairMS::detectPeak(bacteria.ptrset)
-bacteria.eset <- ptairMS::alignSamples(bacteria.ptrset)
-bacteria.eset <- ptairMS::annotateVOC(bacteria.eset)
+bacteria.ptrset <- detectPeak(bacteria.ptrset)
+bacteria.eset <- alignSamples(bacteria.ptrset)
+bacteria.eset <- annotateVOC(bacteria.eset)
 Biobase::fData(bacteria.eset)
 }

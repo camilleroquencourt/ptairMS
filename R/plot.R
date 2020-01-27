@@ -20,7 +20,7 @@
                                      "deLacyCostello2014"),
                             dirC = "//10.0.238.33/Data/Phenostore/data/Exhalomics/reference/") {
   
-  read.table(paste0(dirC, refC, ".tsv"),
+  utils::read.table(paste0(dirC, refC, ".tsv"),
              header = TRUE,
              quote = "\"",
              sep = "\t",

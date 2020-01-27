@@ -18,3 +18,11 @@ a list containing:
 \description{
 get the peak list of a ptrSet object
 }
+\examples{
+library(ptairData)
+directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+dirSet <- createPtrSet(directory,setName="test",mzCalibRef=c(21.022,59.049))
+dirSet <- detectPeak(dirSet , mzNominal=59)
+getPeakList(dirSet)$aligned
+getPeakList(dirSet)$raw
+}

@@ -17,7 +17,7 @@ detectPeak(x, ...)
   fracGroup = 0.8,
   minIntensity = 10,
   fctFit = c("Sech2", "average")[1],
-  normalize = T,
+  normalize = TRUE,
   fracMaxTIC = 0.5,
   processFun = processFileSepExp,
   ...
@@ -31,10 +31,10 @@ detectPeak(x, ...)
   fracGroup = 0.8,
   minIntensity = 10,
   fctFit = c("Sech2", "average")[1],
-  parallel = F,
+  parallel = FALSE,
   nbCores = 2,
-  normalize = T,
-  saving = T,
+  normalize = TRUE,
+  saving = TRUE,
   saveDir = x@parameter$saveDir,
   processFun = processFileSepExp,
   ...
@@ -90,7 +90,7 @@ the background, last column is NA.
 \code{detectPeak} function detect peak in all file present in ptrSet who have not alredy been processed, in the signal 
 and the background. To see the peakList use getPeakList() method. It give a list of data.frame, whith column:
 peak center in mz, peak quanitfication in ppb, peak width and background intenisty. 
-which eah element correspond to the Peak List of one file.
+which each element correspond to the Peak List of one file.
 For each file the following steps are done: \cr
 for each expiration and ambiant air :
 \itemize{

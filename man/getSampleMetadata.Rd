@@ -9,6 +9,9 @@ getSampleMetadata(set)
 \arguments{
 \item{set}{a ptrSet object}
 }
+\value{
+a data.frame
+}
 \description{
 get sampleMetadata of a ptrSet
 }

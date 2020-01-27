@@ -35,6 +35,6 @@ mzCalibRef = c(21.022,59.049))
 bacteria.ptrset <- ptairMS::detectPeak(bacteria.ptrset)
 eset <- ptairMS::alignSamples(bacteria.ptrset)
 \dontrun{
-writeEset(eset, dirC = file.path(getwd(), "processed_dataset"))
+writeEset(eset, dirName = file.path(getwd(), "processed_dataset"))
 }
 }

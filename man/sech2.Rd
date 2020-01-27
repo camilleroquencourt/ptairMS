@@ -17,6 +17,9 @@ sech2(p, lf, lr, h, x)
 
 \item{x}{vector values}
 }
+\value{
+numeric value
+}
 \description{
 Fit function Sech2
 }

@@ -16,3 +16,8 @@ cretae a mzML file in the same directory of the h5 iput file
 convert_to_mzML create a mzML file from a h5 file in the same directory with the \code{writeMLData} of
 the \code{MSnbase} package
 }
+\examples{
+library(ptairData)
+filePathRaw <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
+\dontrun{convert_to_mzML(filePathRaw)}
+}

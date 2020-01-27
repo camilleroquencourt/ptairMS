@@ -19,6 +19,9 @@ fit_averagePeak(initTof, l.shape, sp, bin, lower.cons, upper.cons)
 
 \item{upper.cons}{upper constrain for fit}
 }
+\value{
+list with fit information
+}
 \description{
 Fit peak with average function
 }

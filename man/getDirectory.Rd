@@ -9,6 +9,15 @@ getDirectory(ptrSet)
 \arguments{
 \item{ptrSet}{ptrSte object}
 }
+\value{
+the directory in absolute path as character
+}
 \description{
 get the files diretory of a ptrSet
+}
+\examples{
+library(ptairData)
+directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+ptrSet<-createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049))
+getDirectory(ptrSet)
 }

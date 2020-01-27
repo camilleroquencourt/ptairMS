@@ -19,6 +19,9 @@ fit_averagePeak_function(t, delta, h, intervRef, peakShape, bin)
 
 \item{bin}{bin interval of peak will be fitted}
 }
+\value{
+peak function made on an average of reference peaks normalized
+}
 \description{
 fit function average
 }

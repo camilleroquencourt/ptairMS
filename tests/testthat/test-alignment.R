@@ -14,7 +14,7 @@ test_align <- function() {
   wrongMat2 <- cbind(mz=c("21","22"),group=c(1,2))
   testthat::expect_error(align(wrongMat2))
 
-  goodMat<- cbind(mz=c(21.002,21.0021,21.0019),quanti=c(100,120,115),group=c(1,2,3))
+  goodMat<- cbind(Mz=c(21.002,21.0021,21.0019),quanti=c(100,120,115),group=c(1,2,3))
   res <- align(goodMat)
   testthat::expect_equal(length(res),1)
   testthat::expect_is(res,'list')
@@ -23,7 +23,7 @@ test_align <- function() {
 
 test_alignExpirations <- function(){
   
-  Ex<- cbind(mz=c(21.002,21.0021,21.0019,21.002),quanti=c(100,120,115,40), 
+  Ex<- cbind(Mz=c(21.002,21.0021,21.0019,21.002),quanti=c(100,120,115,40), 
                        delta_mz=rep(0.5,4), resolution = rep(5000,4),group=c(1,2,3,0))
   res <- alignExpirations(as.data.frame(Ex))
   testthat::expect_equal(dim(res)[1],1)
@@ -32,9 +32,9 @@ test_alignExpirations <- function(){
 
 test_alignSamples <- function(){
   directory <-  system.file("extdata/mycobacteria",  package = "ptairData")
-  dirSet <- createPtrSet(directory, setName = "test",mzCalibRef =c(21.022,59.049))
+  dirSet <- createPtrSet(directory, setName = "test", mzCalibRef =c(21.022,59.049))
   dirSet <- detectPeak(dirSet, mzNominal = c(21,59))
-  eset <- alignSamples(dirSet,bgThreshold = 0)
+  eset <- alignSamples(dirSet, bgThreshold = 0)
   
   # output is expression set
   testthat::expect_is(eset,'ExpressionSet')

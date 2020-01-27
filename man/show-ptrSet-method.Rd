@@ -9,6 +9,9 @@
 \arguments{
 \item{object}{a ptrSet object}
 }
+\value{
+nothing
+}
 \description{
 It indicates the directory, the numer of files taht contain teh directory at the moment, and teh number of processed files.
 The two numbers are diffrents, use \code{updatePtrSet} function.

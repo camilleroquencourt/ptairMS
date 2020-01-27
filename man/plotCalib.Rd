@@ -24,6 +24,9 @@ plotCalib(object, ppm = 2000, ...)
 \item{fileNames}{the name of the files in the ptrSet object to plot. If \code{NULL}, all files will be
 plotted}
 }
+\value{
+plot
+}
 \description{
 Plot the calibration peaks
 }

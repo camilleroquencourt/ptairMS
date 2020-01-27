@@ -44,6 +44,16 @@ plotFeatures(
 
 \item{colorBy}{character. A column name of sample metadata by which the line are colored.}
 }
+\value{
+a plotly or ggplot2 object
+}
 \description{
 Plot the raw data spectrum for several files in a ptrSet object around the \code{mz} masses.
+}
+\examples{
+library(ptairData)
+directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+ptrSet <- createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049))
+plotF <- plotFeatures(ptrSet,mz=59.049)
+print(plotF)
 }

@@ -2,7 +2,7 @@ Package: ptairMS
 Title: Pre-processing PTR-TOF-MS Data 
 Version: 0.0.2
 Date: 16-09-2019
-Authors@R: person("camille", "Roquencourt", email = "camille.roquencourt@cea.fr", role = c("aut", "cre"))
+Authors@R: person("camille", "Roquencourt", email = "camille.roquencourt@hotmail.fr", role = c("aut", "cre"))
 Description: This package implements a suite of methods to preprocess data from PTR-TOF-MS instruments (HDF5 format) and 
    generates the 'sample by features' table of peak intensities in addition to the sample and feature metadata (as a single ExpressionSet object for subsequent statistical analysis). The steps include control quality, calibration, peak detection and quantification,feature alignment, missing value imputation and feature annotation. Applications to exhaled air and headspace are described in the vignettes.  
 License: GPL-3
@@ -10,26 +10,28 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.0.2
 Imports:
-    rhdf5,
-    MSnbase,
-    graphics,
-    stats,
-    fields,
-    signal,
-    pracma,
-    minpack.lm,
-    Rcpp,
-    Hmisc,
     Biobase,
-    ggplot2,
-    gridExtra,
-    plotly,
+    data.table,
     doParallel,
+    DT,
+    fields,
     foreach,
-    utils,
+    ggplot2,
+    graphics,
+    gridExtra,
+    Hmisc,
+    minpack.lm,
+    MSnbase,
+    parallel,
+    plotly,
+    pracma,
+    rhdf5,
+    Rcpp,
     shiny,
-    DT
-Depends: 
+    signal,
+    stats,
+    utils,
+Depends:
     data.table
 Suggests: 
     knitr,
@@ -42,4 +44,4 @@ VignetteBuilder: knitr
 LinkingTo:
     Rcpp
 NeedsCompilation: yes
-biocViews: MassSpectrometry, Metabolomics, PeakDetection, Preprocessing, Software, Workflow 
+biocViews: MassSpectrometry, Preprocessing, Metabolomics

@@ -10,12 +10,13 @@ peakListNominalMass(
   sp,
   ppmPeakMinSep = 130,
   mzToTof,
+  tofToMz,
   minPeakDetect = 10,
   fitFunc = "Sech2",
   maxIter = 2,
   autocorNoiseMax = 0.3,
-  plotFinal = F,
-  plotAll = F,
+  plotFinal = FALSE,
+  plotAll = FALSE,
   thNoiseRate = 1.1,
   thIntensityRate = 0.01,
   countFacFWHM = 10,
@@ -34,6 +35,8 @@ peakListNominalMass(
 \item{ppmPeakMinSep}{the minimum distance between two peeks in ppm}
 
 \item{mzToTof}{function to convert mz to tof}
+
+\item{tofToMz}{function  to convert tof to mz}
 
 \item{minPeakDetect}{the minimum intenisty for peaks detection. The final threshold for peak detection
 will be : max ( \code{minPeakDetect} , thresholdNoise ). The thresholdNoise correspond to
@@ -65,6 +68,9 @@ centered in the mass peak center.}
 
 \item{windowSize}{peaks will be detected only around  m - windowSize ; m + windowSize, for all 
 m in \code{mzNominal}}
+}
+\value{
+a list that contains the peak list of nomminal mass i, and information to plot the peaks detected
 }
 \description{
 Detect peak in a single nominal mass, same parameter as peakList

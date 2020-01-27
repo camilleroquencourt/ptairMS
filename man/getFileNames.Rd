@@ -15,6 +15,15 @@ getFileNames(object, fullNames = FALSE)
 \item{fullNames}{logical: if \code{TRUE}, it return the the directory path is 
 prepended to the file names.}
 }
+\value{
+a vector of character that contains all file names
+}
 \description{
 get the file names containing in the directory of a ptrSet
+}
+\examples{
+library(ptairData)
+directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+ptrSet<-createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049))
+getFileNames(ptrSet)
 }
