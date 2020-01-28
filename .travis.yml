@@ -1,0 +1,56 @@
+# https://jef.works/blog/2019/02/17/automate-testing-of-your-R-package/
+
+# Use R
+language: R
+sudo: true
+cache:
+  - packages: true
+  - $HOME/.ccache
+warnings_are_errors: false
+
+# environment variables set for all builds
+env:
+  global:
+    - BIOC_USE_DEVEL="FALSE"  ## Use the current release version
+    - R_BUILD_ARGS="--no-build-vignettes --no-manual"
+    - R_CHECK_ARGS="--no-build-vignettes --no-manual --timings"  ## do not build vignettes or manual
+    - _R_CHECK_TIMINGS_="0"  ## get the timing information for the examples for all of your functions
+
+r:
+ - release
+ 
+addons:
+  apt:
+    packages:
+      - libmpfr-dev
+      - ccache
+
+# https://pjs-web.de/post/using-ccache-to-speed-up-r-package-checks-on-travis-ci/    
+before_install:
+  - mkdir $HOME/.R && echo -e 'CXX_STD = CXX14\n\nVER=\nCCACHE=ccache\nCC=$(CCACHE) gcc$(VER) -std=gnu99\nCXX=$(CCACHE) g++$(VER)\nC11=$(CCACHE) g++$(VER)\nC14=$(CCACHE) g++$(VER)\nFC=$(CCACHE) gfortran$(VER)\nF77=$(CCACHE) gfortran$(VER)' > $HOME/.R/Makevars
+  - echo -e 'max_size = 5.0G\nsloppiness = include_file_ctime\nhash_dir=false' > $HOME/.ccache/ccache.conf
+
+     
+# Set one of you dependencies from github
+r_github_packages: camilleroquencourt/ptairData
+
+# for codecov
+r_packages:
+  - covr
+      
+# do not build vignettes...takes too long and times out on travis
+r_build_args: --no-build-vignettes --no-manual
+r_check_args: --no-build-vignettes --no-manual --timings
+
+# we need to install BiocInstaller for testing Bioconductor packages
+bioc_required: true
+bioc_check: true
+
+# only report coverage for the release version
+after_success:
+  - test $TRAVIS_R_VERSION_STRING = 'release' && Rscript -e 'covr::codecov()'
+
+notifications:
+    email:
+        recipients:
+            - camille.roquencourt@hotmail.fr
