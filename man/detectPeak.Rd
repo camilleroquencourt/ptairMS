@@ -31,7 +31,7 @@ detectPeak(x, ...)
   fracGroup = 0.8,
   minIntensity = 10,
   fctFit = c("Sech2", "average")[1],
-  parallel = FALSE,
+  parallelize = FALSE,
   nbCores = 2,
   normalize = TRUE,
   saving = TRUE,
@@ -71,7 +71,7 @@ If you want to analyze the entire spectrum, set this parameter to 0.}
 
 \item{processFun}{the function used to process a file. Can not be changed for the moent}
 
-\item{parallel}{boolean. If \code{TRUE} loop aver files will be parallelized}
+\item{parallelize}{boolean. If \code{TRUE} loop aver files will be parallelized}
 
 \item{nbCores}{number of cluster to use for parrallel computation.}
 

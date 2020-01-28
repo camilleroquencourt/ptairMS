@@ -44,7 +44,7 @@ For memory reasons, the raw data are truncate in mass axis at the range: $[20.4,
 
 # Hands on
 
-```{r setup, message = FALSE, warning = FALSE,eval=TRUE}
+```{r setup, message = FALSE, warning = FALSE}
 library(ptairMS)
 library(ptairData)
 ```
@@ -68,7 +68,7 @@ To perform and check the quality of this steps, we first use the `createPtrSet` 
 This function creates a `ptrSet` object that contains all necessary information about the files in the study directory: calibration prameters, time limits, peak lists (as this step it is empty), and primary ion quanitfication. It can be update if new files are added are deleted from the directory with the function `updatePtrSet` (see update section).  
 
 To create a `ptrSet` object form the raw data directory:
-```{r createPtrSet,eval=TRUE}
+```{r createPtrSet}
 exhaledSet <- createPtrSet(dirRaw,
                      setName="exhaledSet",
                      mzCalibRef = c(21.022, 60.0525),
@@ -76,7 +76,7 @@ exhaledSet <- createPtrSet(dirRaw,
                      saveDir = NULL )
 ```
 
-```{r,eval=TRUE}
+```{r}
 exhaledSet
 ```
 
@@ -254,7 +254,7 @@ exhaledSet <- detectPeak(exhaledSet ,  mzNominal = NULL,fracGroup=1,normalize = 
 
 If you want to restrinct the detection to few nominal mass, set them in `mzNominal`, for example `exhaledSet <- detectPeak(exhaledSet ,  mzNominal = c(21,59))`. 
 
-This step can take few times if there are many files and a large mz range. You can then parallelize the algorithm by set `parallel = TRUE` and give the number of cores in `nbCores` (the number of files that will be processed simultaneous). To see the number of CPU cores available in your computer, use `parallel::detectCores()`.
+This step can take few times if there are many files and a large mz range. You can then parallelize the algorithm by set `parallelize = TRUE` and give the number of cores in `nbCores` (the number of files that will be processed simultaneous). To see the number of CPU cores available in your computer, use `parallel::detectCores()`.
 
 To see the resulting peak lists, use `getPeakList` method. It return a list with two elements:
 

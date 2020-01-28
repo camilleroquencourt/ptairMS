@@ -6,7 +6,7 @@
 \alias{plot,ptrSet-method}
 \title{ptrSet object}
 \usage{
-\S4method{plot}{ptrSet,ANY}(x, y, typePlot = "", saveFile = NULL)
+\S4method{plot}{ptrSet,ANY}(x, y, typePlot = "")
 }
 \arguments{
 \item{x}{a ptrSet object}
@@ -15,9 +15,6 @@
 
 \item{typePlot}{could be : \code{calibError}, \code{resolution},  \code{peakShape}, or 
 a empty character if you want all.}
-
-\item{saveFile}{a file path if you want to save the plot. Three extensions are possible : 
-pdf, png ar jpeg. If is \code{NULL}, the plot will not be saved.}
 }
 \value{
 plot
@@ -30,7 +27,7 @@ library(ptairData)
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
 plot(mycobacteria)
-plot(mycobacteria,typePlot="calibError",saveFile=NULL)
-plot(mycobacteria,typePlot="resolution",saveFile=NULL)
-plot(mycobacteria,typePlot="peakShape",saveFile=NULL)
+plot(mycobacteria,typePlot="calibError")
+plot(mycobacteria,typePlot="resolution")
+plot(mycobacteria,typePlot="peakShape")
 }

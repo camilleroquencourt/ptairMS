@@ -31,7 +31,7 @@ utils::globalVariables("::<-")
 #'  max(\code{thNoiseRate} * max( noise around the nominal mass), \code{thIntensityRate} * 
 #'  max( intenisty in the nominal mass)
 #' @param fctFit the function for the quantification of Peak, should be sech2 or Average
-#' @param parallel boolean. If \code{TRUE} loop aver files will be parallelized
+#' @param parallelize boolean. If \code{TRUE} loop aver files will be parallelized
 #' @param nbCores number of cluster to use for parrallel computation.
 #' @param normalize boolean. if TRUE result in ppb or ncps, normalized by primary ions
 #' @param fracMaxTIC if x is a ptrRaw, the same paramter as \code{createPtrSet} function:Percentage 
@@ -54,12 +54,13 @@ utils::globalVariables("::<-")
 #' dirSet <- detectPeak(dirSet , mzNominal=59)
 #' getPeakList(dirSet)$aligned
 #' @rdname detectPeak
+#' @import doParallel foreach parallel
 #' @export
 setMethod(f="detectPeak",
             signature = "ptrSet",
           function(x, 
                    mzNominal=NULL , ppm=130, ppmGroupBkg=50, fracGroup=0.8, minIntensity=10, 
-                   fctFit=c("Sech2","average")[1],parallel=FALSE,nbCores=2,normalize=TRUE,
+                   fctFit=c("Sech2","average")[1],parallelize=FALSE,nbCores=2,normalize=TRUE,
                    saving=TRUE,saveDir=x@parameter$saveDir,processFun=processFileSepExp,...)
           {
             ptrset<-x
@@ -126,7 +127,7 @@ setMethod(f="detectPeak",
             #peakLists<-BiocParallel::bplapply(files,FUN = FUN)
             
             #parrallel 2 
-            if(parallel){
+            if(parallelize){
               cl <- parallel::makeCluster(nbCores)
               doParallel::registerDoParallel(cl)
               `%dopar%`<-foreach::`%dopar%`
@@ -544,10 +545,10 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
   if(ncol(indLim)>1){
     exp<-raw@time[Reduce(c,lapply(seq(2,ncol(indLim)),function(i) seq(indLim["start",i],
                                                                       indLim["end",i])))]
-    matPeakAg<-matPeak[ , .(mz=stats:: median(mz), quanti=mean(quanti[t %in% exp]), 
+    matPeakAg<-matPeak[ , list(mz=stats:: median(mz), quanti=mean(quanti[t %in% exp]), 
                             background=mean(quanti[t %in% bg])),by=group]
     #matPeakAg[group `:=` NULL] #delete column group 
-  }else matPeakAg<-matPeak[,.(mz=stats:: median(mz), quanti=mean(quanti)),by=group]
+  }else matPeakAg<-matPeak[,list(mz=stats:: median(mz), quanti=mean(quanti)),by=group]
   
   names(matPeakAg)[grep("quanti",names(matPeakAg))]<-namesQuanti
   
@@ -906,7 +907,7 @@ peakListNominalMass <- function(i,mz,sp,ppmPeakMinSep=130 , mzToTof,tofToMz,
     } }
     c=c+1
   } # end second repeat
-  if(fitFunc=="average") graphics::pointsPeak<- list(x=tofToMz(par_estimated[1,]),
+  if(fitFunc=="average") pointsPeak<- list(x=tofToMz(par_estimated[1,]),
                                           y=fit$function.fit.peak(fit$fit$par,
                                                                 l.shape$tofRef,l.shape$peakRef,
                                                                 par_estimated[1,],

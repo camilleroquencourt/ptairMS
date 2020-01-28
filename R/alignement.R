@@ -1,4 +1,4 @@
-utils::globalVariables(c("Mz","quanti","group","delta_mz","background","."))
+utils::globalVariables(c("Mz","quanti","group","delta_mz","background"))
 
 #' Alignment with kernel gaussian density
 #'
@@ -89,12 +89,12 @@ makeSubGroup <- function(subpeakl,den,plim) {
   if( ( length(unique(subpeakl.group[,"group"])) < dim(subpeakl.group)[1] ) ){
     subpeakl.group <- data.table::as.data.table(subpeakl.group)
     if("background" %in% colnames(subpeakl.group)){
-      subpeakl.group<-as.matrix(subpeakl.group[,.(`Mz`=`Mz`[which.max(quanti)], 
+      subpeakl.group<-as.matrix(subpeakl.group[,list(`Mz`=`Mz`[which.max(quanti)], 
                                                   quanti=sum(quanti),
                                                   background =  sum(background),
                                                   delta_mz=max(delta_mz)), 
                                                by=group] )
-    } else subpeakl.group<-as.matrix(subpeakl.group[,.(`Mz`=`Mz`[which.max(quanti)], 
+    } else subpeakl.group<-as.matrix(subpeakl.group[,list(`Mz`=`Mz`[which.max(quanti)], 
                                                        quanti=sum(quanti),
                                                        delta_mz=max(delta_mz)), 
                                                     by=group] )
@@ -155,7 +155,7 @@ alignExpirations <- function(PeakMat, ppmGroup = 70, fracGroup=0.8,
 aggregate <- function(subGroupPeak, n.exp) {
   if(nrow(subGroupPeak) == 0) return(subGroupPeak) #empty data frame
   subGroupPeak <- data.table::data.table(subGroupPeak)
-  subGroupPeak<-subGroupPeak[,`.`(Mz=mean(Mz),quanti=mean(`quanti`[`group`!=0]),
+  subGroupPeak<-subGroupPeak[,list(Mz=mean(Mz),quanti=mean(`quanti`[`group`!=0]),
                   delta_mz=mean(`delta_mz`[group!=0]),fracExp= round( sum(`group`!=0) /n.exp, 1 ),
                   background=mean(`quanti`[group==0]))]
   if(is.na(subGroupPeak[,`quanti`])) return(NULL)
@@ -192,32 +192,32 @@ aggregate <- function(subGroupPeak, n.exp) {
 #' Biobase::fData(eset)
 #' Biobase::pData(eset)
 #' @rdname alignSamples
+#' @import data.table
 #'@export
 setMethod(f="alignSamples",signature = "ptrSet",
             function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL, bgThreshold=2,
                          dmzGroup = 0.001,normalize=FALSE,...
                          ){
-
-              if(normalize){
-                if(length(raw@prtReaction)!=0 & nrow(transmission) > 1){
-                  U <- c(reaction$TwData[1,,])
-                  Td <-c(reaction$TwData[3,,])
-                  pd <- c(reaction$TwData[2,,])
-                  list_peak$peak[,"quanti"] <- ppbConvert(peakList = list_peak$peak,
-                                                          primaryIon = primaryIon,
-                                                          transmission = transmission,
-                                                          U = U[indBg] , 
-                                                          Td = Td[ indBg], 
-                                                          pd = pd[ indBg])
-                  namesQuanti<-"quanti (ppb)"
-                  
-                } else {
-                  #normalize by primary ions
-                  list_peak$peak[,"quanti"] <- list_peak$peak[,"quanti"]/(primaryIon*4.9*10^6)
-                  namesQuanti<-"quanti (ncps)"
-                }
-              }
               
+              # if(normalize){
+              #   if(length(reaction)!=0 & nrow(transmission) > 1){
+              #     U <- c(reaction$TwData[1,,])
+              #     Td <-c(reaction$TwData[3,,])
+              #     pd <- c(reaction$TwData[2,,])
+              #     list_peak$peak[,"quanti"] <- ppbConvert(peakList = list_peak$peak,
+              #                                             primaryIon = X@primaryIon,
+              #                                             transmission = transmission,
+              #                                             U = U[indBg] , 
+              #                                             Td = Td[ indBg], 
+              #                                             pd = pd[ indBg])
+              #     namesQuanti<-"quanti (ppb)"
+              #     
+              #   } else {
+              #     #normalize by primary ions
+              #     list_peak$peak[,"quanti"] <- list_peak$peak[,"quanti"]/(primaryIon*4.9*10^6)
+              #     namesQuanti<-"quanti (ncps)"
+              #   }
+              # }
             sampleMetadata <- X@sampleMetadata
             peakList <- X@peakListAligned
             eSet<- alignSamplesFunc(peakList,sampleMetadata,ppmGroup, fracGroup , group,
@@ -228,7 +228,7 @@ setMethod(f="alignSamples",signature = "ptrSet",
 
 #' @rdname alignSamples
 #' @param sampleMetadata if X is a ptrSet, not used, else a data.frame containing sample Metadata
-#'@export
+#' @export
 setMethod(f="alignSamples",signature = "data.frame",
           function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL,bgThreshold=2,
                    dmzGroup = 0.001,sampleMetadata
@@ -263,7 +263,7 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
   groupMat <- do.call(rbind, lapply( groupList, 
                                      function(y){
                                        y<-data.table::as.data.table(y)
-                                       y <- y[,.(`Mz`= stats::median(`Mz`), 
+                                       y <- y[,list(Mz= stats::median(Mz), 
                                                  quanti= paste(quanti,collapse = "_"),
                                                  background = if("background" %in% colnames(y)) paste(background,collapse = "_"),
                                                  Samples=paste(group,collapse="_"),
@@ -412,7 +412,7 @@ impute <- function(eSet,ptrSet){
     
     mzMissing <- as.numeric(rownames(missingValues[missingValues[,"col"]==j,,drop=FALSE]))
     
-    #opense mz Axis 
+    #open mz Axis 
     mzAxis <- rhdf5::h5read(filesFullName.j,name="FullSpectra/MassAxis")
     indexMzList <- lapply(unique(round(mzMissing)),function(m) which( m - 0.6 < mzAxis & 
                                                                         mzAxis < m+ 0.6))
@@ -459,12 +459,12 @@ impute <- function(eSet,ptrSet){
                                   indexExp]) /length.exp
         
         #substract fitted peak also find
-        peakAlsoDetected <- peakListRaw.j[round(peakListRaw.j$mz)==m & peakListRaw.j$group==1,]
+        peakAlsoDetected <- peakListRaw.j[round(peakListRaw.j$Mz)==m & peakListRaw.j$group==1,]
         if(nrow(peakAlsoDetected)!=0){ 
           # cumFitPeak
           
           fitPeaks <- apply(peakAlsoDetected,1,
-                            function(x) sech2(x["mz"],x["parameter.1"],
+                            function(x) sech2(x["Mz"],x["parameter.1"],
                                               x["parameter.2"],x["parameter.3"],x = mzAxis.m)
           )
           if(nrow(peakAlsoDetected)>1) cumFitPeak <- rowSums(fitPeaks) else cumFitPeak <- c(fitPeaks)
@@ -513,7 +513,7 @@ impute <- function(eSet,ptrSet){
           mz.x <- mzAxis.m[ x[1] - th < mz & mz < x[1]+th ]
           sum(sech2(x[1],x[2],x[3],x[4],mz.x),na.rm =TRUE)}) 
         
-        list_peak<-cbind(mz,quanti=quanti.m)
+        list_peak<-cbind(Mz=mz,quanti=quanti.m)
         
         # convert to ppb or ncps
         #if there is reaction ans transmission information
@@ -543,165 +543,4 @@ impute <- function(eSet,ptrSet){
   }#end for file
   return(eSet)
 }
-
-
-# imputeOld <- function(eSet,ptrSet){
-#   
-#   #get peak list 
-#   peakList <- getPeakList(ptrSet)$aligned
-#   
-#   #get index of missing values
-#   missingValues <-which(is.na(Biobase::exprs(eSet)),arr.ind=TRUE)
-#   indexFilesMissingValues <- unique(missingValues[,"col"])
-#   namesFilesMissingValues <- colnames(Biobase::exprs(eSet))[indexFilesMissingValues]
-#   
-#   #get primry ion quantity
-#   primaryIon<-ptrSet@primaryIon
-#   
-#   #get files full names in ptrSet object
-#   filesFullName<-ptrSet@parameter$listFile
-#   for (file in namesFilesMissingValues){
-#     j<-which(file==colnames(Biobase::exprs(eSet)))
-#     filesFullName.j<-filesFullName[which(basename(filesFullName)==file)]
-#     
-#     mzMissing <- as.numeric(rownames(missingValues[missingValues[,"col"]==j,,drop=FALSE]))
-#    
-#     #opense mz Axis 
-#     mzAxis <- rhdf5::h5read(filesFullName.j,name="FullSpectra/MassAxis")
-#     indexMzList <- lapply(unique(round(mzMissing)),function(m) which( m - 0.6 < mzAxis & 
-#                                                                 mzAxis < m+ 0.6))
-#     names(indexMzList)<-unique(round(mzMissing))
-#     indexMz<-Reduce(union,indexMzList)
-#     
-#     #get index time
-#     indexLim <- ptrSet@timeLimit[[file]]
-#     indexTime<-Reduce(c,apply(indexLim,2,function(x) seq(x["start"],x["end"])))
-#     nbExp<-ncol(indexLim)
-#     
-#     #open raw data
-#     raw <- rhdf5::h5read(filesFullName.j, name = "/FullSpectra/TofData",
-#                          index=list(indexMz,NULL,NULL,NULL))
-#     
-#     rawMn <- matrix(raw,
-#                     nrow = dim(raw)[1],
-#                     ncol = prod(utils::tail(dim(raw),2))) #* 0.2 ns / 2.9 (single ion signal) if convert to cps
-#     
-#     # information for ppb convertion
-#     reaction <-  try(reaction<- rhdf5::h5read(filesFullName.j,"AddTraces/PTR-Reaction"))
-#     transmission <-try(rhdf5::h5read(filesFullName.j,"PTR-Transmission"))
-#     
-#     #calibrate mass axis
-#     FirstcalibCoef <- rhdf5::h5read(filesFullName.j,"FullSpectra/MassCalibration",index=list(NULL,1))
-#     tof <- sqrt(mzAxis)*FirstcalibCoef[1,1] + FirstcalibCoef[2,1]
-#     coefCalib<-ptrSet@coefCalib[[file]]
-#     mzAxis <- ((tof-coefCalib['b',])/coefCalib['a',])^2
-#     
-#     #peak list raw
-#     peakListRaw.j<-ptrSet@peakListRaw[[file]]
-#     
-#     for (m in unique(round(mzMissing))){
-#       #exact missing mz
-#       mz <- mzMissing[round(mzMissing)==m]
-#       
-#       #mzAxis around m
-#       mzAxis.m <- mzAxis[indexMzList[[as.character(m)]]]
-#       
-#       #loop over expirations
-#       quantiMat<-matrix(0,ncol=length(mz),nrow=nbExp)
-#       for (n.exp in 1:nbExp ){
-#         length.exp<-indexLim["end",n.exp] - indexLim["start",n.exp] + 1
-#         indexExp<-seq( indexLim["start",n.exp],indexLim["end",n.exp] )
-#         spectrum <- rowSums(rawMn[which(indexMz %in% indexMzList[[as.character(m)]]),
-#                                   indexExp]) /length.exp
-#         
-#         #substract fitted peak also find
-#         peakAlsoDetected <- peakListRaw.j[round(peakListRaw.j$mz)==m & peakListRaw.j$group==n.exp,]
-#         if(nrow(peakAlsoDetected)!=0){ 
-#           # cumFitPeak
-# 
-#           fitPeaks <- apply(peakAlsoDetected,1,
-#                           function(x) sech2(x["mz"],x["parameter.1"],
-#                                                       x["parameter.2"],x["parameter.3"],x = mzAxis.m)
-#                             )
-#           if(nrow(peakAlsoDetected)>1) cumFitPeak <- rowSums(fitPeaks) else cumFitPeak <- c(fitPeaks)
-#           spectrum<- spectrum-cumFitPeak
-#         }
-#        
-#         #fit on the missing values
-#         resolution_upper<-8000
-#         resolution_mean<- 5000
-#         resolution_lower<-3500
-#         
-#         n.peak<-length(mz)
-#         delta<-rep(m/resolution_mean,2*n.peak)
-#         h<- vapply(mz, function(m) max(max(spectrum[which(abs(mzAxis.m-m)<(m*50/10^6))]),1),0)
-#         
-#         initMz <- matrix(c(mz,log(sqrt(2)+1)*2/delta,
-#                            h),nrow=n.peak)
-#         colnames(initMz)<-c("m","delta1","delta2","h")
-#         
-#         lower.cons <- c(t(initMz * matrix(c(rep(1, n.peak),
-#                                             rep(0, n.peak*2),
-#                                             rep(0.1, n.peak)),ncol = 4) 
-#                           -
-#                             matrix(c(initMz[,"m"]/(resolution_mean*100),
-#                                      -resolution_lower*log(sqrt(2)+1)*2/initMz[,"m"],
-#                                      -resolution_lower*log(sqrt(2)+1)*2/initMz[,"m"],
-#                                      rep(0, n.peak)),ncol = 4)))
-#         
-#         upper.cons <- c(t( initMz * matrix(c(rep(1, n.peak),
-#                                              rep(0, n.peak*2),
-#                                              rep(Inf, n.peak)),ncol = 4) 
-#                            +
-#                              matrix(c(initMz[,"m"]/(resolution_mean*100),
-#                                       resolution_upper*log(sqrt(2)+1)*2/initMz[,"m"],
-#                                       resolution_upper*log(sqrt(2)+1)*2/initMz[,"m"],
-#                                       rep(0, n.peak)),ncol = 4)))
-#         
-#         
-#         fit <- fit_sech2(initMz, spectrum, mzAxis.m, lower.cons, upper.cons)
-#         
-#         fit.peak <- fit$fit.peak
-#         par_estimated<-fit$par_estimated
-#         
-#         quanti.m <- apply(par_estimated,2, function(x){
-#           th<-10*0.5*(log(sqrt(2)+1)/x[2]+log(sqrt(2)+1)/x[3])
-#           mz.x <- mzAxis.m[ x[1] - th < mz & mz < x[1]+th ]
-#           sum(sech2(x[1],x[2],x[3],x[4],mz.x),na.rm =T)}) 
-#         
-#         list_peak<-cbind(mz,quanti.m)
-# 
-#         # convert to ppb or ncps
-#         #if there is reaction ans transmission information
-#         if(ptrSet@parameter$detectPeakParam$normalize){
-#         if(is.null(attr(transmission,'condition')) & is.null(attr(reaction,'condition'))){
-#           U <- c(reaction$TwData[1,,])
-#           Td <-c(reaction$TwData[3,,])
-#           pd <- c(reaction$TwData[2,,])
-#           quanti.m <- ppbConvert(peakList = list_peak,
-#                                                             primaryIon = primaryIon[[file]],
-#                                                             transmission = transmission$Data,
-#                                                             U = U[ indexExp] , 
-#                                                             Td = Td[ indexExp], 
-#                                                             pd = pd[indexExp])
-#           
-#         } else {
-#           #normalize by primary ions
-#           quanti.m <- quanti.m/(primaryIon[[basename(fullNamefile)]]*4.9*10^6)
-#         }
-#         }
-#         quantiMat[n.exp,]<-quanti.m
-#       }
-#       
-#           # aggregation 
-#       quantiMissing<-apply(quantiMat,2,mean)
-#       
-#          
-#           # add to peak table
-#       Biobase::exprs(eSet)[as.character(mz),file] <- quantiMissing
-#     }
-#     message(basename(file)," done")
-#   }
-#   return(eSet)
-# }
 

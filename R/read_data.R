@@ -81,12 +81,11 @@ readRaw <- function(filePath, calibTIS=TRUE,
     calib_formula <- function(tof) ((tof - calibCoef['b']) / calibCoef['a']) ^ 2
     calib_invFormula <- function(m) sqrt(m)*calibCoef['a'] + calibCoef['b']
     calibMassRef = c(attributCalib$`MassCalibration m1`, attributCalib$`MassCalibration m2`)
-    if(is.null(calibMassRef)) calibMassRef <- 0
-  }else {
-    calibCoef <- matrix(0)
-    calib_formula <- function(x) NULL
-    calib_invFormula <- function(x) NULL
-    calibMassRef <- 0
+    if(is.null(calibMassRef)) calibMassRef <- 0 } else { 
+      calibCoef <- matrix(0)
+      calib_formula <- function(x) NULL
+      calib_invFormula <- function(x) NULL
+      calibMassRef <- 0
   }
   
   # write ptrRaw objet

@@ -26,7 +26,7 @@
 #' rawCalibrated <- calibration(raw)
 #' @rdname calibration
 #' @export 
-setMethod(f = "calibration",
+methods::setMethod(f = "calibration",
           signature = "ptrRaw", 
           function(x, mzCalibRef = c(21.022, 29.013424,41.03858,59.049141,75.04406, 
                                               203.943, 330.8495), tol=70){
@@ -162,7 +162,7 @@ calibrationFun<-function(sp,mz,mzCalibRef,mzToTofFunc,tol){
 ## plotRaw ----
 #' @rdname plotRaw
 #' @export
-setMethod(f = "plotRaw",
+methods::setMethod(f = "plotRaw",
           signature = "ptrRaw",
           function(object,
                    mzRange ,
@@ -235,7 +235,7 @@ setMethod(f = "plotRaw",
               filenameSplitVc <- unlist(strsplit(basename(figure.pdf), ".", fixed = TRUE))
               extC <- utils::tail(filenameSplitVc, 1)
               if (extC == "pdf") {
-                pdf(figure.pdf)
+                grDevices::pdf(figure.pdf)
               } else
                 stop("The extension of the 'figure.pdf' filename argument should be 'pdf'",
                      call. = FALSE)
@@ -265,7 +265,7 @@ setMethod(f = "plotRaw",
                          font.lab = 2,
                          pch = 18)
                      
-                     layout(matrix(c(1, 2,
+                     graphics::layout(matrix(c(1, 2,
                                      3, 4),
                                    byrow = TRUE,
                                    nrow = 2),
@@ -309,7 +309,7 @@ setMethod(f = "plotRaw",
                      
                      if (showVocDB && !is.null(vocdbDF)) {
                        mzImaVn <- as.numeric(colnames(imageMN))
-                       abline(h = vapply(vocdbDF[, "mz_Hplus"],
+                       graphics::abline(h = vapply(vocdbDF[, "mz_Hplus"],
                                          function(mzN)
                                            (mzN - min(mzImaVn))/diff(range(mzImaVn)) * ncol(imageMN) + par("usr")[1],
                                          FUN.VALUE =1.1 ),
@@ -341,7 +341,7 @@ setMethod(f = "plotRaw",
                      
                      if (showVocDB && !is.null(vocdbDF)) {
                        
-                       abline(h = vocdbDF[, "mz_Hplus"], lty = "dotted")
+                       graphics::abline(h = vocdbDF[, "mz_Hplus"], lty = "dotted")
                        
                      }
                      
@@ -584,7 +584,7 @@ setMethod(f = "plotRaw",
 ## plotCalib ----
 #' @rdname plotCalib
 #' @export
-setMethod(f="plotCalib",
+methods::setMethod(f="plotCalib",
           signature = "ptrRaw",
           function(object,ppm=2000,...){
   
@@ -598,7 +598,7 @@ setMethod(f="plotCalib",
         nb_plot<-length(mzCalibRef)
         nb_row <- ceiling(sqrt(nb_plot))
         graphics::par(oma = c(0, 0, 3, 0))
-        layout(matrix(seq(1,(nb_row^2)),nrow=nb_row,byrow = TRUE))
+        graphics::layout(matrix(seq(1,(nb_row^2)),nrow=nb_row,byrow = TRUE))
         
         #loop over masses
         for (i in seq_along(mzCalibRef)){
@@ -611,11 +611,11 @@ setMethod(f="plotCalib",
           plot( x , y , type="l",
           lwd=2, ylab="intenisty", xlab="mz", 
           main  = c(m,paste("error:", round(error[i],2),"ppm")))
-          abline(v=m, col="red", lwd=2)
+          graphics::abline(v=m, col="red", lwd=2)
       }
         title(main=raw@name,outer = TRUE,line =0.5,cex.main=2)
         graphics::par(oma = c(0, 0, 0, 0))
-        layout(matrix(1))
+        graphics::layout(matrix(1))
 } )
 
 
@@ -633,7 +633,7 @@ setMethod(f="plotCalib",
 #' p <- plotTIC(raw)
 #' p
 #' 
-setMethod(f="plotTIC",
+methods::setMethod(f="plotTIC",
           signature = "ptrRaw",
           function(object, type, baselineRm, showLimits,fracMaxTIC=0.5,...){
             
@@ -701,7 +701,7 @@ setMethod(f="plotTIC",
 #' ind_lim <- timeLimits(raw, fracMaxTIC=0.9, plotDel=TRUE)
 #' ind_lim_acetone <- timeLimits(raw, fracMaxTIC=0.5, traceMasses = 59,plotDel=TRUE)
 #'@export
-setMethod(f="timeLimits",
+methods::setMethod(f="timeLimits",
           signature = "ptrRaw",
           function(object,fracMaxTIC=0.5, traceMasses= NULL, minPoints = 2, plotDel=FALSE){
             
@@ -835,7 +835,7 @@ bakgroundDetect<-function(TIC,derivThreshold=0.01,  minPoints = 4, plotDel=FALSE
 #' peakList$peak
 #'@rdname PeakList 
 #'@export
-setMethod(f="PeakList",
+methods::setMethod(f="PeakList",
           signature = "ptrRaw",
           function(raw,
                    mzNominal = unique(round(raw@mz)), ppm = 130, 
@@ -876,7 +876,7 @@ setMethod(f="PeakList",
 #' peakList <- detectPeak(raw, mzNominal = c(21,63))
 #' peakList$aligned
 #' @export
-setMethod(f="detectPeak",
+methods::setMethod(f="detectPeak",
           signature = "ptrRaw",
           function(x, 
                    mzNominal=NULL , ppm=130, ppmGroupBkg=50, fracGroup=0.8, minIntensity=10, 
@@ -934,7 +934,7 @@ estimateResol<-function(calibMassRef,calibSpectr){
 #' @param object a ptrRaw object
 #' @return nothing
 #' @export 
-setMethod("show","ptrRaw",
+methods::setMethod("show","ptrRaw",
           function(object){
             cat(object@name,"\n")
             cat("  mz range: ",paste(round(range(object@mz),2),collapse = " - "),"\n")

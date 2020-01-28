@@ -47,9 +47,20 @@ test_alignSamples <- function(){
   eset <- alignSamples(dirSet,bgThreshold = 2)
   testthat::expect_equal(ncol(Biobase::fData(eset)),6)
   testthat::expect_equal(nrow(Biobase::exprs(eset)),1)
-  }
+}
+
+test_impute<-function(){
+  directory <-  system.file("extdata/mycobacteria",  package = "ptairData")
+  dirSet <- createPtrSet(directory, setName = "test", mzCalibRef =c(21.022,59.049))
+  dirSet <- detectPeak(dirSet, mzNominal = c(21,57))
+  eset <- alignSamples(dirSet, bgThreshold = 4)
+  testthat::expect_equal(sum(is.na(Biobase::exprs(eset))),1)
+  eset<-impute(eset,dirSet)
+  testthat::expect_equal(sum(is.na(Biobase::exprs(eset))),0)
+}
 
 testthat::test_that("findEqualGreater() works correctly.", test_findEqualGreater())
 testthat::test_that("align() works correctly.", test_align())
 testthat::test_that("alignExpirations() works correctly.", test_alignExpirations())
 testthat::test_that("alignSamples() works correctly.", test_alignSamples())
+testthat::test_that("impute() works correctly.", test_impute())

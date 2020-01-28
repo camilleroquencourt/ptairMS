@@ -16,7 +16,7 @@ output:
 BiocStyle::markdown()
 ```
 
-```{r setup, message = FALSE, warning = FALSE,eval=TRUE}
+```{r setup, message = FALSE, warning = FALSE}
 library(ptairMS)
 library(ptairData)
 ```
@@ -55,7 +55,7 @@ dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
 ```
 
 
-```{r createPtrSet,eval=TRUE}
+```{r createPtrSet}
 exhaledSet <- createPtrSet(dirRaw,
                      setName="exhaledSet",
                      mzCalibRef = c(21.022, 60.0525,75.04406),
@@ -108,7 +108,7 @@ For each file in the data set, this function :
 exhaledSet <- detectPeak(exhaledSet)
 ```
 
-This function can take few times if there are many files and a large mz range. You can then parallelize the algorithm by set `parallel = TRUE` and give the number of cores in `nbCores` (the number of files that will be processed simultaneous). To see the number of CPU cores available in your computer, use `parallel::detectCores()`.
+This function can take few times if there are many files and a large mz range. You can then parallelize the algorithm by set `parallelize = TRUE` and give the number of cores in `nbCores` (the number of files that will be processed simultaneous). To see the number of CPU cores available in your computer, use `parallel::detectCores()`.
 
 ## align Samples
 
@@ -129,7 +129,7 @@ eSet <- alignSamples(exhaledSet, group="subfolder", fracGroup = 1, bgThreshold =
 ## imputation 
 To imputue missing values, `ptairMS` returns back to the raw data, and compute with the same method as `detectPeak` the missing values without limit of detection. 
 ```{r imputation}
-eSet <- ptairMS::impute(eSet,  exhaledSet)
+eSet <- ptairMS::impute(eSet, exhaledSet)
 ```
 
 ## annotation 
@@ -159,7 +159,7 @@ ropls::view(log2(X),printL = FALSE)
 
 ```{r}
 pca<-ropls::opls(t(log2(X)),crossvalI=5,info.txtC="none",fig.pdfC="none")
-plot(pca,type="x-score",parAsColFcVn=SMD$subfolder)
+plot(pca,type="x-score", parAsColFcVn=SMD$subfolder)
 
 dim1<-ropls::getLoadingMN(pca)[,1]
 barplot(sort(abs(dim1),decreasing = TRUE))
@@ -202,7 +202,7 @@ bacteriaSet <- detectPeak(bacteriaSet)
 ```
 
 ```{r }
-eSet <- alignSamples(bacteriaSet, group="subfolder", fracGroup = 1, bgThreshold = 4 )
+eSet <- alignSamples(bacteriaSet, group="subfolder", fracGroup = 1, bgThreshold = 0 )
 ```
 
 ```{r }

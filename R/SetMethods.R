@@ -8,8 +8,6 @@ utils::globalVariables(c("error","name","out","intervalRef","signal","signal0","
 #' @param y not use
 #' @param typePlot could be : \code{calibError}, \code{resolution},  \code{peakShape}, or 
 #' a empty character if you want all. 
-#' @param saveFile a file path if you want to save the plot. Three extensions are possible : 
-#' pdf, png ar jpeg. If is \code{NULL}, the plot will not be saved. 
 #' @return plot 
 #' @rdname plot
 #' @export
@@ -18,18 +16,18 @@ utils::globalVariables(c("error","name","out","intervalRef","signal","signal0","
 #'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 #'mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
 #'plot(mycobacteria)
-#'plot(mycobacteria,typePlot="calibError",saveFile=NULL)
-#'plot(mycobacteria,typePlot="resolution",saveFile=NULL)
-#'plot(mycobacteria,typePlot="peakShape",saveFile=NULL)
-setMethod(f = "plot",
+#'plot(mycobacteria,typePlot="calibError")
+#'plot(mycobacteria,typePlot="resolution")
+#'plot(mycobacteria,typePlot="peakShape")
+methods::setMethod(f = "plot",
           signature = "ptrSet",
-          function(x, y, typePlot= "", saveFile=NULL){
-            if(!is.null(saveFile)) {
-              ext<- tools::file_ext(saveFile)
-              if(ext == "pdf") pdf(saveFile)
-              if(ext == "png") png(saveFile)
-              if(ext == "jpeg") jpeg(saveFile)
-            }
+          function(x, y, typePlot= ""){
+            # if(!is.null(saveFile)) {
+            #   ext<- tools::file_ext(saveFile)
+            #   if(ext == "pdf") pdf(saveFile)
+            #   if(ext == "png") png(saveFile)
+            #   if(ext == "jpeg") jpeg(saveFile)
+            # }
             if(! typePlot %in% c("","calibError","resolution","peakShape")) 
               warning( "typePolt should be calibError,resolution or peakShape")
             if(typePlot=="calibError"){
@@ -47,7 +45,7 @@ setMethod(f = "plot",
                                       reso$plot,
                                       ncol=2)
             }
-            if(!is.null(saveFile)) dev.off()
+            #if(!is.null(saveFile)) dev.off()
           })
 
 # plot resolution boxplot for a ptrSet
@@ -80,7 +78,7 @@ plotResolution<-function(set){
             
             #identify outliers 
             resolMat<-resolMat[!is.na(resolMat$resolution),]
-            resolMat<-resolMat[,.(resolution,name,out=ifelse(is_outlier(resolution), resolution, as.numeric(NA))),by=Mz]
+            resolMat<-resolMat[,list(resolution,name,out=ifelse(is_outlier(resolution), resolution, as.numeric(NA))),by=Mz]
 
             # boxplot with outlier labels 
             g<-ggplot2::ggplot(subset(resolMat, !is.na(resolution)), ggplot2::aes(y=resolution, x=Mz)) + 
@@ -145,7 +143,7 @@ plotCalibError<- function(set){
 
             #identify outliers   
             calibErrorMat<-calibErrorMat[!is.na(calibErrorMat$error),]
-            calibErrorMat<-calibErrorMat[,.(error,name,out=ifelse(is_outlier(error), error, as.numeric(NA))),by=Mz]
+            calibErrorMat<-calibErrorMat[,list(error,name,out=ifelse(is_outlier(error), error, as.numeric(NA))),by=Mz]
             
             # boxplot with labels 
             p<-ggplot2::ggplot(subset(calibErrorMat, !is.na(error)), ggplot2::aes(y=error, x=Mz)) + 
@@ -302,7 +300,7 @@ plotPeakShape<-function(set){
 #' filePath<-system.file("extdata/exhaledAir/ind1/ind1-1.h5", package = "ptairData")
 #' raw <- readRaw(filePath,mzCalibRef=c(21.022,59.049))
 #' plotCalib(raw)
-setMethod(f="plotCalib",
+methods::setMethod(f="plotCalib",
           signature = "ptrSet",
           function(object,ppm=2000, pdfFile=NULL, fileNames=NULL,...){
             
@@ -384,13 +382,14 @@ setMethod(f="plotCalib",
 #' the same color files of same attributes. 
 #' @param ... not used
 #' @rdname plotTIC
+#' @importFrom grDevices dev.off pdf
 #' @export
 #' @examples 
 #' library(ptairData)
 #'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 #'mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022,59.049141))
 #'plotTIC(mycobacteria,type="ggplot")
-setMethod(f="plotTIC",
+methods::setMethod(f="plotTIC",
           signature = "ptrSet",
           function(object, type, baselineRm, showLimits, pdfFile=NULL, 
                    fileNames = NULL,colorBy="rownames",...){
@@ -536,9 +535,11 @@ setMethod(f="plotTIC",
 #' mzCalibRef=c(21.022,59.049141,75.04406))
 #' ptairMS::plotRaw(patientRaw, mzRange = 59)
 #' ptairMS::plotRaw(patientRaw, mzRange = 59, type = "plotly")
-#' 
+#'
+#' @importFrom grDevices dev.off pdf
+#' @importFrom graphics abline layout par title
 #' @export 
-setMethod(f="plotRaw",signature = "ptrSet", 
+methods::setMethod(f="plotRaw",signature = "ptrSet", 
           function(object,
                    mzRange ,
                    timeRange = c(NA, NA),
@@ -784,7 +785,7 @@ setMethod(f="plotRaw",signature = "ptrSet",
                  shareX = TRUE, shareY = TRUE, titleX = FALSE, titleY = FALSE
                  
                )
-               
+               `%>%`<-plotly::`%>%`
                p<- p %>% layout(title=basename(file))
                
                return(p)
@@ -817,7 +818,7 @@ setMethod(f="plotRaw",signature = "ptrSet",
 
 #' @rdname plotFeatures
 #' @export
-setMethod(f="plotFeatures",
+methods::setMethod(f="plotFeatures",
           signature = "ptrSet",
           function(set, mz, typePlot , addFeatureLine, ppm, pdfFile, fileNames,colorBy){
             # get list files
@@ -1134,7 +1135,7 @@ importSampleMetadata<-function(set,file){
 
 #' @rdname timeLimits
 #' @export
-setMethod(f="timeLimits",
+methods::setMethod(f="timeLimits",
           signature = "ptrSet",
           function(object,fracMaxTIC=0.5, traceMasses= NULL, minPoints = 2, plotDel=FALSE){
             
@@ -1163,7 +1164,7 @@ setMethod(f="timeLimits",
 ##calibration----
 #' @rdname calibration
 #' @export 
-setMethod(f = "calibration",
+methods::setMethod(f = "calibration",
           signature = "ptrSet", 
           function(x, mzCalibRef = c(21.022, 29.013424,41.03858,75.04406, 
                                      203.943, 330.8495), tol=70){
@@ -1243,7 +1244,7 @@ rmPeakList<-function(object){
 #' @param object a ptrSet object
 #' @return nothing
 #' @export 
-setMethod("show","ptrSet",
+methods::setMethod("show","ptrSet",
           function(object){
             nFiles <- length(list.files(object@parameter$dir, recursive = TRUE, pattern="\\.h5$"))
             nFilesCheck <- length(object@parameter$listFile)
@@ -1288,7 +1289,7 @@ getPeakList<-function(set){
 #' getFileNames(ptrSet)
 #'@rdname getFileNames
 #'@export
-setMethod("getFileNames",signature = "ptrSet",
+methods::setMethod("getFileNames",signature = "ptrSet",
           function(object, fullNames){
             fileFullNames <- object@parameter$listFile
             if(fullNames) return(fileFullNames) else return(basename(fileFullNames))
