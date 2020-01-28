@@ -40,7 +40,8 @@ Suggests:
     rmarkdown,
     BiocStyle,
     testthat (>= 2.1.0),
-    ropls,
+    ropls
+Remotes:
     ptairData
 VignetteBuilder: knitr
 LinkingTo:
