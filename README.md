@@ -1,5 +1,8 @@
 # ptairMS
 
+[![Travis build status](https://travis-ci.org/camilleroquencourt/ptairMS.svg?branch=master)](https://travis-ci.org/camilleroquencourt/ptairMS)
+
+
 # Introduction
 The _**ptairMS**_ package provides a workflow to process PTR-TOF-MS raw data in the open Hierarchical Data Format 5 ([HDF5](https://www.hdfgroup.org/); .h5 extension), and generate the peak table as an `ExpressionSet` object for subsequent data analysis with the many methods and packages available in [R](https://www.r-project.org/). Applications include the analysis of exhaled air, headspace or ambient air. The package offers several features to check the raw data and tune the few processing parameters. It also enables to include new samples in a study without re-processing all the previous data, providing a convenient management for cohort studies. 
 
