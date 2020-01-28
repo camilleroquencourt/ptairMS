@@ -42,7 +42,7 @@ Suggests:
     testthat (>= 2.1.0),
     ropls
 Remotes:
-    ptairData
+    github::camilleroquencourt/ptairData
 VignetteBuilder: knitr
 LinkingTo:
     Rcpp
