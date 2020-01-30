@@ -23,6 +23,7 @@ addons:
   apt:
     packages:
       - libmpfr-dev
+      - libnetcdf-dev
       - ccache
 
 # https://pjs-web.de/post/using-ccache-to-speed-up-r-package-checks-on-travis-ci/    
