@@ -408,7 +408,7 @@ formula2mass <- function(formulaVc,
 #'@param eSet an expression set of PTR-TOF-MS data aligned 
 #'@param ppm presision for the mz matching
 #'@return an expresion with the column isotope added in teh features data
-#'@examples
+#' @examples
 #' library(ptairData)
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 #' bacteria.ptrset <- createPtrSet(directory, setName = "bacteria",
@@ -417,7 +417,7 @@ formula2mass <- function(formulaVc,
 #' bacteria.eset <- alignSamples(bacteria.ptrset,fracGroup=0.9)
 #' bacteria.eset<- impute(bacteria.eset,bacteria.ptrset)
 #' bacteria.eset <-findIsotope(bacteria.eset)
-#' Biobase::fData(bacteria.eset)[,"isotope",drop=F]
+#' Biobase::fData(bacteria.eset)[,"isotope",drop=FALSE]
 #' @export
 findIsotope<-function(eSet,ppm=100){
   X<-Biobase::exprs(eSet)
