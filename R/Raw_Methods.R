@@ -949,7 +949,23 @@ methods::setMethod("show","ptrRaw",
           })
 
 #### dead time correction -----
-deadTimeCorr<-function(raw,ve,vne,r){
+#'Dead time correction on raw data
+#'@param raw ptrRaw object
+#'@param ve exenting dead time
+#'@param vne non extending dead time
+#'@param r number of extraction
+#'@param threshold only bin of intenisty more then threshold*r which be corrected
+#'@return a ptrRaw object with the raw matrix corrected
+deadTimeCorr<-function(raw,ve,vne,r,threshold=0.1){
   rawM <- raw@rawM  
-  
+  index<-which(rawM > threshold*r)
+  for(j in index){
+    rawM[j]<- -r*log( 1-( rawM[j]/r * 
+                            (1-sum(raw[(j-vne):(j-1-ve)])/r)^-1*
+                            exp(sum(rawM[(j-ve):(j-1)])/r)
+                          )
+                      )
+  }
+  raw@rawM<-rawM
+  return(raw)
 }

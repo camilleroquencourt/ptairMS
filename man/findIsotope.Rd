@@ -28,5 +28,5 @@ bacteria.ptrset <- detectPeak(bacteria.ptrset)
 bacteria.eset <- alignSamples(bacteria.ptrset,fracGroup=0.9)
 bacteria.eset<- impute(bacteria.eset,bacteria.ptrset)
 bacteria.eset <-findIsotope(bacteria.eset)
-Biobase::fData(bacteria.eset)[,"isotope",drop=F]
+Biobase::fData(bacteria.eset)[,"isotope",drop=FALSE]
 }
