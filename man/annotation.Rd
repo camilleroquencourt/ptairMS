@@ -49,7 +49,8 @@ the data.frame with additional columns) (resp. a data.frame with columns)
 containing the matched 'mz', 'formula', 'name', 'reference', and 'matrix' putative annotations
 }
 \description{
-Putatively annotate VOC mz by using the reference compilation from the literature
+Putatively annotate VOC mz by using the reference compilation from the literature, 
+and detect isotope thanks to \code{findIsotope} function.
 }
 \examples{
 library(ptairData)

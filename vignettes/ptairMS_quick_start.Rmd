@@ -133,8 +133,7 @@ eSet <- ptairMS::impute(eSet, exhaledSet)
 ```
 
 ## annotation 
-`ptairMS` propose a putative annotation based on the database saved in `'inst/extdata/reference_tables/vocDB_tables`. The function write in the features metadata all possible formulas and names found for each features  
-
+`ptairMS` propose a putative annotation based on the database saved in `'inst/extdata/reference_tables/vocDB_tables`. The function write in the features metadata all possible formulas and names found for each features, and the isotopes for nuclide C13, O17 and O18. 
 ```{r annotaion}
 eSet<-annotateVOC(eSet)
 ```
@@ -157,6 +156,12 @@ features<-Biobase::fData(eSet)
 ropls::view(log2(X),printL = FALSE)
 ```
 
+Delete isotopes:
+```{r}
+isotope<-Biobase::fData(eSet)[,"isotope"]
+X<-X[! (row.names(X)  %in% isotope[!is.na(isotope)]),]
+```
+
 ```{r}
 pca<-ropls::opls(t(log2(X)),crossvalI=5,info.txtC="none",fig.pdfC="none")
 plot(pca,type="x-score", parAsColFcVn=SMD$subfolder)
@@ -169,9 +174,10 @@ knitr::kable(head(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_for
 `plotFeatures` plot for all files the average spectrum baseline corrected of all expirations, and background superimposed as a dashed line. 
  
 ```{r}
-plotFeatures(exhaledSet,mz=51.0442,colorBy="subfolder",typePlot = "ggplot")
 plotFeatures(exhaledSet,mz=67.0539,colorBy="subfolder",typePlot = "ggplot")
-plotFeatures(exhaledSet,mz=137.131,colorBy="subfolder",typePlot = "ggplot")
+plotFeatures(exhaledSet,mz=69.0699,colorBy="subfolder",typePlot = "ggplot")
+plotFeatures(exhaledSet,mz=109.066,colorBy="subfolder",typePlot = "ggplot")
+plotFeatures(exhaledSet,mz=51.0442,colorBy="subfolder",typePlot = "ggplot")
 ```
 
 

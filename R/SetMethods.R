@@ -870,7 +870,8 @@ methods::setMethod(f="plotFeatures",
                 mzAxis <- rhdf5::h5read(file, name = "FullSpectra/MassAxis")
                 
                 #get the index of the mzAxis
-                indexMz<-which(mz-0.4 < mzAxis & mzAxis < mz+0.4)
+                thLarge<-max(0.4,mz*(ppm/2)/10^6)
+                indexMz<-which(mz-thLarge < mzAxis & mzAxis < mz+thLarge)
                 
                 indLim <- set@timeLimit[[basename(file)]]
                 n.limit <- dim(indLim)[2]

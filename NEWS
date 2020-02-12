@@ -1,3 +1,10 @@
+CHANGES IN VERSION 0.0.6
+------------------------------
+
+NEW FEATURE
+
+    o findIsotope function to find isotope clusters in the final peak table 
+
 CHANGES IN VERSION 0.0.4
 ------------------------------
 

@@ -324,7 +324,7 @@ eSet <- ptairMS::impute(eSet,  exhaledSet)
 ```
 
 ## Annotation
-`ptairMS` propose a putative annotation based on the database described in [@de_lacy_costello_review_2014],with the annotateVOC function. Applied to an expression set, it write in the features metadata all possible formulas and names found.  
+`ptairMS` propose a putative annotation based on the database described in [@de_lacy_costello_review_2014],with the annotateVOC function. Applied to an expression set, it write in the features metadata all possible formulas, names foun, and the isotopes for nuclide C13, O17 and O18. 
 
 ```{r}
 annotateVOC(59.049)
@@ -346,6 +346,12 @@ X<-Biobase::exprs(eSet)
 SMD<-Biobase::pData(eSet)
 features<-Biobase::fData(eSet)
 ropls::view(log2(X),printL = FALSE)
+```
+
+Delete the isotope features:
+```{r}
+isotope<-Biobase::fData(eSet)[,"isotope"]
+X<-X[! (row.names(X)  %in% isotope[!is.na(isotope)]),]
 ```
 
 ```{r}

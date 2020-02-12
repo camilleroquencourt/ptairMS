@@ -4,7 +4,7 @@ test_annotateVOC<- function(){
   bacteria_dir.c <- system.file("extdata/mycobacteria",  package = "ptairData")
   bacteria.ptrset <- createPtrSet(bacteria_dir.c, setName = "bacteria",
                                   mzCalibRef = c(21.022,59.049), fracMaxTIC = 0.8, saveDir = NULL)
-  bacteria.ptrset <- detectPeak(bacteria.ptrset, mzNominal = c(21,59))
+  bacteria.ptrset <- detectPeak(bacteria.ptrset, mzNominal = c(21,59,60))
   bacteria.eset <- alignSamples(bacteria.ptrset)
   
   # numeric vector
@@ -25,6 +25,17 @@ test_annotateVOC<- function(){
   
 }
 
+test_isotope<-function(){
+  directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+  bacteria.ptrset <- createPtrSet(directory, setName = "bacteria",
+  mzCalibRef = c(21.022,59.049))
+  bacteria.ptrset <- detectPeak(bacteria.ptrset,mz=c(59,60))
+  bacteria.eset <- alignSamples(bacteria.ptrset,fracGroup=1,bgThreshold = 0)
+  bacteria.eset <-findIsotope(bacteria.eset)
+  testthat::expect_equal( Biobase::fData(bacteria.eset)[1,"isotope"],row.names(Biobase::fData(bacteria.eset))[2])
+}
+
 
 test_that("annotateVOC function",test_annotateVOC())
+test_that("findIsotope function",test_isotope())
   

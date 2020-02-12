@@ -948,3 +948,8 @@ methods::setMethod("show","ptrRaw",
             
           })
 
+#### dead time correction -----
+deadTimeCorr<-function(raw,ve,vne,r){
+  rawM <- raw@rawM  
+  
+}
