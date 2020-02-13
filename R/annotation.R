@@ -279,7 +279,7 @@ formula2mass <- function(formulaVc,
          function(formC) {
            .form2mass(formC, elemVn, protonizeL)
          },FUN.VALUE = 1.01,
-         USE.NAMES = FALSE)
+         USE.NAMES = TRUE)
   
 }
 
