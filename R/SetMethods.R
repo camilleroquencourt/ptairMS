@@ -626,8 +626,13 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
     if (showVocDB){
       vocdbDF <- .loadVocDB()
       
+      vocdb_sel.vl <- vocdbDF[, "mass_Hplus"] >= mzRange[1] &
+        vocdbDF[, "mass_Hplus"] <= mzRange[2]
       
-      vocdbDF <- vocdbDF[vocdbDF[, "mz_Hplus"] >= mzRange[1] & vocdbDF[, "mz_Hplus"] <= mzRange[2], ]
+      if (sum(vocdb_sel.vl)) {
+      vocdbDF <- vocdbDF[vocdb_sel.vl, , drop = FALSE]
+      } else
+        vocdbDF <- NULL
       
       #if (nrow(vocdbDF) > 0) {
         #vocMatrixVc = c("faeces", "urine", "breath", "skin", "milk", "blood", "saliva")
@@ -642,8 +647,7 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
           #                             }
          #                            })
         #vocdbDF <- vocdbDF[ grepl("breath", vocdbDF[, "sample"]), , drop = FALSE]
-        if (nrow(vocdbDF) == 0)
-          vocdbDF <- NULL
+ 
       #}
     } else
       vocdbDF <- NULL
@@ -717,7 +721,7 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
              
              if (showVocDB && !is.null(vocdbDF)) {
                mzImaVn <- as.numeric(colnames(imageMN))
-               abline(h = vapply(vocdbDF[, "mz_Hplus"],
+               abline(h = vapply(vocdbDF[, "mass_Hplus"],
                                  function(mzN)
                                    (mzN - min(mzImaVn))/diff(range(mzImaVn)) * ncol(imageMN) + par("usr")[1],
                                  FUN.VALUE = 1.1),
@@ -749,7 +753,7 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
              
              if (showVocDB && !is.null(vocdbDF) ) {
                
-               abline(h = vocdbDF[, "mz_Hplus"], lty = "dotted")
+               abline(h = vocdbDF[, "mass_Hplus"], lty = "dotted")
                
              }
              
@@ -812,7 +816,7 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
   # print voc ref 
   if (!is.null(vocdbDF)) {
     vocdbDF <- vocdbDF[nrow(vocdbDF):1, , drop = FALSE]
-    print(vocdbDF[, c("mz_Hplus", "formula_Hplus", "cas.name"), drop = FALSE])
+    print(vocdbDF[, c("mass_Hplus", "formula_Hplus", "name_iupac"), drop = FALSE])
   }
 })
 

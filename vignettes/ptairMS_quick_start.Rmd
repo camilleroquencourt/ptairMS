@@ -1,6 +1,6 @@
 ---
-title: "ptairMS: Processing and analysis of PTR-TOF-MS data, quick Start"
-author: "Camille Roquencourt, Paul Zang, Pierrick Roger and Etienne Thevenot"
+title: "ptairMS: Processing and analysis of PTR-TOF-MS data: quick start"
+author: "Camille Roquencourt, Paul Zheng, Pierrick Roger and Etienne Thevenot"
 package: "`r pkg_ver('ptairMS')`"
 vignette: >
   %\VignetteIndexEntry{ptairMS: Processing and analysis of PTR-TOF-MS data, quick Start}
@@ -24,9 +24,9 @@ library(ptairData)
 
 # Introduction
 
-The _**ptairMS**_ package provides a workflow to process PTR-TOF-MS raw data in the open Hierarchical Data Format 5 ([HDF5](https://www.hdfgroup.org/); .h5 extension), and generate the peak table as an `ExpressionSet` object for subsequent data analysis with the many methods and packages available in [R](https://www.r-project.org/). 
+The _**ptairMS**_ package provides a workflow to process PTR-TOF-MS raw data in the open Hierarchical Data Format 5 ([HDF5](https://www.hdfgroup.org/); .h5 extension), and to generate the peak table as an `ExpressionSet` object for subsequent data analysis with the many methods and packages available in [R](https://www.r-project.org/). 
 
-We present in this vignette a quick handling of this package, and application to two dataset : exhaled air, mycobacteria culture air. For more details on the parameters choice and algorithm, see ptairMS vignette. 
+We present in this vignette a quick handling of this package, and application to two datasets: exhaled breath and mycobacteria culture headspace. For more details on the parameters choice and algorithm, see thptairMS vignette. 
 
 # `ptairData` package
 
@@ -168,7 +168,7 @@ plot(pca,type="x-score", parAsColFcVn=SMD$subfolder)
 
 dim1<-ropls::getLoadingMN(pca)[,1]
 barplot(sort(abs(dim1),decreasing = TRUE))
-knitr::kable(head(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_formula_Hplus","vocDB_cas.name")]))
+knitr::kable(head(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_formula_Hplus","vocDB_name_iupac")]))
 ```
 
 `plotFeatures` plot for all files the average spectrum baseline corrected of all expirations, and background superimposed as a dashed line. 
@@ -233,7 +233,7 @@ plot(pca,type="x-score",parAsColFcVn=SMD$subfolder,parEllipsesL=FALSE)
 
 dim1<-ropls::getLoadingMN(pca)[,1]
 barplot(sort(abs(dim1),decreasing = TRUE))
-knitr::kable(head(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_formula_Hplus","vocDB_cas.name")]))
+knitr::kable(head(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_formula_Hplus","vocDB_name_iupac")]))
 ```
 
 

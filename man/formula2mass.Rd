@@ -4,12 +4,12 @@
 \alias{formula2mass}
 \title{Compute exact mass.}
 \usage{
-formula2mass(formulaVc, protonizeL = TRUE)
+formula2mass(formula.vc, protonize.l = TRUE)
 }
 \arguments{
-\item{formulaVc}{Vector of molecular formulas.}
+\item{formula.vc}{Vector of molecular formulas.}
 
-\item{protonizeL}{Should a proton be added to the formula?}
+\item{protonize.l}{Should a proton be added to the formula?}
 }
 \value{
 Vector of the corresponding (protonated) masses.

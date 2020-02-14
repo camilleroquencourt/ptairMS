@@ -1,3 +1,10 @@
+CHANGES IN VERSION 0.0.8
+------------------------------
+
+NEW FEATURE
+
+    o annotateVOC: new version of vocDB based on the Human Breathomics Database 
+
 CHANGES IN VERSION 0.0.6
 ------------------------------
 

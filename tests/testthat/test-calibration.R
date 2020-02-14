@@ -4,6 +4,7 @@ test_calib<-function(){
   # Error
   testthat::expect_error(calibration(NULL))
 
+  library(ptairData)
   filePath <-  system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
   file <- readRaw(filePath,calibTIS = FALSE)
 

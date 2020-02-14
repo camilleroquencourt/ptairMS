@@ -7,16 +7,15 @@
 #'
 #' @param x Expression set object (resp. data.frame) (resp. numeric vector) containing
 #' the PTR-MS processed data (resp. containing a column with the mz values) (resp. containing the mz values)
-#' @param mzColname Character: column name from the fData (resp. from the data.frame) containing
+#' @param massHplusColname Character: column name from the fData (resp. from the data.frame) containing
 #' the mz values; if set to NA, featureNames from the Expression set (resp. row.names
 #' from the data.frame) will be converted to numerics and used
 #' @param ppm Numeric: tolerance
 #' @param prefix Character: prefix for the new 'annotation' columns [default: 'vocDB_']
 #' @param fields Characer vector: fields of the 'vocDB' database to be queried among:
-#' 'mz_Hplus' [default], 'formula_Hplus' [default], 'name' [default], 
-#' reference', 'cas', 'chebi', 'chebi.formula', 'chebi.monoisotopic.mass',
-#' 'chebi.name', 'chebi.inchi', 'chebi.kegg.compound.id'
-#' @param ... Additional parameters to be passed to the internal function
+#' 'mass_Hplus' [default], 'formula_Hplus' [default], 'formula', 'mass_monoiso',
+#' 'name_iupac' [default], 'pubchem_cid', 'inchi', 'inchikey', 'ref_year',
+#' 'ref_pmid', 'disease_name', 'disease_meshid'
 #' @return Returns the Expression set with additional columns in the fData (resp.
 #' the data.frame with additional columns) (resp. a data.frame with columns)
 #' containing the matched 'mz', 'formula', 'name', 'reference', and 'matrix' putative annotations
@@ -28,28 +27,28 @@
 #' bacteria.ptrset <- detectPeak(bacteria.ptrset)
 #' bacteria.eset <- alignSamples(bacteria.ptrset)
 #' bacteria.eset <- annotateVOC(bacteria.eset)
-#' Biobase::fData(bacteria.eset)
+#' Biobase::fData(bacteria.eset)[, c("vocDB_mass_Hplus", "vocDB_formula_Hplus")]
 #' @rdname annotation
 #' @export
 setMethod("annotateVOC", "ExpressionSet",
           function(x,
-                   mzColname = NA,ppm = 20, prefix = "vocDB_",
-                   fields = c("mz_Hplus",
+                   massHplusColname = NA, ppm = 20, prefix = "vocDB_",
+                   fields = c("mass_Hplus",
                               "formula_Hplus",
-                              "cas.name",
-                              "reference",
-                              "cas",
-                              "chebi",
-                              "chebi.formula",
-                              "chebi.monoisotopic.mass",
-                              "chebi.name",
-                              "chebi.inchi",
-                              "kegg.compound.id")[c(1,2,3)],
-                   ...) {
+                              "formula",
+                              "mass_monoiso",
+                              "name_iupac",
+                              "pubchem_cid",
+                              "inchi",
+                              "inchikey",
+                              "ref_year",
+                              "ref_pmid",
+                              "disease_name",
+                              "disease_meshid")[c(1,2,5)]) {
             
             fdataDF <- Biobase::fData(x)
             
-            if (is.na(mzColname)) {
+            if (is.na(massHplusColname)) {
               if (is.null(rownames(fdataDF)))
                 stop("The 'mz' column name is missing and rownames from fData are NULL.",
                      call. = FALSE)
@@ -59,23 +58,26 @@ setMethod("annotateVOC", "ExpressionSet",
                      call. = FALSE)
             } else {
               
-              mzColnameI <- grep(mzColname, colnames(fdataDF))
+              massHplusColnameI <- grep(massHplusColname, colnames(fdataDF))
               
-              if (length(mzColnameI) != 1)
-                stop("No or multiple columns found in the fdataDF with the '", mzColname, "' name.",
+              if (length(massHplusColnameI) != 1)
+                stop("No or multiple columns found in the fdataDF with the '", massHplusColname, "' name.",
                      call. = FALSE)
               
-              mzVn <- fdataDF[, mzColnameI]
+              mzVn <- fdataDF[, massHplusColnameI]
               
             }
             
-            annotateDF <- .annotate(mz_Hplus = mzVn, ppm, prefix,fields,...)
+            annotateDF <- .annotate(mass_Hplus = mzVn,
+                                    ppm = ppm,
+                                    prefix = prefix,
+                                    fields = fields)
             
             for (annotateC in colnames(annotateDF))
               fdataDF[, annotateC] <- annotateDF[, annotateC]
             
             Biobase::fData(x) <- fdataDF
-            x<-findIsotope(x)
+            x <- findIsotope(x)
             
             x
             
@@ -83,14 +85,46 @@ setMethod("annotateVOC", "ExpressionSet",
 
 ## annotateVOC (data.frame) ----
 
+#' @param x Data frame containing a column with the protonized mass values
+#' @param massHplusColname Character: column name from the data.frame containing
+#' the mz values; if set to NA, row.names from the data.frame will be converted to numerics and used
+#' @param ppm Numeric: tolerance
+#' @param prefix Character: prefix for the new 'annotation' columns [default: 'vocDB_']
+#' @param fields Characer vector: fields of the 'vocDB' database to be queried among:
+#' 'mass_Hplus' [default], 'formula_Hplus' [default], 'formula', 'mass_monoiso',
+#' 'name_iupac' [default], 'pubchem_cid', 'inchi', 'inchikey', 'ref_year',
+#' 'ref_pmid', 'disease_name', 'disease_meshid'
+#' @return Returns the data.frame with additional columns containing the vocDB informations
+#' for the matched mass_Hplus values
+#' @examples
+#' library(ptairData)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' bacteria.ptrset <- createPtrSet(directory, setName = "bacteria",
+#' mzCalibRef = c(21.022,59.049))
+#' bacteria.ptrset <- detectPeak(bacteria.ptrset)
+#' bacteria.eset <- alignSamples(bacteria.ptrset)
+#' bacteria_fdata.df <- Biobase::fData(bacteria.eset)
+#' bacteria_fdata.df <- annotateVOC(bacteria_fdata.df)
+#' bacteria_fdata.df[, c("vocDB_mass_Hplus", "vocDB_formula_Hplus")]
 #' @rdname annotation
 #' @export
 setMethod("annotateVOC", "data.frame",
           function(x,
-                   mzColname = NA,
-                   ...) {
+                   massHplusColname = NA, ppm = 20, prefix = "vocDB_",
+                   fields = c("mass_Hplus",
+                              "formula_Hplus",
+                              "formula",
+                              "mass_monoiso",
+                              "name_iupac",
+                              "pubchem_cid",
+                              "inchi",
+                              "inchikey",
+                              "ref_year",
+                              "ref_pmid",
+                              "disease_name",
+                              "disease_meshid")[c(1,2,5)]) {
             
-            if (is.na(mzColname)) {
+            if (is.na(massHplusColname)) {
               if (is.null(rownames(x)))
                 stop("The 'mz' column name is missing and rownames are 'NULL'.",
                      call. = FALSE)
@@ -100,17 +134,17 @@ setMethod("annotateVOC", "data.frame",
                      call. = FALSE)
             } else {
               
-              mzColnameI <- grep(mzColname, colnames(x))
+              massHplusColnameI <- grep(massHplusColname, colnames(x))
               
-              if (length(mzColnameI) != 1)
-                stop("No or multiple columns found with the '", mzColname, "' name.",
+              if (length(massHplusColnameI) != 1)
+                stop("No or multiple columns found with the '", massHplusColname, "' name.",
                      call. = FALSE)
               
-              mzVn <- x[, mzColnameI]
+              mzVn <- x[, massHplusColnameI]
               
             }
             
-            annotateDF <- .annotate(mz_Hplus = mzVn, ...)
+            annotateDF <- .annotate(mass_Hplus = mzVn)
             
             for (annotateC in colnames(annotateDF))
               x[, annotateC] <- annotateDF[, annotateC]
@@ -121,54 +155,86 @@ setMethod("annotateVOC", "data.frame",
 
 ## annotateVOC (numeric) ----
 
+#' @param x Numeric vector containing containing the protonized mass values
+#' @param ppm Numeric: tolerance
+#' @param prefix Character: prefix for the new 'annotation' columns [default: 'vocDB_']
+#' @param fields Characer vector: fields of the 'vocDB' database to be queried among:
+#' 'mass_Hplus' [default], 'formula_Hplus' [default], 'formula', 'mass_monoiso',
+#' 'name_iupac' [default], 'pubchem_cid', 'inchi', 'inchikey', 'ref_year',
+#' 'ref_pmid', 'disease_name', 'disease_meshid'
+#' @return Returns the a data.frame with columns containing the vocDB informations
+#' for the matched mass_Hplus values
+#' @examples
+#' library(ptairData)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' bacteria.ptrset <- createPtrSet(directory, setName = "bacteria",
+#' mzCalibRef = c(21.022,59.049))
+#' bacteria.ptrset <- detectPeak(bacteria.ptrset)
+#' bacteria.eset <- alignSamples(bacteria.ptrset)
+#' bacteria.eset <- annotateVOC(bacteria.eset)
+#' massHplus.vn <- as.numeric(Biobase::featureNames(bacteria.eset))
+#' annotateVOC(massHplus.vn)[, c("vocDB_mass_Hplus", "vocDB_formula_Hplus")]
 #' @rdname annotation
 #' @export
 setMethod("annotateVOC", "numeric",
-          function(x, ...) {
+          function(x,
+                   ppm = 20,
+                   prefix = "vocDB_",
+                   fields = c("mass_Hplus",
+                              "formula_Hplus",
+                              "formula",
+                              "mass_monoiso",
+                              "name_iupac",
+                              "pubchem_cid",
+                              "inchi",
+                              "inchikey",
+                              "ref_year",
+                              "ref_pmid",
+                              "disease_name",
+                              "disease_meshid")[c(1,2,5)]) {
             
             if (!is.numeric(x))
-              stop("'mz' values must be of 'numeric' mode.", call. = FALSE)
+              stop("Protonized mass values must be of 'numeric' mode.", call. = FALSE)
             
-            .annotate(mz_Hplus = x, ...)
+            .annotate(mass_Hplus = x,
+                      ppm = ppm,
+                      prefix = prefix,
+                      fields = fields)
             
             
           })
 
-.annotate <- function(mz_Hplus,
+.annotate <- function(mass_Hplus,
                       ppm = 20,
                       prefix = "vocDB_",
-                      fields = c("mz_Hplus",
+                      fields = c("mass_Hplus",
                                  "formula_Hplus",
-                                 "cas.name",
-                                 "reference",
-                                 "cas",
-                                 "chebi",
-                                 "chebi.formula",
-                                 "chebi.monoisotopic.mass",
-                                 "chebi.name",
-                                 "chebi.inchi",
-                                 "kegg.compound.id")[c(1,2,3)]) {
+                                 "formula",
+                                 "mass_monoiso",
+                                 "name_iupac",
+                                 "pubchem_cid",
+                                 "inchi",
+                                 "inchikey",
+                                 "ref_year",
+                                 "ref_pmid",
+                                 "disease_name",
+                                 "disease_meshid")[c(1,2,5)]) {
   
-  if (!is.numeric(mz_Hplus))
-    stop("'mz_Hplus' must be of 'numeric' mode.", call. = FALSE)
+  if (!is.numeric(mass_Hplus))
+    stop("'mass_Hplus' must be of 'numeric' mode.", call. = FALSE)
   
   vocdbDF <- .loadVocDB()
   
-  
-  matrixVc <- c("blood", "breath", "faeces", "milk", "saliva", "skin", "urine")
-  
+ 
   fielddbVl <- fields %in% colnames(vocdbDF)
   names(fielddbVl) <- fields
-  if ("matrix" %in% names(fielddbVl))
-    fielddbVl["matrix"] <- TRUE
-  if (sum(!fielddbVl) > 0) {
-    warnings("The following fields were not found in the vocDB database and will be ignored:\n", paste(fields[!fielddbVl], collapse = ", "))
-  }
-  fields <- fields[fielddbVl]
-  if ("matrix" %in% fields && length(matrixVc) == 0)
-    fields <- setdiff(fields, "matrix")
   
-  annotateDF <- data.frame(row.names = as.character(mz_Hplus),
+  if (sum(!fielddbVl) > 0)
+    warnings("The following fields were not found in the vocDB database and will be ignored:\n", paste(fields[!fielddbVl], collapse = ", "))
+
+  fields <- fields[fielddbVl]
+  
+  annotateDF <- data.frame(row.names = as.character(mass_Hplus),
                            stringsAsFactors = FALSE)
   
   for (fieldC in fields)
@@ -176,27 +242,12 @@ setMethod("annotateVOC", "numeric",
   
   for (i in seq_len(nrow(annotateDF))) {
     
-    mzN <- mz_Hplus[i]
-    vocVi <- which(abs(mzN - vocdbDF[, "mz_Hplus"]) < ppm * 1e-6 * mzN)
+    mzN <- mass_Hplus[i]
+    vocVi <- which(abs(mzN - vocdbDF[, "mass_Hplus"]) < ppm * 1e-6 * mzN)
     
     if (length(vocVi) > 0) {
       
       for (fieldC in fields) {
-        
-        if (fieldC == "matrix") {
-          
-          vocMatrixVc <- character()
-          
-          for (k in seq_along(vocVi)) {
-            
-            vocMatrixVl <- as.logical(vocdbDF[vocVi[k], matrixVc, drop = TRUE])
-            vocMatrixVc <- c(vocMatrixVc, matrixVc[vocMatrixVl]) 
-            
-          }
-          
-          annotateDF[i, paste0(prefix, "matrix")] <- paste(sort(unique(vocMatrixVc)), collapse = ", ")
-          
-        } else {
           
           vocFieldVc <- character()
           
@@ -214,9 +265,6 @@ setMethod("annotateVOC", "numeric",
           }
           
           annotateDF[i, paste0(prefix, fieldC)] <- paste(sort(unique(vocFieldVc)), collapse = ", ")
-          
-          
-        }
         
       }
       
@@ -232,14 +280,15 @@ setMethod("annotateVOC", "numeric",
 .loadVocDB <- function() {
   
   vocdbDF <- utils::read.table(file = system.file("extdata/reference_tables/vocDB.tsv",
-                                           package = "ptairMS"),
-                        comment.char = "",
-                        header = TRUE,
-                        quote = "",
-                        sep = "\t",
-                        stringsAsFactors = FALSE)
+                                                  package = "ptairMS"),
+                               check.names = FALSE,
+                               comment.char = "",
+                               header = TRUE,
+                               quote = "\"",
+                               sep = "\t",
+                               stringsAsFactors = FALSE)
   
-  vocdbDF[, "mz_Hplus"] <- floor(vocdbDF[, "mz_Hplus"] * 1e5) / 1e5
+  vocdbDF[, "mass_Hplus"] <- floor(vocdbDF[, "mass_Hplus"] * 1e5) / 1e5
   
   vocdbDF
   
@@ -253,150 +302,160 @@ setMethod("annotateVOC", "numeric",
 #'
 #' Compute exact mass from an elemental formula
 #'
-#' @param formulaVc Vector of molecular formulas.
-#' @param protonizeL Should a proton be added to the formula?
+#' @param formula.vc Vector of molecular formulas.
+#' @param protonize.l Should a proton be added to the formula?
 #' @return Vector of the corresponding (protonated) masses.
 #' @export
 #' @examples
 #' formula2mass("CO2")
-formula2mass <- function(formulaVc,
-                         protonizeL = TRUE) {
+formula2mass <- function(formula.vc,
+                         protonize.l = TRUE) {
   
   ## Gross, J. (2004). Mass spectrometry: a textbook (Springer). p70.
   ## http://www.ciaaw.org/atomic-masses.htm
   
-  elemDF <- utils::read.table(system.file("extdata/reference_tables/elements.tsv",
-                                   package = "ptairMS"),
-                       header = TRUE,
-                       quote = "\"",
-                       sep = "\t",
-                       stringsAsFactors = FALSE)
+  elements.df <- utils::read.table(system.file("extdata/reference_tables/elements.tsv",
+                                               package = "ptairMS"),
+                                   header = TRUE,
+                                   quote = "\"",
+                                   sep = "\t",
+                                   stringsAsFactors = FALSE)
   
-  elemVn <- elemDF[, "mass"]
-  names(elemVn) <- elemDF[, "symbol"]
+  elements.vn <- elements.df[, "mass"]
+  names(elements.vn) <- elements.df[, "symbol"]
   
-  vapply(formulaVc,
-         function(formC) {
-           .form2mass(formC, elemVn, protonizeL)
-         },FUN.VALUE = 1.01,
-         USE.NAMES = TRUE)
+  mass_and_formula.mat <- vapply(formula.vc,
+                                function(formula.c) {
+                                  ptairMS:::.formula2mass(formula.c = formula.c,
+                                                elements.vn = elements.vn,
+                                                protonize.l = protonize.l)
+                                }, FUN.VALUE = list(mass = 12, formula = "C"),
+                                USE.NAMES = FALSE)
+  
+  mass_and_formula.vn <- unlist(mass_and_formula.mat[1, ])
+  names(mass_and_formula.vn) <- unlist(mass_and_formula.mat[2, ])
+  
+  return(mass_and_formula.vn)
   
 }
 
-.form2mass <- function(frmC, eleVn, proL) {
+.formula2mass <- function(formula.c, elements.vn, protonize.l) {
   
-  if (frmC == "[H6-16O2-18O+H]+") {
-    masN <- 57.04
-    names(masN) <- frmC
-    return(masN)
-  } else if (frmC == "[C2H6-34S+H]+") {
-    masN <- 65.04362859832
-    names(masN) <- frmC
-    return(masN)
+  if (formula.c == "[H6-16O2-18O+H]+") {
+    mass.n <- 57.04
+    names(mass.n) <- formula.c
+    return(mass.n)
+  } else if (formula.c == "[C2H6-34S+H]+") {
+    mass.n <- 65.04362859832
+    names(mass.n) <- formula.c
+    return(mass.n)
   }
   
-  if (grepl("[", frmC, fixed = TRUE))
-    frmC <- substr(frmC, 2, nchar(frmC))
+  if (grepl("[", formula.c, fixed = TRUE))
+    formula.c <- substr(formula.c, 2, nchar(formula.c))
   
-  if (grepl("+H]+", frmC, fixed = TRUE))
-    frmC <- gsub("+H]+", "H+", frmC, fixed = TRUE)
+  if (grepl("+H]+", formula.c, fixed = TRUE))
+    formula.c <- gsub("+H]+", "H+", formula.c, fixed = TRUE)
   
-  if (substr(frmC, nchar(frmC), nchar(frmC)) == "+") {
+  if (substr(formula.c, nchar(formula.c), nchar(formula.c)) == "+") {
     ## formula is already protonized (e.g. Herbig09)
     
     ## removing the final '+'
-    frmC <- substr(frmC, 1, nchar(frmC) - 1)
+    formula.c <- substr(formula.c, 1, nchar(formula.c) - 1)
     
-    atoVn <- .findAtom(frmC, eleVn)
+    atoms.vn <- .findAtom(formula.c = formula.c,
+                          elements.vn = elements.vn)
     
     ## removing one 'H'
-    if (atoVn["H"] == 1) {
-      atoVn <- atoVn[!(names(atoVn) == "H")]
+    if (atoms.vn["H"] == 1) {
+      atoms.vn <- atoms.vn[!(names(atoms.vn) == "H")]
     } else
-      atoVn["H"] <- atoVn["H"] - 1
+      atoms.vn["H"] <- atoms.vn["H"] - 1
     
-    proL <- TRUE
+    protonize.l <- TRUE
     
   } else {
     
-    atoVn <- .findAtom(frmC, eleVn)
+    atoms.vn <- .findAtom(formula.c = formula.c,
+                          elements.vn = elements.vn)
     
   }
   
-  masN <- sum(eleVn[names(atoVn)] * atoVn)
+  mass.n <- sum(elements.vn[names(atoms.vn)] * atoms.vn)
   
-  atoVc <- as.character(atoVn)
-  atoVc[atoVc == "1"] <- ""
-  frmC <- paste(paste0(names(atoVn),
-                       atoVc),
+  atoms.vc <- as.character(atoms.vn)
+  atoms.vc[atoms.vc == "1"] <- ""
+  formula.c <- paste(paste0(names(atoms.vn),
+                       atoms.vc),
                 collapse = "")
   
-  if (proL) {
+  if (protonize.l) {
     
-    masN <- masN + eleVn["proton"]
-    frmC <- paste0("[", frmC, "+H]+")
+    mass.n <- mass.n + elements.vn["proton"]
+    formula.c <- paste0("[", formula.c, "+H]+")
     
   }
   
-  names(masN) <- frmC
+  # names(mass.n) <- formula.c
   
-  return(masN)
+  return(list(mass = unname(mass.n),
+              formula = formula.c))
   
 }
 
-.findAtom <- function(frmC, eleVn) {
+.findAtom <- function(formula.c, elements.vn) {
   
-  frmSplVc <- unlist(strsplit(frmC, ""))
-  atoVn <- numeric()
-  atoI <- 0
-  splI <- 1
-  while (splI <= length(frmSplVc)) {
-    atoI <- atoI + 1
-    if (splI == length(frmSplVc)) {
-      atoVn <- c(atoVn, 1)
-      names(atoVn)[atoI] <- frmSplVc[splI]
+  formula_split.vc <- unlist(strsplit(formula.c, ""))
+  atoms.vn <- numeric()
+  atom.i <- 0
+  split.i <- 1
+  while (split.i <= length(formula_split.vc)) {
+    atom.i <- atom.i + 1
+    if (split.i == length(formula_split.vc)) {
+      atoms.vn <- c(atoms.vn, 1)
+      names(atoms.vn)[atom.i] <- formula_split.vc[split.i]
       break
-    } else if (splI == length(frmSplVc) - 1 &&
-               frmSplVc[splI + 1] %in% letters) {
-      atoVn <- c(atoVn, 1)
-      names(atoVn)[atoI] <- paste0(frmSplVc[splI],
-                                   frmSplVc[splI + 1])
+    } else if (split.i == length(formula_split.vc) - 1 &&
+               formula_split.vc[split.i + 1] %in% letters) {
+      atoms.vn <- c(atoms.vn, 1)
+      names(atoms.vn)[atom.i] <- paste0(formula_split.vc[split.i],
+                                   formula_split.vc[split.i + 1])
       break
     } else {
-      atoVn <- c(atoVn, 0)
-      if (frmSplVc[splI + 1] %in% letters) {
-        names(atoVn)[atoI] <- paste0(frmSplVc[splI],
-                                     frmSplVc[splI + 1])
-        splI <- splI + 1
+      atoms.vn <- c(atoms.vn, 0)
+      if (formula_split.vc[split.i + 1] %in% letters) {
+        names(atoms.vn)[atom.i] <- paste0(formula_split.vc[split.i],
+                                     formula_split.vc[split.i + 1])
+        split.i <- split.i + 1
       } else
-        names(atoVn)[atoI] <- frmSplVc[splI]
+        names(atoms.vn)[atom.i] <- formula_split.vc[split.i]
       
-      numI <- 1
-      while ((splI + numI) <= length(frmSplVc) &&
-             !(frmSplVc[splI + numI] %in% LETTERS))
-        numI <- numI + 1
-      numI <- numI - 1
-      if (numI == 0) {
-        atoVn[atoI] <- 1
+      num.i <- 1
+      while ((split.i + num.i) <= length(formula_split.vc) &&
+             !(formula_split.vc[split.i + num.i] %in% LETTERS))
+        num.i <- num.i + 1
+      num.i <- num.i - 1
+      if (num.i == 0) {
+        atoms.vn[atom.i] <- 1
       } else {
-        atoVn[atoI] <- as.numeric(paste(frmSplVc[(splI + 1):(splI + numI)],
+        atoms.vn[atom.i] <- as.numeric(paste(formula_split.vc[(split.i + 1):(split.i + num.i)],
                                         collapse = ""))
       }
-      if ((splI + numI) == length(frmSplVc)) {
+      if ((split.i + num.i) == length(formula_split.vc)) {
         break
       } else
-        splI <- splI + numI + 1
+        split.i <- split.i + num.i + 1
     }
   }
-  atoVn <- table(rep(names(atoVn), times = atoVn))
-  if (any(!(names(atoVn) %in% names(eleVn)))) {
-    stop(paste(names(atoVn)[!(names(atoVn) %in% names(eleVn))],
+  atoms.vn <- table(rep(names(atoms.vn), times = atoms.vn))
+  if (any(!(names(atoms.vn) %in% names(elements.vn)))) {
+    stop(paste(names(atoms.vn)[!(names(atoms.vn) %in% names(elements.vn))],
                collapse = ", "), " mass(es) cannot be provided currently",
          call. = FALSE)
   }
-  atoVn <- atoVn[names(eleVn)[names(eleVn) %in% names(atoVn)]]
+  atoms.vn <- atoms.vn[names(elements.vn)[names(elements.vn) %in% names(atoms.vn)]]
   
-  atoVn
+  atoms.vn
   
 }
 
