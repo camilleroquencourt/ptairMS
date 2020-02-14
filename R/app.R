@@ -1,14 +1,14 @@
 
-#'Shinny app to modify expiration.
+#' Shinny app to modify expiration limits.
 #'  
-#'This function run a shiny app, where you can check the automatic expirations/head spaces detection, and modify it.  
+#' This function run a shiny app, where you can check the automatic expirations/head spaces detection, and modify it.  
 #'  
-#'@param ptrSet a ptrSet 
-#'@return the ptrSet object modified
-#'@examples
-#'library(ptairData)
-#'directory <- system.file("extdata/exhaledAir",  package = "ptairData")
-#'ptrSet <- createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049),fracMaxTIC=0.8)
+#' @param ptrSet a ptrSet 
+#' @return the ptrSet object modified
+#' @examples
+#' library(ptairData)
+#' directory <- system.file("extdata/exhaledAir",  package = "ptairData")
+#' ptrSet <- createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049),fracMaxTIC=0.8)
 #' \dontrun{ptrSet <- changeTimeLimits(ptrSet)}
 #' @export
 changeTimeLimits<-function(ptrSet){

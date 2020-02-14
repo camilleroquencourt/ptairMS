@@ -182,8 +182,8 @@ aggregate <- function(subGroupPeak, n.exp) {
 #' @param ... not used
 #' @return an expressionSet (Biobase object), with annotaTion in features Data
 #' @examples 
-#'library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' library(ptairData)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 #' dirSet <- createPtrSet(directory,setName="test",mzCalibRef =c(21.022,59.049))
 #' dirSet <- detectPeak(dirSet,mzNominal=c(21,59))
 #' getSampleMetadata(dirSet)
@@ -273,7 +273,7 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
   ) 
   )
   
-  # fomratting the final matrix 
+  # formatting the final matrix 
   mat.final.Exp<-apply(groupMat[,c("quanti","Samples")], MARGIN=1, function(x){
     output<-rep(NA,nSample)
     ch.Area <- x[1]
@@ -351,15 +351,17 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
       }
     }
       
-      
-     
-      
   } else Xbg<-data.frame(row.names = rownames(X) )
  
 
+  # adding the ion_mass as the first column in the fData
+  Xbg <- cbind.data.frame(ion_mass = as.numeric(rownames(X)),
+                          as.data.frame(Xbg, stringsAsFactors = FALSE),
+                          stringsAsFactors = FALSE)
+  rownames(Xbg) <- rownames(X)
   
   
-  cat(paste(nrow(X),"peaks aligned \n"))
+  message(nrow(X), " peaks aligned")
  
   featureData <- Biobase::AnnotatedDataFrame(as.data.frame(Xbg))
   sampleMetadata<-as.data.frame(sampleMetadata[colnames(X),,drop=FALSE])
@@ -373,17 +375,17 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
 
 
 
-#'Impute missing values on an expression set from an ptrSet
+#' Impute missing values on an expression set from an ptrSet
 #'
-#'Imputing missing values by returning back to the raw data and fitting the 
-#'peak shape function on the noise / residuals
-#'@param eSet an expression set retun by alignSamples function 
-#'@param ptrSet processed by detectPeak function
-#'@return the same expression set as in input, with missing values imputing
-#'@export 
-#'@examples
-#'library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' Imputing missing values by returning back to the raw data and fitting the 
+#' peak shape function on the noise / residuals
+#' @param eSet an expression set retun by alignSamples function 
+#' @param ptrSet processed by detectPeak function
+#' @return the same expression set as in input, with missing values imputing
+#' @export 
+#' @examples
+#' library(ptairData)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 #' dirSet <- createPtrSet(directory,setName="test",mzCalibRef =c(21.022,59.049))
 #' dirSet <- detectPeak(dirSet,mzNominal=c(21,63))
 #' getSampleMetadata(dirSet)

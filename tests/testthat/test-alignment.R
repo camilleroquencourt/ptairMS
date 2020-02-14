@@ -46,7 +46,7 @@ test_alignSamples <- function(){
   
   #test filer
   eset <- alignSamples(dirSet,bgThreshold = 2)
-  testthat::expect_equal(ncol(Biobase::fData(eset)),6)
+  testthat::expect_equal(ncol(Biobase::fData(eset)),7)
   testthat::expect_equal(nrow(Biobase::exprs(eset)),1)
 }
 

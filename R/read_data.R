@@ -101,39 +101,39 @@ readRaw <- function(filePath, calibTIS=TRUE,
   return(raw)
 }
 
-#'Create a ptrSet object form a directoy
+#' Create a ptrSet object form a directoy
 #'
-#'This function creates a \code{\link[ptairMS]{ptrSet-class}} S4 object. It opens each file and: 
-#'\itemize{
-#'\item performs a calibration with \code{\link[ptairMS]{calibration}} function
-#'\item quantify the primary ion (H30+) with the isotope H3180+ mz 21.022 on the average total ion spectrum. 
-#'\item if \code{fracMaxTIC} is different to zero, calculates boundaries on the 
-#'Total Ion Spectrum (TIC) part of the spectrum where 
-#'the TIC intensity is higher than \code{fracMaxTIC * max(TIC)} to identify expirations or headspace analyze
-#'\item provides a default sampleMetadata based on the tree structure of the directory 
-#'(a \code{data.frame} with file names in rowname, and subfolder in column) 
-#'\item If \code{saveDir} is not null, the returned object will be saved in \code{.Rdata} in \code{saveDir} with 
-#'\code{setName} as name}
+#' This function creates a \code{\link[ptairMS]{ptrSet-class}} S4 object. It opens each file and: 
+#' \itemize{
+#' \item performs a calibration with \code{\link[ptairMS]{calibration}} function
+#' \item quantify the primary ion (H30+) with the isotope H3180+ mz 21.022 on the average total ion spectrum. 
+#' \item if \code{fracMaxTIC} is different to zero, calculates boundaries on the 
+#' Total Ion Spectrum (TIC) part of the spectrum where 
+#' the TIC intensity is higher than \code{fracMaxTIC * max(TIC)} to identify expirations or headspace analyze
+#' \item provides a default sampleMetadata based on the tree structure of the directory 
+#' (a \code{data.frame} with file names in rowname, and subfolder in column) 
+#' \item If \code{saveDir} is not null, the returned object will be saved in \code{.Rdata} in \code{saveDir} with 
+#' \code{setName} as name}
 #'
-#'@param dir character. a directory path which contains several h5 files, possibly organized in subfolder 
-#'@param setName character. The name of the ptrSet object. If `saveDir` is not null, the object will be saved with this name.
-#'@param mzCalibRef Vector of accurate mass values of intensive peaks and 'unique' in a 
+#' @param dir character. a directory path which contains several h5 files, possibly organized in subfolder 
+#' @param setName character. The name of the ptrSet object. If `saveDir` is not null, the object will be saved with this name.
+#' @param mzCalibRef Vector of accurate mass values of intensive peaks and 'unique' in a 
 #' nominal mass interval (without overlapping peaks) to performs calibration. See \code{ ?calibration}.
-#'@param fracMaxTIC Percentage (between 0 and 1) of the maximum of the Total Ion Chromatogram (TIC) 
+#' @param fracMaxTIC Percentage (between 0 and 1) of the maximum of the Total Ion Chromatogram (TIC) 
 #' amplitude with baseline removal. We will analyze only the part of the spectrum where 
 #' the TIC intensity is higher than `fracMaxTIC * max(TIC) `. If you want to analyze the entire spectrum, 
 #' set this parameter to 0. 
-#'@param saveDir The directory where the ptrSet object will be saved in .RData. If NULL, nothing will be saved.
-#'@return a ptrSet objet with slot :
-#'\itemize{
-#'\item Parameter: a list containing the parameters used for \code{createPrtSet}, \code{detectPeak} and 
-#'\code{alignTimePeriods} functions.  
-#'\item sampleMetadata: a data.frame containing infomration on the data, with file names in row names
-#'\item mzCalibRef: a list containing for each file the masses used for the calibration 
-#'(see \code{?ptairMS::calibration} for more details)
-#'\item signalCalibRef: the mz and intensity +- 0.4Da around the calibration masses
-#'\item errorCalibPpm: a list containing for each file the accuracy error in ppm at each calibration masses
-#'\item coefCalib: a list containing the calibration coeficients 'a' and 'b' that permit to convert tof to mz
+#' @param saveDir The directory where the ptrSet object will be saved in .RData. If NULL, nothing will be saved.
+#' @return a ptrSet objet with slot :
+#' \itemize{
+#' \item Parameter: a list containing the parameters used for \code{createPrtSet}, \code{detectPeak} and 
+#' \code{alignTimePeriods} functions.  
+#' \item sampleMetadata: a data.frame containing infomration on the data, with file names in row names
+#' \item mzCalibRef: a list containing for each file the masses used for the calibration 
+#' (see \code{?ptairMS::calibration} for more details)
+#' \item signalCalibRef: the mz and intensity +- 0.4Da around the calibration masses
+#' \item errorCalibPpm: a list containing for each file the accuracy error in ppm at each calibration masses
+#' \item coefCalib: a list containing the calibration coeficients 'a' and 'b' that permit to convert tof to mz
 #' for each file (see \code{?ptairMS::calibration} for more details.  
 #' \item resolution: the estimated resolution \eqn{m / \Delta m} for each calibration masses within each file
 #' \item TIC: The Total Ion Chromatogram for each file
@@ -143,14 +143,14 @@ readRaw <- function(filePath, calibTIS=TRUE,
 #' (the output of \code{detectPeak} function for each file, see \code{?ptairMS::detectPeak})
 #' \item peakListAligned: one peak list for each file, obtain after alignment betewwen all time period and backgroud.
 #' (the output of \code{alignTimePeriods} function)
-#'}
+#' }
 #'
-#'@export 
-#'@examples
-#'library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#'ptrSet<-createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049),
-#'fracMaxTIC=0.9,saveDir= NULL)
+#' @export 
+#' @examples
+#' library(ptairData)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' ptrSet<-createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049),
+#' fracMaxTIC=0.9,saveDir= NULL)
 createPtrSet<-function(dir, setName,
                        mzCalibRef= c(21.022, 29.013424, 41.03858, 59.049141,75.04406, 203.943, 330.8495),
                        fracMaxTIC=0.5,
@@ -222,21 +222,21 @@ createPtrSet<-function(dir, setName,
   return(ptrSet)
 }
 
-#'update a ptrSet object 
+#' update a ptrSet object 
 #'
 #' When new files are added to a directory which has already a ptrSet object associated, run \code{updatePtrSet}
 #' for add the new files to the object. The information on the new files are added to
 #' object with the same parameter used for the function \code{createPtrSet} who has created the object.
-#'\code{updatePtrSet} also delete from the ptrSet deleted files in the directory.
-#'@param ptrset a ptrset object 
-#'@return teh same ptrset object than ininput, but completed with new files and without deleted files in the directory
-#'@export
-#'@examples
-#'library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#'mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
-#'##add or delete files in the directory 
-#'mycobacteria<- updatePtrSet(mycobacteria)
+#' \code{updatePtrSet} also delete from the ptrSet deleted files in the directory.
+#' @param ptrset a ptrset object 
+#' @return teh same ptrset object than ininput, but completed with new files and without deleted files in the directory
+#' @export
+#' @examples
+#' library(ptairData)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#' ##add or delete files in the directory 
+#' mycobacteria<- updatePtrSet(mycobacteria)
 updatePtrSet<-function(ptrset){
 
   if(! methods::is(ptrset,"ptrSet")) stop("ptrset must be a ptrSet object. Use createPtrSet function")
@@ -415,7 +415,7 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC){
 }
 
 
-#'Convert a h5 file to mzML
+#' Convert a h5 file to mzML
 #'
 #' convert_to_mzML create a mzML file from a h5 file in the same directory with the \code{writeMLData} of
 #' the \code{MSnbase} package

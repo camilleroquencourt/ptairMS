@@ -15,7 +15,8 @@ output:
 
 
 # Introduction
-The _**ptairMS**_ package provides a workflow to process PTR-TOF-MS raw data in the open Hierarchical Data Format 5 ([HDF5](https://www.hdfgroup.org/); .h5 extension), and generate the peak table as an `ExpressionSet` object for subsequent data analysis with the many methods and packages available in [R](https://www.r-project.org/). Applications include the analysis of exhaled air, headspace or ambient air. The package offers several features to check the raw data and tune the few processing parameters. It also enables to include new samples in a study without re-processing all the previous data, providing a convenient management for cohort studies. 
+
+The _**ptairMS**_ package provides a workflow to process PTR-TOF-MS raw data in the open Hierarchical Data Format 5 ([HDF5](https://www.hdfgroup.org/); .h5 extension), and generate the peak table as an `ExpressionSet` object for subsequent data analysis with the many methods and packages available in [R](https://www.r-project.org/). Applications include the analysis of exhaled air, cell culture headspace or ambient air. The package offers several features to check the raw data and tune the few processing parameters. It also enables to include new samples in a study without re-processing all the previous data, providing a convenient management for cohort studies. 
 
 Proton Transfer Reaction - Mass Spectrometry (PTR-MS) has emerged with excellent sensitivity and specificity for VOC analysis in a wide range of applications, including environment, food quality, and biology [@blake_proton-transfer_2009]. In the area of health and care, PTR-MS opens up unique opportunities for real-time analysis “at the patient's bedside”.
 
@@ -362,7 +363,7 @@ plot(pca,type="x-loading")
 
 dim1<-ropls::getLoadingMN(pca)[,1]
 barplot(sort(abs(dim1),decreasing = TRUE))
-knitr::kable(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_formula_Hplus","vocDB_name_iupac")])
+knitr::kable(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_ion_formula","vocDB_name_iupac")])
 ```
 
 ## Processing only one raw file

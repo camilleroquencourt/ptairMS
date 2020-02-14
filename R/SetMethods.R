@@ -1,7 +1,7 @@
 utils::globalVariables(c("error","name","out","intervalRef","signal","signal0","signal1","Mz"))
 
-###plot----
-#'ptrSet object
+### plot ----
+#' ptrSet object
 #'
 #' @aliases plot.ptrSet plot,ptrSet-method
 #' @param x a ptrSet object 
@@ -12,13 +12,13 @@ utils::globalVariables(c("error","name","out","intervalRef","signal","signal0","
 #' @rdname plot
 #' @export
 #' @examples 
-#'library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#'mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
-#'plot(mycobacteria)
-#'plot(mycobacteria,typePlot="calibError")
-#'plot(mycobacteria,typePlot="resolution")
-#'plot(mycobacteria,typePlot="peakShape")
+#' library(ptairData)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#' plot(mycobacteria)
+#' plot(mycobacteria,typePlot="calibError")
+#' plot(mycobacteria,typePlot="resolution")
+#' plot(mycobacteria,typePlot="peakShape")
 methods::setMethod(f = "plot",
           signature = "ptrSet",
           function(x, y, typePlot= ""){
@@ -291,12 +291,12 @@ plotPeakShape<-function(set){
 #' @export
 #' @rdname plotCalib
 #' @examples 
-#'library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#'mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
-#'plotCalib(mycobacteria,fileNames=getFileNames(mycobacteria)[1])
+#' library(ptairData)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#' plotCalib(mycobacteria,fileNames=getFileNames(mycobacteria)[1])
 #'
-#'##ptrRaw 
+#' ##ptrRaw 
 #' filePath<-system.file("extdata/exhaledAir/ind1/ind1-1.h5", package = "ptairData")
 #' raw <- readRaw(filePath,mzCalibRef=c(21.022,59.049))
 #' plotCalib(raw)
@@ -367,7 +367,7 @@ methods::setMethod(f="plotCalib",
           })
 
 
-#'plot the Total Ion sptectrum (TIC) for one or several files.
+#' plot the Total Ion sptectrum (TIC) for one or several files.
 #' @param object ptrSet or ptrRaw S4 object
 #' @param type set "plotly" to get an interactive plot, and "ggplot" for classical plot.  
 #' @param baselineRm logical. If \code{TRUE}, remove the baseline of the TIC
@@ -386,9 +386,9 @@ methods::setMethod(f="plotCalib",
 #' @export
 #' @examples 
 #' library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#'mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022,59.049141))
-#'plotTIC(mycobacteria,type="ggplot")
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022,59.049141))
+#' plotTIC(mycobacteria,type="ggplot")
 methods::setMethod(f="plotTIC",
           signature = "ptrSet",
           function(object, type, baselineRm, showLimits, pdfFile=NULL, 
@@ -526,10 +526,10 @@ methods::setMethod(f="plotTIC",
 #' @rdname plotRaw
 #' @examples 
 #' library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#'ptrSet <- createPtrSet(dir= directory, setName="testDir",
-#'mzCalibRef= c(21.022, 59.049141))
-#'ptairMS::plotRaw(ptrSet,mzRange=59)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' ptrSet <- createPtrSet(dir= directory, setName="testDir",
+#' mzCalibRef= c(21.022, 59.049141))
+#' ptairMS::plotRaw(ptrSet,mzRange=59)
 #'
 #' patientRaw <- ptairMS::readRaw(system.file("extdata/exhaledAir/ind1/ind1-1.h5",  package = "ptairData"),
 #' mzCalibRef=c(21.022,59.049141,75.04406))
@@ -626,30 +626,14 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
     if (showVocDB){
       vocdbDF <- .loadVocDB()
       
-      vocdb_sel.vl <- vocdbDF[, "mass_Hplus"] >= mzRange[1] &
-        vocdbDF[, "mass_Hplus"] <= mzRange[2]
+      vocdb_sel.vl <- vocdbDF[, "ion_mass"] >= mzRange[1] &
+        vocdbDF[, "ion_mass"] <= mzRange[2]
       
       if (sum(vocdb_sel.vl)) {
       vocdbDF <- vocdbDF[vocdb_sel.vl, , drop = FALSE]
       } else
         vocdbDF <- NULL
-      
-      #if (nrow(vocdbDF) > 0) {
-        #vocMatrixVc = c("faeces", "urine", "breath", "skin", "milk", "blood", "saliva")
-        #vocdbDF[, "sample"] <- apply(as.matrix(vocdbDF[, vocMatrixVc]),
-          #                           1,
-          #                           function(matVi) {
-          #                             matVl <- as.logical(matVi)
-          #                             if (sum(matVl,na.rm = TRUE) == 0) {
-          #                               return("")
-          #                             } else {
-          #                               return(paste(vocMatrixVc[matVl], collapse = ", "))
-          #                             }
-         #                            })
-        #vocdbDF <- vocdbDF[ grepl("breath", vocdbDF[, "sample"]), , drop = FALSE]
- 
-      #}
-    } else
+     } else
       vocdbDF <- NULL
     
     
@@ -721,7 +705,7 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
              
              if (showVocDB && !is.null(vocdbDF)) {
                mzImaVn <- as.numeric(colnames(imageMN))
-               abline(h = vapply(vocdbDF[, "mass_Hplus"],
+               abline(h = vapply(vocdbDF[, "ion_mass"],
                                  function(mzN)
                                    (mzN - min(mzImaVn))/diff(range(mzImaVn)) * ncol(imageMN) + par("usr")[1],
                                  FUN.VALUE = 1.1),
@@ -753,7 +737,7 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
              
              if (showVocDB && !is.null(vocdbDF) ) {
                
-               abline(h = vocdbDF[, "mass_Hplus"], lty = "dotted")
+               abline(h = vocdbDF[, "ion_mass"], lty = "dotted")
                
              }
              
@@ -816,7 +800,7 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
   # print voc ref 
   if (!is.null(vocdbDF)) {
     vocdbDF <- vocdbDF[nrow(vocdbDF):1, , drop = FALSE]
-    print(vocdbDF[, c("mass_Hplus", "formula_Hplus", "name_iupac"), drop = FALSE])
+    print(vocdbDF[, c("ion_mass", "ion_formula", "name_iupac"), drop = FALSE])
   }
 })
 
@@ -991,9 +975,9 @@ methods::setMethod(f="plotFeatures",
 #' @export
 #' @examples 
 #' library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#'mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
-#'SMD<- resetSampleMetadata(mycobacteria)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#' SMD<- resetSampleMetadata(mycobacteria)
 resetSampleMetadata<-function(ptrset){
   
   dir<-ptrset@parameter$dir
@@ -1035,9 +1019,9 @@ resetSampleMetadata<-function(ptrset){
 #' @export
 #' @examples 
 #' library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#'mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
-#'SMD<-getSampleMetadata(mycobacteria)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#' SMD<-getSampleMetadata(mycobacteria)
 getSampleMetadata<- function(set){
   
   if(!methods::is(set,"ptrSet")) stop("set is not a ptrSet object")
@@ -1053,11 +1037,11 @@ getSampleMetadata<- function(set){
 #' @export
 #' @examples 
 #' library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#'mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
-#'SMD<-getSampleMetadata(mycobacteria)
-#'colnames(SMD)[1]<-"species"
-#'mycobacteria<-setSampleMetadata(mycobacteria,SMD)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#' SMD<-getSampleMetadata(mycobacteria)
+#' colnames(SMD)[1]<-"species"
+#' mycobacteria<-setSampleMetadata(mycobacteria,SMD)
 setSampleMetadata<- function(set, sampleMetadata){
   
   #check if set is ptrSet
@@ -1115,7 +1099,7 @@ exportSampleMetada<-function(set, saveFile){
 #' @export
 #' @examples 
 #' library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 #' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
 #' saveFile<-file.path(directory,"sampleMetadata.tsv")
 #' #exportSampleMetada(mycobacteria,saveFile)
@@ -1211,7 +1195,7 @@ methods::setMethod(f = "calibration",
             return(x)
           } )
 ## other ----
-#'get the files diretory of a ptrSet
+#' get the files diretory of a ptrSet
 #' @param ptrSet ptrSte object 
 #' @return the directory in absolute path as character
 #' @examples 
@@ -1232,7 +1216,7 @@ getDirectory<-function(ptrSet) return(ptrSet@parameter$dir)
 #' @export
 #' @examples 
 #' library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 #' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
 #' mycobacteria<-rmPeakList(mycobacteria)
 rmPeakList<-function(object){
@@ -1282,18 +1266,18 @@ getPeakList<-function(set){
             return(list(aligned=set@peakListAligned,raw=set@peakListRaw))}
 
 
-#'get the file names containing in the directory of a ptrSet
-#'@param object ptrSet object 
-#'@param fullNames logical: if \code{TRUE}, it return the the directory path is 
-#'prepended to the file names.
-#'@return a vector of character that contains all file names
+#' get the file names containing in the directory of a ptrSet
+#' @param object ptrSet object 
+#' @param fullNames logical: if \code{TRUE}, it return the the directory path is 
+#' prepended to the file names.
+#' @return a vector of character that contains all file names
 #' @examples 
 #' library(ptairData)
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 #' ptrSet<-createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049))
 #' getFileNames(ptrSet)
-#'@rdname getFileNames
-#'@export
+#' @rdname getFileNames
+#' @export
 methods::setMethod("getFileNames",signature = "ptrSet",
           function(object, fullNames){
             fileFullNames <- object@parameter$listFile

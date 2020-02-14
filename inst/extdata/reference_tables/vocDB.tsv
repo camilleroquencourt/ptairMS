@@ -1,4 +1,4 @@
-"mass_Hplus"	"formula_Hplus"	"formula"	"mass_monoiso"	"name_iupac"	"pubchem_cid"	"inchi"	"inchikey"	"ref_year"	"ref_pmid"	"disease_name"	"disease_meshid"
+"ion_mass"	"ion_formula"	"formula"	"mass_monoiso"	"name_iupac"	"pubchem_cid"	"inchi"	"inchikey"	"ref_year"	"ref_pmid"	"disease_name"	"disease_meshid"
 3.0229265	"[H2+H]+"	"H2"	"5.034"	"hydrogen monohydride"	"58838673"	"InChI=1S/H2/h1H"	"UFHFLCQGNIYNRP-UHFFFAOYSA-N"	"2014"	"24421258"	""	""
 10.0194595	"[Be+H]+"	"Be"	"9.012183"	"beryllium"	"5460467"	"InChI=1S/Be"	"ATBAMAFKBVZNFJ-UHFFFAOYSA-N"	"2017_2016_2014_2011_2009_2001_2000_1996_1992"	"28278063_27777105_24856577_20974744_19757293_11171753_10652683_8837677_1320822"	""	""
 17.0385765	"[CH4+H]+"	"CH4"	"16.0313"	"methane"	"297"	"InChI=1S/CH4/h1H4"	"VNWKTOKETHGBQD-UHFFFAOYSA-N"	"2014"	"24421258"	""	""

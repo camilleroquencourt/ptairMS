@@ -48,8 +48,8 @@ utils::globalVariables("::<-")
 #' have been detected, and background quantification. If the peak has not been deteted in 
 #' the background, last column is NA.
 #' @examples 
-#'library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' library(ptairData)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 #' dirSet <- createPtrSet(directory,setName="test")
 #' dirSet <- detectPeak(dirSet , mzNominal=59)
 #' getPeakList(dirSet)$aligned

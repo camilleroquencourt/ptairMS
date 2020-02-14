@@ -168,7 +168,7 @@ plot(pca,type="x-score", parAsColFcVn=SMD$subfolder)
 
 dim1<-ropls::getLoadingMN(pca)[,1]
 barplot(sort(abs(dim1),decreasing = TRUE))
-knitr::kable(head(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_formula_Hplus","vocDB_name_iupac")]))
+knitr::kable(head(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_ion_formula","vocDB_name_iupac")]))
 ```
 
 `plotFeatures` plot for all files the average spectrum baseline corrected of all expirations, and background superimposed as a dashed line. 
@@ -233,7 +233,7 @@ plot(pca,type="x-score",parAsColFcVn=SMD$subfolder,parEllipsesL=FALSE)
 
 dim1<-ropls::getLoadingMN(pca)[,1]
 barplot(sort(abs(dim1),decreasing = TRUE))
-knitr::kable(head(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_formula_Hplus","vocDB_name_iupac")]))
+knitr::kable(head(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_ion_formula","vocDB_name_iupac")]))
 ```
 
 

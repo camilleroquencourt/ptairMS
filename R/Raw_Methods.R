@@ -202,8 +202,8 @@ methods::setMethod(f = "plotRaw",
             if (showVocDB) {
               vocdbDF <- .loadVocDB()
               
-              vocdb_sel.vl <- vocdbDF[, "mass_Hplus"] >= mzRange[1] &
-                vocdbDF[, "mass_Hplus"] <= mzRange[2]
+              vocdb_sel.vl <- vocdbDF[, "ion_mass"] >= mzRange[1] &
+                vocdbDF[, "ion_mass"] <= mzRange[2]
               
               if (sum(vocdb_sel.vl)) {
                 vocdbDF <- vocdbDF[vocdb_sel.vl, , drop = FALSE]
@@ -295,7 +295,7 @@ methods::setMethod(f = "plotRaw",
                      
                      if (showVocDB && !is.null(vocdbDF)) {
                        mzImaVn <- as.numeric(colnames(imageMN))
-                       graphics::abline(h = vapply(vocdbDF[, "mass_Hplus"],
+                       graphics::abline(h = vapply(vocdbDF[, "ion_mass"],
                                          function(mzN)
                                            (mzN - min(mzImaVn))/diff(range(mzImaVn)) * ncol(imageMN) + par("usr")[1],
                                          FUN.VALUE =1.1 ),
@@ -327,7 +327,7 @@ methods::setMethod(f = "plotRaw",
                      
                      if (showVocDB && !is.null(vocdbDF)) {
                        
-                       graphics::abline(h = vocdbDF[, "mass_Hplus"], lty = "dotted")
+                       graphics::abline(h = vocdbDF[, "ion_mass"], lty = "dotted")
                        
                      }
                      
@@ -379,7 +379,7 @@ methods::setMethod(f = "plotRaw",
             
             if (showVocDB & !is.null(vocdbDF)) {
               vocdbDF <- vocdbDF[nrow(vocdbDF):1, , drop = FALSE]
-              print(vocdbDF[, c("mass_Hplus", "formula_Hplus", "name_iupac"),
+              print(vocdbDF[, c("ion_mass", "ion_formula", "name_iupac"),
                             drop = FALSE])
             }
             
@@ -606,7 +606,7 @@ methods::setMethod(f="plotCalib",
 } )
 
 
-##plotTIC----
+## plotTIC----
 #' @param fracMaxTIC Percentage (between 0 and 1) of the maximum of the Total Ion Chromatogram (TIC) 
 #' amplitude with baseline removal. We will analyze only the part of the spectrum where 
 #' the TIC intensity is higher than `fracMaxTIC * max(TIC) `. If you want to analyze the entire spectrum, 
@@ -644,8 +644,8 @@ methods::setMethod(f="plotTIC",
               #calculate timeLimit 
               indLim <- timeLimits(object, fracMaxTIC = fracMaxTIC, plotDel = FALSE)
               plot<- plot +
-                geom_vline(aes(xintercept = object@time[c(indLim)],
-                               color="time limits")) + scale_fill_manual("Legend")
+                ggplot2::geom_vline(ggplot2::aes(xintercept = object@time[c(indLim)],
+                               color="time limits")) + ggplot2::scale_fill_manual("Legend")
             }
              plot <- plot + ggplot2::theme( 
                plot.title = ggplot2::element_text(size=20, face="bold"),

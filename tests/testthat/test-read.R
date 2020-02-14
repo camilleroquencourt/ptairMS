@@ -21,6 +21,7 @@ test_readRaw <- function() {
 }
 
 test_createSet <- function(){
+  
   library(ptairData)
   dir <- system.file("extdata/mycobacteria", package = "ptairData")
   pSet <- createPtrSet(dir,setName = "test", mzCalibRef = c(21.022,59.049))
@@ -31,14 +32,17 @@ test_createSet <- function(){
   testthat::expect_equal(length(pSet@resolution),6)
   testthat::expect_equal(length(pSet@TIC),6)
   testthat::expect_equal(length(pSet@timeLimit),6)
+  
   }
 
 test_checkSet <- function(){
+  
   library(ptairData)
   directory <- system.file("extdata/mycobacteria", package = "ptairData")
   files <- list.files(directory,full.names = TRUE,recursive = TRUE,pattern = "\\.h5*")
   check<- checkSet(files,mzCalibRef =c(21.022,59.049),fracMaxTIC = 0.6 )
   testthat::expect_is(check,"list")
+  
   }
 
 

@@ -7,66 +7,69 @@
 \alias{annotateVOC,numeric-method}
 \title{Putatively annotate VOC mz by using the reference compilation from the literature}
 \usage{
-annotateVOC(x, ...)
+annotateVOC(
+  x,
+  ionMassColname = "ion_mass",
+  ppm = 20,
+  prefix = "vocDB_",
+  fields = c("ion_mass", "ion_formula", "formula", "mass_monoiso", "name_iupac",
+    "pubchem_cid", "inchi", "inchikey", "ref_year", "ref_pmid", "disease_name",
+    "disease_meshid")[c(1, 2, 5)]
+)
 
 \S4method{annotateVOC}{ExpressionSet}(
   x,
-  massHplusColname = NA,
+  ionMassColname = "ion_mass",
   ppm = 20,
   prefix = "vocDB_",
-  fields = c("mass_Hplus", "formula_Hplus", "formula", "mass_monoiso", "name_iupac",
+  fields = c("ion_mass", "ion_formula", "formula", "mass_monoiso", "name_iupac",
     "pubchem_cid", "inchi", "inchikey", "ref_year", "ref_pmid", "disease_name",
     "disease_meshid")[c(1, 2, 5)]
 )
 
 \S4method{annotateVOC}{data.frame}(
   x,
-  massHplusColname = NA,
+  ionMassColname = "ion_mass",
   ppm = 20,
   prefix = "vocDB_",
-  fields = c("mass_Hplus", "formula_Hplus", "formula", "mass_monoiso", "name_iupac",
+  fields = c("ion_mass", "ion_formula", "formula", "mass_monoiso", "name_iupac",
     "pubchem_cid", "inchi", "inchikey", "ref_year", "ref_pmid", "disease_name",
     "disease_meshid")[c(1, 2, 5)]
 )
 
 \S4method{annotateVOC}{numeric}(
   x,
+  ionMassColname = "",
   ppm = 20,
   prefix = "vocDB_",
-  fields = c("mass_Hplus", "formula_Hplus", "formula", "mass_monoiso", "name_iupac",
+  fields = c("ion_mass", "ion_formula", "formula", "mass_monoiso", "name_iupac",
     "pubchem_cid", "inchi", "inchikey", "ref_year", "ref_pmid", "disease_name",
     "disease_meshid")[c(1, 2, 5)]
 )
 }
 \arguments{
-\item{x}{Numeric vector containing containing the protonized mass values}
+\item{x}{Expression set object (resp. data.frame) (resp. numeric vector) containing
+the PTR-MS processed data (resp. containing a column with the ion mass values) (resp. containing the ion mass values)}
 
-\item{massHplusColname}{Character: column name from the data.frame containing
-the mz values; if set to NA, row.names from the data.frame will be converted to numerics and used}
+\item{ionMassColname}{Character: column name from the fData (resp. from the data.frame) containing
+the ion mass values; [default: 'ion_mass']; this argument is not used when x is a numeric vector}
 
 \item{ppm}{Numeric: tolerance}
 
 \item{prefix}{Character: prefix for the new 'annotation' columns [default: 'vocDB_']}
 
 \item{fields}{Characer vector: fields of the 'vocDB' database to be queried among:
-'mass_Hplus' [default], 'formula_Hplus' [default], 'formula', 'mass_monoiso',
+'ion_mass' [default], 'ion_formula' [default], 'formula', 'mass_monoiso',
 'name_iupac' [default], 'pubchem_cid', 'inchi', 'inchikey', 'ref_year',
 'ref_pmid', 'disease_name', 'disease_meshid'}
 }
 \value{
-Returns the Expression set with additional columns in the fData (resp.
-the data.frame with additional columns) (resp. a data.frame with columns)
-containing the matched 'mz', 'formula', 'name', 'reference', and 'matrix' putative annotations
-
 Returns the data.frame with additional columns containing the vocDB informations
-for the matched mass_Hplus values
-
-Returns the a data.frame with columns containing the vocDB informations
-for the matched mass_Hplus values
+for the matched ion_mass values as well as the detected isotopes
 }
 \description{
 Putatively annotate VOC mz by using the reference compilation from the literature, 
-and detect isotope thanks to \code{findIsotope} function.
+and detect isotope thanks to the \code{findIsotope} function.
 }
 \examples{
 library(ptairData)
@@ -75,24 +78,15 @@ bacteria.ptrset <- createPtrSet(directory, setName = "bacteria",
 mzCalibRef = c(21.022,59.049))
 bacteria.ptrset <- detectPeak(bacteria.ptrset)
 bacteria.eset <- alignSamples(bacteria.ptrset)
+# Expression Set
 bacteria.eset <- annotateVOC(bacteria.eset)
-Biobase::fData(bacteria.eset)[, c("vocDB_mass_Hplus", "vocDB_formula_Hplus")]
-library(ptairData)
-directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-bacteria.ptrset <- createPtrSet(directory, setName = "bacteria",
-mzCalibRef = c(21.022,59.049))
-bacteria.ptrset <- detectPeak(bacteria.ptrset)
-bacteria.eset <- alignSamples(bacteria.ptrset)
+head(Biobase::fData(bacteria.eset)[, c("vocDB_ion_mass", "vocDB_ion_formula")])
+# Data frame
 bacteria_fdata.df <- Biobase::fData(bacteria.eset)
 bacteria_fdata.df <- annotateVOC(bacteria_fdata.df)
-bacteria_fdata.df[, c("vocDB_mass_Hplus", "vocDB_formula_Hplus")]
-library(ptairData)
-directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-bacteria.ptrset <- createPtrSet(directory, setName = "bacteria",
-mzCalibRef = c(21.022,59.049))
-bacteria.ptrset <- detectPeak(bacteria.ptrset)
-bacteria.eset <- alignSamples(bacteria.ptrset)
-bacteria.eset <- annotateVOC(bacteria.eset)
-massHplus.vn <- as.numeric(Biobase::featureNames(bacteria.eset))
-annotateVOC(massHplus.vn)[, c("vocDB_mass_Hplus", "vocDB_formula_Hplus")]
+head(bacteria_fdata.df[, c("vocDB_ion_mass", "vocDB_ion_formula")])
+# Numeric
+ionMass.vn <- as.numeric(Biobase::featureNames(bacteria.eset))
+annotated_ions.df <- annotateVOC(ionMass.vn)
+head(annotated_ions.df[, c("vocDB_ion_mass", "vocDB_ion_formula")])
 }
