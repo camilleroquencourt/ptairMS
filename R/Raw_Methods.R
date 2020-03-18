@@ -203,30 +203,16 @@ methods::setMethod(f = "plotRaw",
             if (showVocDB) {
               vocdbDF <- .loadVocDB()
               
-              vocdbDF <- vocdbDF[vocdbDF[, "mz_Hplus"] >= mzRange[1] & vocdbDF[, "mz_Hplus"] <= mzRange[2], ]
+              vocdb_sel.vl <- vocdbDF[, "ion_mass"] >= mzRange[1] &
+                vocdbDF[, "ion_mass"] <= mzRange[2]
               
-              if (nrow(vocdbDF) > 0) {
-                vocMatrixVc <- c("blood", "breath", "faeces", "milk", "saliva", "skin", "urine")
-                vocdbDF[, "sample"] <- apply(as.matrix(vocdbDF[, vocMatrixVc]),
-                                             1,
-                                             function(matVc) {
-                                               matVl <- vapply(matVc,
-                                                               function(matC) {
-                                                                 sum(as.numeric(unlist(strsplit(matC, split = "|",
-                                                                                                fixed = TRUE)))) > 0
-                                                               },FUN.VALUE = TRUE)
-                                               if (sum(matVl,na.rm = TRUE) == 0) {
-                                                 return("")
-                                               } else {
-                                                 return(paste(vocMatrixVc[matVl], collapse = ", "))
-                                               }
-                                             })
-                vocdbDF <- vocdbDF[grepl("calibration", vocdbDF[, "sample"]) |
-                                     grepl("ambient", vocdbDF[, "sample"]) |
-                                     grepl("breath", vocdbDF[, "sample"]), , drop = FALSE]
-                
-              } else vocdbDF <- NULL
-            } else vocdbDF <- NULL
+              if (sum(vocdb_sel.vl)) {
+                vocdbDF <- vocdbDF[vocdb_sel.vl, , drop = FALSE]
+              } else
+                vocdbDF <- NULL
+              
+            } else
+              vocdbDF <- NULL
             
             
             if (figure.pdf != "interactive") {
@@ -310,7 +296,7 @@ methods::setMethod(f = "plotRaw",
                      
                      if (showVocDB && !is.null(vocdbDF)) {
                        mzImaVn <- as.numeric(colnames(imageMN))
-                       graphics::abline(h = vapply(vocdbDF[, "mz_Hplus"],
+                       graphics::abline(h = vapply(vocdbDF[, "ion_mass"],
                                          function(mzN)
                                            (mzN - min(mzImaVn))/diff(range(mzImaVn)) * ncol(imageMN) + par("usr")[1],
                                          FUN.VALUE =1.1 ),
@@ -342,7 +328,7 @@ methods::setMethod(f = "plotRaw",
                      
                      if (showVocDB && !is.null(vocdbDF)) {
                        
-                       graphics::abline(h = vocdbDF[, "mz_Hplus"], lty = "dotted")
+                       graphics::abline(h = vocdbDF[, "ion_mass"], lty = "dotted")
                        
                      }
                      
@@ -394,7 +380,8 @@ methods::setMethod(f = "plotRaw",
             
             if (showVocDB & !is.null(vocdbDF)) {
               vocdbDF <- vocdbDF[nrow(vocdbDF):1, , drop = FALSE]
-              print(vocdbDF[, c("summary", "sample"), drop = FALSE])
+              print(vocdbDF[, c("ion_mass", "ion_formula", "name_iupac"),
+                            drop = FALSE])
             }
             
             return(invisible(list(rawsubM = rawSubMN,
@@ -620,7 +607,7 @@ methods::setMethod(f="plotCalib",
 } )
 
 
-##plotTIC----
+## plotTIC----
 #' @param fracMaxTIC Percentage (between 0 and 1) of the maximum of the Total Ion Chromatogram (TIC) 
 #' amplitude with baseline removal. We will analyze only the part of the spectrum where 
 #' the TIC intensity is higher than `fracMaxTIC * max(TIC) `. If you want to analyze the entire spectrum, 
@@ -658,8 +645,8 @@ methods::setMethod(f="plotTIC",
               #calculate timeLimit 
               indLim <- timeLimits(object, fracMaxTIC = fracMaxTIC, plotDel = FALSE)
               plot<- plot +
-                geom_vline(aes(xintercept = object@time[c(indLim)],
-                               color="time limits")) + scale_fill_manual("Legend")
+                ggplot2::geom_vline(ggplot2::aes(xintercept = object@time[c(indLim)],
+                               color="time limits")) + ggplot2::scale_fill_manual("Legend")
             }
              plot <- plot + ggplot2::theme( 
                plot.title = ggplot2::element_text(size=20, face="bold"),

@@ -9,7 +9,7 @@ findIsotope(eSet, ppm = 100)
 \arguments{
 \item{eSet}{an expression set of PTR-TOF-MS data aligned}
 
-\item{ppm}{presision for the mz matching}
+\item{ppm}{presision for the mass matching}
 }
 \value{
 an expresion with the column isotope added in teh features data

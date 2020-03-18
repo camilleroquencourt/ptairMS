@@ -3,7 +3,8 @@ CHANGES IN VERSION 0.0.8
 
 NEW FEATURE
 
-    o New process function for detectPeak: processTemporalFile that compute the exctracted chromatogram for all peak finded on theTIS 
+    o New process function for detectPeak: processTemporalFile that compute the exctracted chromatogram for all peak finded on the TIS and annotateVOC: new version of vocDB based on the Human Breathomics Database 
+
 
 CHANGES IN VERSION 0.0.6
 ------------------------------

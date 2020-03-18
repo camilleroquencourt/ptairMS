@@ -1,6 +1,7 @@
 testthat::context("Test m/z annotation")
 
-test_annotateVOC<- function(){
+test_annotateVOC <- function(){
+  library(ptairData)
   bacteria_dir.c <- system.file("extdata/mycobacteria",  package = "ptairData")
   bacteria.ptrset <- createPtrSet(bacteria_dir.c, setName = "bacteria",
                                   mzCalibRef = c(21.022,59.049), fracMaxTIC = 0.8, saveDir = NULL)
@@ -9,23 +10,24 @@ test_annotateVOC<- function(){
   
   # numeric vector
   annotateVectorDF <- ptairMS::annotateVOC(as.numeric(Biobase::featureNames(bacteria.eset)))
-  testthat::expect_identical(annotateVectorDF["59.0492", "vocDB_cas.name"],
-                             "2-propen-1-ol, acetone, propanal")
+  testthat::expect_identical(annotateVectorDF["59.0492", "vocDB_name_iupac"],
+                             "prop-2-en-1-ol, propan-2-one, propanal")
   
   # data.frame
   fdataDF <- Biobase::fData(bacteria.eset)
   annotateDataFrameDF <- annotateVOC(fdataDF)
-  testthat::expect_identical(annotateDataFrameDF["59.0492", "vocDB_cas.name"],
-                             "2-propen-1-ol, acetone, propanal")
+  testthat::expect_identical(annotateDataFrameDF["59.0492", "vocDB_name_iupac"],
+                             "prop-2-en-1-ol, propan-2-one, propanal")
   
   # ExpressionSet
   bacteria.eset <- annotateVOC(bacteria.eset)
-  testthat::expect_identical(Biobase::fData(bacteria.eset)["59.0492", "vocDB_cas.name"],
-                             "2-propen-1-ol, acetone, propanal")
+  testthat::expect_identical(Biobase::fData(bacteria.eset)["59.0492", "vocDB_name_iupac"],
+                             "prop-2-en-1-ol, propan-2-one, propanal")
   
 }
 
 test_isotope<-function(){
+  library(ptairData)
   directory <- system.file("extdata/mycobacteria",  package = "ptairData")
   bacteria.ptrset <- createPtrSet(directory, setName = "bacteria",
   mzCalibRef = c(21.022,59.049))

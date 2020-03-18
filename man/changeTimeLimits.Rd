@@ -2,7 +2,7 @@
 % Please edit documentation in R/app.R
 \name{changeTimeLimits}
 \alias{changeTimeLimits}
-\title{Shinny app to modify expiration.
+\title{Shinny app to modify expiration limits.
  
 This function run a shiny app, where you can check the automatic expirations/head spaces detection, and modify it.}
 \usage{
@@ -15,7 +15,7 @@ changeTimeLimits(ptrSet)
 the ptrSet object modified
 }
 \description{
-Shinny app to modify expiration.
+Shinny app to modify expiration limits.
  
 This function run a shiny app, where you can check the automatic expirations/head spaces detection, and modify it.
 }

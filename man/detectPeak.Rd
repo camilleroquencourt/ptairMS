@@ -110,9 +110,8 @@ filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptair
 raw <- readRaw(filePath,mzCalibRef=c(21.022,59.049))
 peakList <- detectPeak(raw, mzNominal = c(21,63))
 peakList$aligned
-library(ptairData)
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 dirSet <- createPtrSet(directory,setName="test")
-dirSet <- detectPeak(dirSet , mzNominal=59,processFun=processFileTemporal)
+dirSet <- detectPeak(dirSet , mzNominal=59)
 getPeakList(dirSet)$aligned
 }

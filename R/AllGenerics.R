@@ -105,10 +105,60 @@ setGeneric("getFileNames", function(object,fullNames=FALSE){
 
 ## annotateVOC ----
 
+#' Putatively annotate VOC mz by using the reference compilation from the literature
+#'
+#' Putatively annotate VOC mz by using the reference compilation from the literature, 
+#' and detect isotope thanks to the \code{findIsotope} function. 
+#'
+#' @param x Expression set object (resp. data.frame) (resp. numeric vector) containing
+#' the PTR-MS processed data (resp. containing a column with the ion mass values) (resp. containing the ion mass values)
+#' @param ionMassColname Character: column name from the fData (resp. from the data.frame) containing
+#' the ion mass values; [default: 'ion_mass']; this argument is not used when x is a numeric vector
+#' @param ppm Numeric: tolerance
+#' @param prefix Character: prefix for the new 'annotation' columns [default: 'vocDB_']
+#' @param fields Characer vector: fields of the 'vocDB' database to be queried among:
+#' 'ion_mass' [default], 'ion_formula' [default], 'formula', 'mass_monoiso',
+#' 'name_iupac' [default], 'pubchem_cid', 'inchi', 'inchikey', 'ref_year',
+#' 'ref_pmid', 'disease_name', 'disease_meshid'
+#' @return Returns the data.frame with additional columns containing the vocDB informations
+#' for the matched ion_mass values as well as the detected isotopes
+#' @examples
+#' library(ptairData)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' bacteria.ptrset <- createPtrSet(directory, setName = "bacteria",
+#' mzCalibRef = c(21.022,59.049))
+#' bacteria.ptrset <- detectPeak(bacteria.ptrset)
+#' bacteria.eset <- alignSamples(bacteria.ptrset)
+#' # Expression Set
+#' bacteria.eset <- annotateVOC(bacteria.eset)
+#' head(Biobase::fData(bacteria.eset)[, c("vocDB_ion_mass", "vocDB_ion_formula")])
+#' # Data frame
+#' bacteria_fdata.df <- Biobase::fData(bacteria.eset)
+#' bacteria_fdata.df <- annotateVOC(bacteria_fdata.df)
+#' head(bacteria_fdata.df[, c("vocDB_ion_mass", "vocDB_ion_formula")])
+#' # Numeric
+#' ionMass.vn <- as.numeric(Biobase::featureNames(bacteria.eset))
+#' annotated_ions.df <- annotateVOC(ionMass.vn)
+#' head(annotated_ions.df[, c("vocDB_ion_mass", "vocDB_ion_formula")])
 #' @rdname annotation
 #' @export 
 setGeneric("annotateVOC",
-           function(x, ...){ standardGeneric("annotateVOC") })
+           function(x,
+                    ionMassColname = "ion_mass",
+                    ppm = 20,
+                    prefix = "vocDB_",
+                    fields = c("ion_mass",
+                               "ion_formula",
+                               "formula",
+                               "mass_monoiso",
+                               "name_iupac",
+                               "pubchem_cid",
+                               "inchi",
+                               "inchikey",
+                               "ref_year",
+                               "ref_pmid",
+                               "disease_name",
+                               "disease_meshid")[c(1,2,5)]){ standardGeneric("annotateVOC") })
 
 ##aligneSamples----
 #' @rdname alignSamples

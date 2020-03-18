@@ -31,6 +31,7 @@ test_alignExpirations <- function(){
 }
 
 test_alignSamples <- function(){
+  library(ptairData)
   directory <-  system.file("extdata/mycobacteria",  package = "ptairData")
   dirSet <- createPtrSet(directory, setName = "test", mzCalibRef =c(21.022,59.049))
   dirSet <- detectPeak(dirSet, mzNominal = c(21,59))
@@ -45,11 +46,12 @@ test_alignSamples <- function(){
   
   #test filer
   eset <- alignSamples(dirSet,bgThreshold = 2)
-  testthat::expect_equal(ncol(Biobase::fData(eset)),6)
+  testthat::expect_equal(ncol(Biobase::fData(eset)),7)
   testthat::expect_equal(nrow(Biobase::exprs(eset)),1)
 }
 
 test_impute<-function(){
+  library(ptairData)
   directory <-  system.file("extdata/mycobacteria",  package = "ptairData")
   dirSet <- createPtrSet(directory, setName = "test", mzCalibRef =c(21.022,59.049))
   dirSet <- detectPeak(dirSet, mzNominal = c(21,57))

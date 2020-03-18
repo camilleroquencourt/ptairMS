@@ -15,7 +15,8 @@ output:
 
 
 # Introduction
-The _**ptairMS**_ package provides a workflow to process PTR-TOF-MS raw data in the open Hierarchical Data Format 5 ([HDF5](https://www.hdfgroup.org/); .h5 extension), and generate the peak table as an `ExpressionSet` object for subsequent data analysis with the many methods and packages available in [R](https://www.r-project.org/). Applications include the analysis of exhaled air, headspace or ambient air. The package offers several features to check the raw data and tune the few processing parameters. It also enables to include new samples in a study without re-processing all the previous data, providing a convenient management for cohort studies. 
+
+The _**ptairMS**_ package provides a workflow to process PTR-TOF-MS raw data in the open Hierarchical Data Format 5 ([HDF5](https://www.hdfgroup.org/); .h5 extension), and generate the peak table as an `ExpressionSet` object for subsequent data analysis with the many methods and packages available in [R](https://www.r-project.org/). Applications include the analysis of exhaled air, cell culture headspace or ambient air. The package offers several features to check the raw data and tune the few processing parameters. It also enables to include new samples in a study without re-processing all the previous data, providing a convenient management for cohort studies. 
 
 Proton Transfer Reaction - Mass Spectrometry (PTR-MS) has emerged with excellent sensitivity and specificity for VOC analysis in a wide range of applications, including environment, food quality, and biology [@blake_proton-transfer_2009]. In the area of health and care, PTR-MS opens up unique opportunities for real-time analysis “at the patient's bedside”.
 
@@ -317,14 +318,14 @@ knitr::kable(head(Biobase::pData(eSet)))
 
 
 ## Imputation 
-To imputue missing values, `ptairMS` returns back to the raw data, and compute with the same method as `detectPeak` the missing values without limit of detection. 
+To impute missing values, `ptairMS` returns back to the raw data, and compute with the same method as `detectPeak` the missing values without limit of detection. 
 
 ```{r imputue, message=FALSE}
 eSet <- ptairMS::impute(eSet,  exhaledSet)
 ```
 
 ## Annotation
-`ptairMS` propose a putative annotation based on the database described in [@de_lacy_costello_review_2014],with the annotateVOC function. Applied to an expression set, it write in the features metadata all possible formulas, names foun, and the isotopes for nuclide C13, O17 and O18. 
+`ptairMS` provides putative annotations based on the mass ions matching to [Human Breathomics Database](https://hbdb.cmdm.tw)  [[@kuo_human_2020]](https://doi.org/10.1093/database/baz139), with the `annotateVOC` function. Applied to an expression set, it writes in the feature metadata all possible formulas, names, and the isotopes for nuclides C13, O17 and O18. 
 
 ```{r}
 annotateVOC(59.049)
@@ -340,7 +341,7 @@ writeEset(eset, dirC = file.path(getwd(), "processed_dataset"))
 
 ## Statistical analysis 
 
-You can now use known package as `ropls` to performs PCA or further statistical analysis.
+You can now use statistical R packages such as `ropls` to perform PCA or further statistical analyses.
 ```{r imageF}
 X<-Biobase::exprs(eSet)
 SMD<-Biobase::pData(eSet)
@@ -362,31 +363,33 @@ plot(pca,type="x-loading")
 
 dim1<-ropls::getLoadingMN(pca)[,1]
 barplot(sort(abs(dim1),decreasing = TRUE))
-knitr::kable(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_formula_Hplus","vocDB_cas.name")])
+knitr::kable(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_ion_formula","vocDB_name_iupac")])
 ```
 
 ## Processing only one raw file
 
-To read and access to the entire raw data of one file, use  `readRaw` function. It opens the data from a absolute file path whith `rhdf5` library, and returns a `ptrRaw` object containing the raw data matrix, the time axis, the m/z axis obtained after calibration if `calibTIS = TRUE`, and information contained in the h5 file (transmission curve, drift temperature, ...).
+To read and access the entire raw data of one file, use `readRaw` function. It opens the data from a absolute file path whith `rhdf5` library, and returns a `ptrRaw` object containing the raw data matrix, the time axis, the m/z axis obtained after calibration if `calibTIS = TRUE`, and information contained in the h5 file (transmission curve, drift temperature, ...).
 
-To get a absolute file path of one file:
+To get the absolute file path for one file:
 ```{r readRaw}
-samplePath <-list.files(dirRaw,recursive = TRUE,full.names = TRUE,pattern = ".h5$")[1]
+samplePath<-list.files(dirRaw,recursive = TRUE,full.names = TRUE,pattern = ".h5$")[1]
 ```
 
-To read the file :
+To read the file:
 ```{r}
 sampleRaw <- readRaw(samplePath, calibTIS = FALSE)
 sampleRaw
 ```
 
-After that, you can use same method as ptrSet object: calibration, timeLimits, plotCalib, plotTIC, plotRaw, and detectPeak. 
+After that, you can use same method as ptrSet object: `calibration`, `timeLimits`, `plotCalib`, `plotTIC`, `plotRaw`, and `detectPeak`. 
 
 # Acknowledgements
-This research was developed within the Data Sciences for Deep Phenotyping and Precision Medicine team at CEA (C. Roquencourt, P. Zheng, P. Roger-Mele and E. Thévenot) in collaboration with the Exhalomics platform from the Foch Hospital (S. Grassin-Delyle, P. Devillier, H. Salvator, E. Naline and L.-J. Couderc) within the SoftwAiR project supported by the Agence Nationale de la Recherche (ANR-18-CE45-0017 grant).
+
+This research was conducted by Camille Roquencourt, with the contributions from Paul Zheng, Pierrick Roger-Mele and Etienne A. Thévenot ([**Data Sciences for Deep Phenotyping and Precision Medicine team**](http://etiennethevenot.pagesperso-orange.fr/) at CEA), in collaboration with Stanislas Grassin-Delyle, Hélène Salvator, Emmanuel Naline, Philippe Devillier and Louis-Jean Couderc ([**Exhalomics platform**](https://www.pluginlabs-universiteparissaclay.fr/fr/entity/915199-exhalomics-plateforme-danalyse-de-lair-expire) at the Foch Hospital) within the [**SoftwAiR project**](https://anr.fr/Projet-ANR-18-CE45-0017) funded by the Agence Nationale de la Recherche (ANR-18-CE45-0017 grant).
 
 # Annex
-##Peak detection and quanitfication methods
+
+## Peak detection and quantification methods
 
 For each nominal mass m/z:
 

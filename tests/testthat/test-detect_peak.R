@@ -5,7 +5,7 @@ test_PeakList<-function(){
   ## error
   testthat::expect_error(PeakList(NULL))
   
-  
+  library(ptairData)
   filePath <-  system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
   file <- readRaw(filePath,mzCalibRef = c(21.022,59.049))
   
@@ -19,6 +19,8 @@ test_PeakList<-function(){
 }
 
 test_peakSet<-function(){
+  
+  library(ptairData)
   dir <- system.file("extdata/mycobacteria",  package = "ptairData")
   dirSet <- createPtrSet(dir, setName = "test", mzCalibRef = c(21.022,59.049))
   ListFiles <- names(dirSet@TIC)
