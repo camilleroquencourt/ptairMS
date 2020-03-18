@@ -49,9 +49,9 @@ utils::globalVariables("::<-")
 #' the background, last column is NA.
 #' @examples 
 #'library(ptairData)
-#'directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 #' dirSet <- createPtrSet(directory,setName="test")
-#' dirSet <- detectPeak(dirSet , mzNominal=59)
+#' dirSet <- detectPeak(dirSet , mzNominal=59,processFun=processFileTemporal)
 #' getPeakList(dirSet)$aligned
 #' @rdname detectPeak
 #' @import doParallel foreach parallel
@@ -64,6 +64,7 @@ setMethod(f="detectPeak",
                    saving=TRUE,saveDir=x@parameter$saveDir,processFun=processFileSepExp,...)
           {
             ptrset<-x
+            
             #get infomration
             massCalib<-ptrset@mzCalibRef
             primaryIon<-ptrset@primaryIon
@@ -86,6 +87,7 @@ setMethod(f="detectPeak",
             fileToProcess <- which(!(fileName %in% fileDone))
             fileName <- fileName[ fileToProcess ]
             allFilesName<-basename(files) #to save the oder
+            
             files <- files[ fileToProcess ]
             
             if(length(files)==0) {
@@ -169,6 +171,494 @@ setMethod(f="detectPeak",
             return(ptrset)
           } )
 
+#'extract quantity over time of VOC in a pre-defined peak list
+#'@param raw ptrRaw object 
+#'@param peak a data.frame with a column named "Mz". The Mz of the VOC detected
+#'@param timeCalib duration in second of every calibration
+#'@param deconvMethod the deconvolution 2d method. Should be "deconv2d2linearIndependant",
+#'"deconv2d2LinearCoupled" or "deconv2d2NonlinearIndependant"
+#'@return list containing the matrix with all temporal profile (matPeak) 
+#'of VOC and a list of all raw EIC (EIClist)
+computeTemporalFile<-function(raw,peak,timeCalib=20,deconvMethod=deconv2d2linearIndependant){
+  
+  listCalib<-multiCalib(raw,timeCalib)
+  
+  EICex<-extractEIC(raw,peak)
+  
+  borne<-EICex$borne
+  EIC<-EICex$EIC
+  
+  nbPeak <- sum(borne[,"overlap"])
+  
+  # compute EIC
+  
+  # without overlap
+  borne<-cbind(borne,matrix(0,nrow = nrow(borne),ncol=length(raw@time))) #ajoter colonne de time
+  colnames(borne)[5:ncol(borne)]<-raw@time
+  if(nrow(borne)>1) borneUnique<-borne[!duplicated(data.frame(borne[,2:3])),,drop=FALSE] else
+    borneUnique <- borne
+  borne[borne[,"overlap"]==0,5:ncol(borne)] <- Reduce(rbind,lapply(EIC[borneUnique[,"overlap"]==0], colSums))
+  
+  #with overlapp
+  XICdeconv2<-matrix(0,ncol=length(raw@time),nrow=nbPeak)
+  c<-1
+  for(j in which(borneUnique[,"overlap"]==1)){
+    mz<-borne[which(borne[,"lower"]==borneUnique[j,"lower"]),"Mz"]
+    peak.detect<-peak[peak[,"Mz"]%in% mz,,drop=F]
+    
+    rawM<-EIC[[j]]
+    deconv2<-deconvMethod(rawM,raw@time,peak.detect,raw,listCalib)
+    
+    for (i in seq_len(nrow(peak.detect))){
+      XICdeconv2[c,]<-deconv2$predPeak[,i]
+      c<-c+1
+    }
+  }
+  XICdeconv<-XICdeconv2
+  borne[borne[,"overlap"]==1,5:ncol(borne)]<-XICdeconv
+ 
+  
+  # test significativité
+  # comparaison de moyenne normal 
+  indLim<-timeLimits(raw,fracMaxTIC = 0.7)
+  indExp<-Reduce(c,apply(indLim,2,function(x) seq(from=x[1],to=x[2])))
+  indLimBg<- bakgroundDetect(colSums(raw@rawM))
+  indBg<-Reduce(c,apply(indLimBg,2,function(x) seq(from=x[1],to=x[2])))
+  
+  XIC<-borne[,5:ncol(borne),drop=F]
+  p.greater<-apply(XIC,1,function(x) t.test(x[indExp],x[indBg],alternative="greater")$p.value)
+  p.less<-apply(XIC,1,function(x) t.test(x[indExp],x[indBg],alternative="less")$p.value)
+  p.greater<-p.adjust(p.greater,method = "fdr")
+  p.less<-p.adjust(p.less,method = "fdr")
+  
+  borne<-cbind(borne, data.frame(p.less=p.less,p.upper=p.greater))
+  
+  return(list(matPeak=borne,EIClist=EIC))
+}
+
+#'extract all raw EIC from a pre-definied peak List
+#'@param raw ptrRaw object
+#'@param peak a data.frame with a column named "Mz". The Mz of the VOC detected
+#'@param peakQuantil the quantile of the peak shape to determine the borne of the EIC
+#'@return list containing all EIC and the mz borne for all peak
+extractEIC<-function(raw,peak,peakQuantil=0.05){
+  #borne integration
+  borne<-apply(peak,1,function(x) sechInv(x["Mz"],
+                                          x["parameter.1"],
+                                          x["parameter.2"],
+                                          x["parameter.3"],
+                                          x["parameter.3"]*0.05) )
+  borne<-cbind(peak$Mz,t(borne))
+  colnames(borne)<- c("Mz","lower","upper")
+  
+  #overlap detection and fusion
+  overlap<-list(NULL)
+  c<-0
+  
+  o<-1
+  for (i in seq_len(nrow(borne)-1)){
+    if(borne[i+1,"lower"]< borne[i,"upper"]){
+      #save the overlap
+      o<-c(o,i+1)
+    } else {
+      if(length(o)>1){
+        #change
+        borne[o,"lower"]<-borne[o[1],"lower"]
+        borne[o,"upper"]<-borne[tail(o,1),"upper"]
+        c<-c+1
+        overlap[[c]]<-o
+      }
+      o <-i+1 
+    }
+  }
+  if(length(o)>1){
+    #change
+    borne[o,"lower"]<-borne[o[1],"lower"]
+    borne[o,"upper"]<-borne[tail(o,1),"upper"]
+    c<-c+1
+    overlap[[c]]<-o
+  }
+  
+  borne<-cbind(borne,overlap=0)
+  borne[Reduce(c,overlap),"overlap"]<-1
+  if(nrow(borne)>1) borneUnique<-borne[!duplicated(data.frame(borne[,2:3])),,drop=FALSE] else
+    borneUnique <- borne
+  
+ 
+  #extract EIC
+  EIC<-list(NULL)
+  for (j in seq_len(nrow(borneUnique))){
+    EIC[[j]]<-raw@rawM[raw@mz>borneUnique[j,"lower"] & raw@mz<borneUnique[j,"upper"],]
+  }
+  
+  return(list(EIC=EIC,borne=borne))
+}
+
+#'Performs a calibration every x time step
+#'@param raw a ptrRaw object already calibrate
+#'@param step number of time step  
+#'@return a list that each element contains: index time, coef calibration, and the function to convert mz to tof
+multiCalib<-function(raw,step){
+  t<-raw@time
+  mzCalibRef<-raw@calibMassRef
+  calib_invformulaLIst<-list(NULL)
+  mzRef<-raw@mz
+  
+  indexTime<-round(diff(t)[1],3)
+  nbIndex<- round(step/indexTime)
+  for (i in seq(0,(floor(length(t)/nbIndex)-1))) {
+    index <- seq(from=i*nbIndex+1,
+                 to=min((i*nbIndex+nbIndex),length(raw@time)))
+    if(i == (floor(length(t)/nbIndex)-1) & utils::tail(index,1) < length(t)) index<-c(index,seq(utils::tail(index,1)+1,length(raw@time)))
+    sp.i <- rowSums(raw@rawM[,index])
+    
+    width.window<-0.4
+    
+    # calculate tof axis
+    if(is.null(mzToTof(1,raw@calibCoef))) tof<-seq(0,length(mzRef)-1) else tof <- mzToTof(mzRef,raw@calibCoef)
+    
+    #spectrum of mass calib 
+    spTronc <- lapply(mzCalibRef,function(m) {
+      index<- which((mzRef < m + width.window) & (mzRef > m - width.window))
+      tof<-tof[index]
+      mzRef <- mzRef[index]
+      signal <- sp.i[index] 
+      return(list(signal=signal,mz=mzRef,tof=tof))})
+    
+    # calculate the tof of reference masses
+    tofMax <- vapply(spTronc, function(x) {
+      tofrange <- x$tof
+      sp<- x$signal
+      t<-tofrange[which.max(sp)]
+      delta<-10000 * log(sqrt(2)+1)*2/ t
+      init<-list(m=t,d1=delta,d2=delta,h=max(sp))
+      fit<-suppressWarnings(minpack.lm::nls.lm(par=init, 
+                                               fn =function(par,x,y) y- sech2(
+                                                 par$m,par$d1,par$d2,par$h,x),
+                                               x= tofrange , y = sp))
+      tofMax<-fit$par$m
+      
+      return(tofMax)
+    },FUN.VALUE = 0.1)
+    
+    # re estimated calibration coefficient with reference masses
+    regression <- stats::nls( rep(1,length(mzCalibRef))  ~  I( ( (tofMax - b) / a) ^ 2 /mzCalibRef ),
+                              start = list(a = raw@calibCoef["a",], b= raw@calibCoef["b",] ), algorithm = "port")
+    
+    coefs <- stats::coefficients(regression)
+    calib_invformula <- function(m,coefs) sqrt(m)*coefs['a'] + coefs['b']
+    calib_invformulaLIst[[i+1]]<-list(index=index,coef=coefs,funcMzToTof=calib_invformula)
+    
+  }
+  
+  return(calib_invformulaLIst)
+  
+}
+
+#'Estimate the calibration for precise mz
+#'@param raw a ptrRaw object
+#'@param peak a data.frame with a column named "Mz". The Mz of the VOC detected
+#'@param listCalib a list containing calibration coeficient for different time periods:
+#'the output of multicalib function
+#'@return a vector with mz shift values in Da for eaf mz of peak list
+calibShitEstimate<-function(raw,peak,listCalib){
+  
+  shift<-matrix(0,ncol=length(listCalib),nrow=nrow(peak))
+  for(k in seq_along(listCalib)){
+    index<-listCalib[[k]]$index
+    mz<- tofToMz(listCalib[[k]]$funcMzToTof(peak$Mz,listCalib[[k]]$coef),raw@calibCoef)
+    shift[,k]<-mz-peak$Mz
+  }
+  
+  return(shift)
+}
+
+#'corretcion of the tof shift
+#'@param rawM an EIC
+#'@param raw ptrRaw object (replaec by the coef calib) 
+#'@param peak mz peak in rawM
+#'@param listCalib mutlicalib list
+#'@return the rawM corrected 
+calibShiftCorr<-function(rawM,raw,peak,listCalib){
+  calibShit<-calibShitEstimate(raw,peak,listCalib)
+  nbIndex<-length(listCalib[[1]]$index)
+  size<-utils::tail(listCalib[[length(listCalib)]]$index,1)
+  time<-seq(1, size, by=nbIndex)[1:ncol(calibShit)]+nbIndex/2
+  
+  # image(x=raw@time,y=as.numeric(rownames(rawM)),z=t(rawM))
+  # lines(time,calibShit[1,]+peak$Mz[1],pch=19)
+  # lines(time,calibShit[2,]+peak$Mz[2],pch=19)
+  
+  rawMCorr<-matrix(0,ncol=ncol(rawM),nrow=nrow(rawM))
+  rawMCorr[,1]<-rawM[,1]
+  nr<-nrow(rawM)
+  for (i in seq_along(listCalib)){
+    index<-listCalib[[i]]$index
+    rawMCorr[,index]<-vapply(index,function(j){
+      approx(x=as.numeric(rownames(rawM)) ,
+             y=rawM[,j],
+             xout=as.numeric(rownames(rawM))+ calibShit[1,i])$y
+    },FUN.VALUE = rep(0,nrow(rawM)))
+    
+  }
+  
+  rownames(rawMCorr)<-rownames(rawM)
+  rawMCorr<-rawMCorr[! apply(rawMCorr,1,function(x) any(is.na(x))),]
+  # image(x=raw@time,y=as.numeric(rownames(rawMCorr)),t(rawMCorr))
+  # abline(h=peak$Mz)
+  return(rawMCorr)
+}
+
+#t<-raw@time
+
+#process<-deconv2dLinearCoupled(rawM,t,peak,raw,listCalib,smoothParam=1)
+#apply(process$predPeak,2,plot)
+#plot(colSums(rawM))
+#lines(colSums(process$predRaw))
+#image(t(rawM))
+#image(t(process$predRaw))
+deconv2dLinearCoupled<-function(rawM,t,peak.detect,raw,listCalib,K=round(length(t)/2),smoothParam=100){
+  
+  #mass shifed correction
+  mzNom<-round(peak.detect$Mz)[1]
+  rawM<-calibShiftCorr(rawM,raw,peak.detect,listCalib)
+  m<-as.numeric(row.names(rawM))
+  
+  #mass function
+  n.peak<-nrow(peak.detect)
+  sp <-function(m,par) {
+    1/((cosh(par["lf"]*(m-par["Mz"]))^2)*(m<=par["Mz"]) + (cosh(par["lr"]*(m-par["Mz"]))^2)*(m >par["Mz"]))}
+  
+  #time function 
+  tic<- function(t,K,tRef,smp){
+    smooth<-mgcv::smooth.construct(mgcv::s(t,k=K,bs="cr",sp=smp),data=list(t=tRef),
+                                   list(t=quantile(tRef,probs = seq(0,1,length=K))))
+    return(list(TIC=mgcv::Predict.matrix(smooth,data.frame(t=t)),S=smooth$S))
+  }
+  
+  #fit 
+  #g<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(time,EIC,colour=param),
+  #                                          data=data.frame(time=raw@time,EIC=colSums(rawM),param="raw"))
+  
+  
+  par<-peak.detect[,c("Mz","parameter.1","parameter.2")]
+  colnames(par)<-c("Mz","lf","lr")
+  SP <- apply(par,1,function(z) sp(m,z) )
+  TICconstruc<- tic(t,K,t,smoothParam)
+  TIC<-TICconstruc$TIC
+  S<-  diag(rep(1,n.peak)) %x% (smoothParam *TICconstruc$S[[1]])
+  X<-SP %x% TIC
+  Y<-matrix(t(rawM),ncol=1)
+  param<- solve(t(X)%*%X+S) %*% t(X) %*% Y
+  predRaw <- t(matrix(X %*% param, ncol=nrow(rawM),nrow=length(t)))
+  
+  # g<-g+ggplot2::geom_line(mapping = ggplot2::aes(time,EIC,colour=param),
+  #                         data=data.frame(time=raw@time,EIC=colSums(predRaw),param=as.character(smoothParam)))
+  # plot(colSums(rawM),main=paste(K,smoothParam))
+  # lines(colSums(predRaw),col="red")
+  
+  #deconvolution in ppb 
+  predPeak<-matrix(0,ncol=n.peak,nrow=length(t))
+  for (i in seq_len(nrow(peak.detect))){
+    pred <- t(matrix(SP[,i] %x% TIC %*% param[((i-1)*K+1):(i*K)],nrow=length(t)) )
+    # quanti<- ppbConvert(peakList = cbind(Mz=rep(peak.detect$Mz[i]),quanti=colSums(pred)),
+    #                               primaryIon = primaryIon,
+    #                               transmission = transmission,
+    #                               U = U, 
+    #                               Td = Td, 
+    #                               pd = pd)
+    #plot(colSums(pred),main=peak.detect$Mz[i],pch=19)
+    predPeak[,i]<-colSums(pred)
+  }
+  
+  # image(t(rawM))
+  # image(t(predRaw))
+  return(list(predRaw=predRaw,predPeak=predPeak))
+}
+
+
+#process<-deconv2d2linearIndependant(rawM,t,peak,raw,listCalib)
+#apply(process$predPeak,2,plot)
+#plot(colSums(rawM))
+#lines(colSums(process$predRaw))
+#image(t(rawM))
+#image(t(process$predRaw))
+deconv2d2linearIndependant<-function(rawM,time,peak.detect,raw,listCalib){
+  
+  shift<-calibShitEstimate(raw,peak.detect,listCalib)
+  
+  Indextime<-lapply(listCalib,function(x) {x$index})
+  Indextime<-Reduce(rbind,lapply(seq_len(length(listCalib)),function(i) cbind(Indextime[[i]],i)))
+  
+  mzAxis<-as.numeric(row.names(rawM))
+  mzNom<-round(peak.detect$Mz)[1]
+  
+  n.peak <- nrow(peak.detect)
+  matRaw<-matrix(0,nrow=nrow(rawM),ncol=ncol(rawM))
+  matPeak<-matrix(0,ncol=n.peak,nrow=ncol(rawM))
+  #mzlargeIndex<-which(raw@mz > mzNom-0.4 & raw@mz < mzNom+0.4)
+  for (i in seq_along(time)){
+    
+    #base line correction 
+    #spectrum.large<-raw@rawM[mzlargeIndex,i]
+    #bl<- MALDIquant::estimateBaseline(spectrum.large, method="SNIP", iterations=75)
+    #spectrum.large <- spectrum.large - snipBase(spectrum.large)
+    
+    # first<-which( raw@mz[mzlargeIndex]>= mzAxis[1])[1]
+    # spectrum.m <-spectrum.large[first:(nrow(rawM)+first-1)]
+    spectrum.m <- rawM[,i]
+    
+    #initialisation
+    mz<-peak.detect$Mz+ shift[,Indextime[i,2]]
+    lf<-peak.detect$parameter.1
+    lr<-peak.detect$parameter.2
+    param<-cbind(mz,lf,lr)
+    
+    model<- apply(param,1,
+                  function(x) 1/(cosh(x["lf"]*(mzAxis-x["mz"]))^2*(mzAxis<=x["mz"])+
+                                   cosh(x["lr"]*(mzAxis-x["mz"]))^2*(mzAxis>x["mz"])))
+    
+    fit<-lm(spectrum.m ~ model-1)
+    
+    par_estimated<-fit$coefficients
+    fit.peak<- fit$fitted.values
+    
+    matRaw[,i]<-fit.peak
+    
+    #quantification 
+    quanti <- apply(rbind(mz,par_estimated,lf,lr),2, function(x){
+      sum(sech2(x[1],x[3],x[4],x[2],mzAxis))})
+    
+    ## normalisation
+    #if there is reaction ans transmission information
+    # if(normalize){
+    #   #normalize by primary ions
+    #   quanti <- quanti/(primaryIon*4.9*10^6)
+    #   namesQuanti<-"quanti (ncps)"
+    # }
+    
+    matPeak[i,]<-quanti
+    
+    
+  }
+  return(list(predRaw=matRaw,predPeak=matPeak))
+}
+
+
+#process<-deconv2d2NonlinearIndependant(rawM,t,peak,raw,listCalib)
+#apply(process$predPeak,2,plot)
+#plot(colSums(rawM))
+#lines(colSums(process$predRaw))
+#image(t(rawM))
+#image(t(process$predRaw))
+deconv2d2NonlinearIndependant<-function(rawM,time,peak.detect,raw,listCalib){
+  
+  shift<-calibShitEstimate(raw,peak.detect,listCalib)
+  
+  Indextime<-lapply(listCalib,function(x) {x$index})
+  Indextime<-Reduce(rbind,lapply(seq_len(length(listCalib)),function(i) cbind(Indextime[[i]],i)))
+  
+  mzNom<-round(peak.detect$Mz)[1]
+  n.peak <- nrow(peak.detect)
+  matRaw<-matrix(0,nrow=nrow(rawM),ncol=ncol(rawM))
+  matPeak<-matrix(0,ncol=n.peak,nrow=ncol(rawM))
+  for (i in seq_along(time)){
+    
+    #base line correction 
+    mzlargeIndex<-which(raw@mz > mzNom-0.4 & raw@mz < mzNom+0.4)
+    spectrum.large<-raw@rawM[mzlargeIndex,i]
+    #spectrum.large <- spectrum.large - snipBase(spectrum.large)
+    
+    mzAxis<-as.numeric(row.names(rawM))
+    #first<-which( raw@mz[mzlargeIndex]>= mzAxis[1])[1]
+    #spectrum.m <-spectrum.large[first:(nrow(rawM)+first-1)]
+    spectrum.m<-rawM[,i]
+    plot(mzAxis,spectrum.m,type="l")
+    
+    #initialisation
+    mz<-peak.detect$Mz+ shift[,Indextime[i,2]]
+    deltal<-peak.detect$parameter.1
+    deltar<-peak.detect$parameter.2
+    h<- vapply(mz, function(m) max(max(spectrum.m[which(abs(mzAxis-m)<(m*50/10^6))]),0),0)
+    initMz <- matrix(c(mz, h),nrow=n.peak)
+    lf<-peak.detect$parameter.1
+    lr<-peak.detect$parameter.2
+    colnames(initMz)<-c("m","h")
+    
+    ppmCons<-30
+    #constrain
+    
+    lower.cons <- c(t(initMz * matrix(c(rep(1, n.peak),
+                                        rep(0, n.peak)),ncol = 2) 
+                      -
+                        matrix(c(initMz[,"m"]*ppmCons/10^6,
+                                 rep(0, n.peak)),ncol = 2)))
+    
+    upper.cons <- c(t( initMz * matrix(c(rep(1, n.peak),
+                                         rep(Inf, n.peak)),ncol = 2) 
+                       +
+                         matrix(c(initMz[,"m"]*ppmCons/10^6,
+                                  rep(0, n.peak)),ncol = 2)))
+    
+    #fit
+    fit_function_str<-"sech2"
+    par_var_str<-c("m","h")
+    par_fix_str<-c("x")
+    formul.character <- ""
+    init.names<- ""
+    for (j in seq(1, n.peak)){
+      par_str.j<- paste(rep("par$",2),par_var_str,rep(j,2),sep = "")
+      
+      for(n in seq_along(par_var_str)){
+        init.names<-c(init.names,paste(par_var_str[n],j,sep=""))
+      }
+      formul.character <- paste(formul.character,fit_function_str,"(",
+                                par_str.j[1],",lf[",j,"],lr[",j,"],", par_str.j[2],",",par_fix_str,")+",sep="")
+      
+      if (j == n.peak){
+        formul.character <- substr(formul.character, start=1, stop=nchar(formul.character) - 1)
+      }
+    }
+    initMz.names<-init.names[-1]
+    func.eval <- parse(text = formul.character)
+    
+    function.char <- function(par, x, y){
+      eval(func.eval) - y
+    }
+    
+    initMz<-as.list(t(initMz))
+    names(initMz)<-initMz.names
+    
+    #Regression
+    fit<-suppressWarnings(minpack.lm::nls.lm(par=initMz, lower = lower.cons, upper = upper.cons,
+                                             fn =function.char,
+                                             x= mzAxis , y = spectrum.m))
+    
+    par_estimated<-matrix(unlist(fit$par),nrow=2)
+    fit.peak<- function.char(fit$par,mzAxis,rep(0,length(spectrum.m)))
+    
+    matRaw[,i]<-fit.peak
+    
+    #quantification 
+    quanti <- apply(rbind(par_estimated,lf,lr),2, function(x){
+      lines(mzAxis,sech2(x[1],x[3],x[4],x[2],mzAxis))
+      return(sum(sech2(x[1],x[3],x[4],x[2],mzAxis)))})
+    
+    ## normalisation
+    #if there is reaction ans transmission information
+    # if(normalize){
+    #   #normalize by primary ions
+    #   quanti <- quanti/(primaryIon*4.9*10^6)
+    #   namesQuanti<-"quanti (ncps)"
+    # }
+    
+    matPeak[i,]<-quanti
+    
+    
+  }
+  return(list(predRaw=matRaw,predPeak=matPeak))
+}
+
 
 processFileAvgExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNominal, ppm, 
                              ppmGroupBkg, fracGroup,
@@ -214,23 +704,11 @@ processFileAvgExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNo
     #if there is reaction ans transmission information
     namesQuanti<-"quanti (cps)"
     if(normalize){
-      if(length(raw@prtReaction)!=0 & nrow(transmission) > 1){
-        U <- c(reaction$TwData[1,,])
-        Td <-c(reaction$TwData[3,,])
-        pd <- c(reaction$TwData[2,,])
-        list_peak$peak[,"quanti"] <- ppbConvert(peakList = list_peak$peak,
-                                                primaryIon = primaryIon,
-                                                transmission = transmission,
-                                                U = U[indBg] , 
-                                                Td = Td[ indBg], 
-                                                pd = pd[ indBg])
-        namesQuanti<-"quanti (ppb)"
-        
-      } else {
+       
         #normalize by primary ions
         list_peak$peak[,"quanti"] <- list_peak$peak[,"quanti"]/(primaryIon*4.9*10^6)
         namesQuanti<-"quanti (ncps)"
-      }
+      
     }
     matPeak.bg<- cbind(list_peak$peak , group=rep(0,dim(list_peak$peak)[1]))
   } 
@@ -256,23 +734,9 @@ processFileAvgExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNo
     #if there is reaction ans transmission information
     namesQuanti<-"quanti (cps)"
     if(normalize){
-      if(length(raw@prtReaction)!=0 & nrow(transmission) > 1){
-        U <- c(reaction$TwData[1,,])
-        Td <-c(reaction$TwData[3,,])
-        pd <- c(reaction$TwData[2,,])
-        list_peak$peak[,"quanti"] <- ppbConvert(peakList = list_peak$peak,
-                                                primaryIon = primaryIon,
-                                                transmission = transmission,
-                                                U = U[ indLimAll] , 
-                                                Td = Td[ indLimAll], 
-                                                pd = pd[ indLimAll])
-        namesQuanti<-"quanti (ppb)"
-        
-      } else {
         #normalize by primary ions
         list_peak$peak[,"quanti"] <- list_peak$peak[,"quanti"]/(primaryIon*4.9*10^6)
         namesQuanti<-"quanti (ncps)"
-      }
     }
     
     list_peak.exp<- cbind(list_peak$peak , group=rep(1,dim(list_peak$peak)[1]))
@@ -335,23 +799,10 @@ processFileSepExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNo
     #if there is reaction ans transmission information
     namesQuanti<-"quanti (cps)"
     if(normalize){
-      if(length(raw@prtReaction)!=0 & nrow(transmission) > 1){
-        U <- c(reaction$TwData[1,,])
-        Td <-c(reaction$TwData[3,,])
-        pd <- c(reaction$TwData[2,,])
-        list_peak$peak[,"quanti"] <- ppbConvert(peakList = list_peak$peak,
-                                                primaryIon = primaryIon,
-                                                transmission = transmission,
-                                                U = U[indBg] , 
-                                                Td = Td[ indBg], 
-                                                pd = pd[ indBg])
-        namesQuanti<-"quanti (ppb)"
-        
-      } else {
+      
         #normalize by primary ions
         list_peak$peak[,"quanti"] <- list_peak$peak[,"quanti"]/(primaryIon*4.9*10^6)
         namesQuanti<-"quanti (ncps)"
-      }
     }
     matPeak.bg<- cbind(list_peak$peak , group=rep(0,dim(list_peak$peak)[1]))
   } 
@@ -377,23 +828,11 @@ processFileSepExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNo
     #if there is reaction ans transmission information
     namesQuanti<-"quanti (cps)"
     if(normalize){
-      if(length(raw@prtReaction)!=0 & nrow(transmission) > 1){
-        U <- c(reaction$TwData[1,,])
-        Td <-c(reaction$TwData[3,,])
-        pd <- c(reaction$TwData[2,,])
-        list_peak$peak[,"quanti"] <- ppbConvert(peakList = list_peak$peak,
-                                                primaryIon = primaryIon,
-                                                transmission = transmission,
-                                                U = U[ seq(indLim["start", i], indLim["end", i])] , 
-                                                Td = Td[ seq(indLim["start", i], indLim["end", i])], 
-                                                pd = pd[ seq(indLim["start", i], indLim["end", i])])
-        namesQuanti<-"quanti (ppb)"
-        
-      } else {
+      
         #normalize by primary ions
         list_peak$peak[,"quanti"] <- list_peak$peak[,"quanti"]/(primaryIon*4.9*10^6)
         namesQuanti<-"quanti (ncps)"
-      }
+      
     }
     
    list_peak.j[[i]]<- cbind(list_peak$peak , group=rep(i,dim(list_peak$peak)[1]))
@@ -417,25 +856,17 @@ processFileSepExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNo
 processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNominal, ppm, 
                       ppmGroupBkg, fracGroup,
                       minIntensity, 
-                      fctFit,...){
+                      fctFit,normalize,...){
   
   if(is.character(fullNamefile)){
     cat(basename(fullNamefile),": ")
     # read file
-    raw <- readRaw(fullNamefile, calibTIS = FALSE)
+    raw <- readRaw(fullNamefile)
   } else raw <- fullNamefile
   
   # information for ppb convertion
   reaction = raw@prtReaction
   transmission = raw@ptrTransmisison
-  
-  # time limit
-  indLim <- indTimeLim
-  if(ncol(indLim) == 0 || is.na(indLim) ) {
-    indLim <- matrix(c(1,length(raw@time)),
-                     dimnames =list(c("start","end"),NULL) )
-  } else if(indLim[1,1] > 4) indLim <- cbind( matrix( c(1, indLim[1, 1] - 3)), indLim)
-  
   
   # peak detection on TIS 
   if(is.null(mzNominal)) mzNominal= unique(round(raw@mz))
@@ -443,116 +874,34 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
                           ppm=ppm, minIntensity=minIntensity,
                           fctFit=fctFit)$peak
 
-  matPeak <- matrix(0,ncol=7,nrow=length(raw@time)*nrow(list_peak))
-  colnames(matPeak)<-c("Mz","parameter.1","parameter.2","parameter.3","quanti","t","group")
-  mzAxis <- raw@mz
-  c<-1
-  ligne<-1
-  #loop over mass
-  for (m in unique(round(list_peak$mz))){
-    #select mz axis around m
-    indexMz <- which(m-0.6 < mzAxis &mzAxis<m+0.6 )
-    mzAxis.m <- mzAxis[indexMz]
-    peak <- list_peak[which(round(list_peak$Mz)==m),]
-    n.peak <- nrow(peak)
-    group <- seq(c,c+(n.peak-1))
-    indLimExp<-timeLimitFun(colSums(raw@rawM),fracMaxTIC = 0.1)
-    indExp<-Reduce(c,apply(indLimExp,2,function(x) seq(x[1],x[2])))
-    #loop over time
-    for (i in indExp){
-      spectrum.m <- raw@rawM[indexMz, i]
-      t <-  raw@time[ i]
-    
-      #base line correction 
-      spectrum.m<-spectrum.m - snipBase(spectrum.m)
-      
-      #if sech2
-      resolution_upper<-8000
-      resolution_mean<- 5000
-      resolution_lower<-3500
-      
-      #initialisation
-      mz<-peak$mz
-      deltal<-peak$parameter.1
-      deltar<-peak$parameter.2
-      h<- vapply(mz, function(m) max(max(spectrum.m[which(abs(mzAxis.m-m)<(m*50/10^6))]),0),0)
-      initMz <- matrix(c(mz,log(sqrt(2)+1)*2/deltal,log(sqrt(2)+1)*2/deltar,
-                         h),nrow=n.peak)
-      colnames(initMz)<-c("m","delta1","delta2","h")
-      
-      #constrain
-      lower.cons <- c(t(initMz * matrix(c(rep(1, n.peak),
-                                          rep(0, n.peak*2),
-                                          rep(0, n.peak)),ncol = 4) 
-                        -
-                          matrix(c(initMz[,"m"]/(resolution_mean*100),
-                                   -resolution_lower*log(sqrt(2)+1)*2/initMz[,"m"],
-                                   -resolution_lower*log(sqrt(2)+1)*2/initMz[,"m"],
-                                   rep(0, n.peak)),ncol = 4)))
-      
-      upper.cons <- c(t( initMz * matrix(c(rep(1, n.peak),
-                                           rep(0, n.peak*2),
-                                           rep(Inf, n.peak)),ncol = 4) 
-                         +
-                           matrix(c(initMz[,"m"]/(resolution_mean*100),
-                                    resolution_upper*log(sqrt(2)+1)*2/initMz[,"m"],
-                                    resolution_upper*log(sqrt(2)+1)*2/initMz[,"m"],
-                                    rep(0, n.peak)),ncol = 4)))
-      
-      #fit
-      fit <- fit_sech2(initMz, spectrum.m, mzAxis.m, lower.cons, upper.cons)
-      fit.peak <- fit$fit.peak
-      par_estimated<-fit$par_estimated
-      
-      #quantification on m=- 10*delta
-      quanti <- apply(par_estimated,2, function(x){
-        th<-10*0.5*(log(sqrt(2)+1)/x[2]+log(sqrt(2)+1)/x[3])
-        mz.x <- mzAxis[ x[1] - th < mzAxis & mzAxis < x[1]+th ]
-        sum(sech2(x[1],x[2],x[3],x[4],mz.x))}) 
-
-      ## normalisation
-      #if there is reaction ans transmission information
-    if(length(raw@prtReaction)!=0 & nrow(transmission) > 1){
-      list_peak.i<-cbind(mz,quanti)
-      U <- c(reaction$TwData[1,,])
-      Td <-c(reaction$TwData[3,,])
-      pd <- c(reaction$TwData[2,,])
-      quanti <-ppbConvert(peakList = list_peak.i,
-                                                        primaryIon = primaryIon,
-                                                        transmission = transmission,
-                                                        U = U[i] , 
-                                                        Td = Td[i], 
-                                                        pd = pd[i])
-      namesQuanti<-"quanti (ppb)"
-    } else {
-      #normalize by primary ions
-      quanti <- quanti/(primaryIon*4.9*10^6)
-      namesQuanti<-"quanti (ncps)"
-    }
-      ligne<-seq(ligne,ligne+(n.peak-1))
-      matPeak[ligne,]<-cbind(t(par_estimated),quanti,rep(t,n.peak),group)
-      ligne<-utils::tail(ligne,1)+1
-    } # end loop over time
-    c<-c+n.peak
-  }#end loop over masses
-
   
-  matPeak<-data.table::as.data.table(matPeak)
+  # compute temporal profile
+  fileProccess<-ptairMS:::computeTemporalFile(raw,list_peak)
+  
+  matPeak<-data.table::as.data.table(fileProccess$matPeak)
+  #apply(matPeak,1,function(x) plot(x[5:(length(x)-2)],main=round(x[1],2)))
   
   # agregation of expirations and bg
 
-  bg<-raw@time[seq(indLim["start",1],indLim["end",1])]
-  if(ncol(indLim)>1){
-    exp<-raw@time[Reduce(c,lapply(seq(2,ncol(indLim)),function(i) seq(indLim["start",i],
-                                                                      indLim["end",i])))]
-    matPeakAg<-matPeak[ , list(mz=stats:: median(mz), quanti=mean(quanti[t %in% exp]), 
-                            background=mean(quanti[t %in% bg])),by=group]
-    #matPeakAg[group `:=` NULL] #delete column group 
-  }else matPeakAg<-matPeak[,list(mz=stats:: median(mz), quanti=mean(quanti)),by=group]
+  # adjustement of time limit
+  # indLim <- indTimeLim
+  # if(ncol(indLim) == 0 || is.na(indLim) ) {
+  #   indLim <- matrix(c(1,length(raw@time)),
+  #                    dimnames =list(c("start","end"),NULL) )
+  # } else if(indLim[1,1] > 4) indLim <- cbind( matrix( c(1, indLim[1, 1] - 3)), indLim)
+  # 
+  # bg<-raw@time[seq(indLim["start",1],indLim["end",1])]
+  # if(ncol(indLim)>1){
+  #   exp<-raw@time[Reduce(c,lapply(seq(2,ncol(indLim)),function(i) seq(indLim["start",i],
+  #                                                                     indLim["end",i])))]
+  #   matPeakAg<-matPeak[ , list(mz=stats:: median(mz), quanti=mean(quanti[t %in% exp]), 
+  #                           background=mean(quanti[t %in% bg])),by=group]
+  #   #matPeakAg[group `:=` NULL] #delete column group 
+  # }else matPeakAg<-matPeak[,list(mz=stats:: median(mz), quanti=mean(quanti)),by=group]
+  # 
+  # names(matPeakAg)[grep("quanti",names(matPeakAg))]<-namesQuanti
   
-  names(matPeakAg)[grep("quanti",names(matPeakAg))]<-namesQuanti
-  
-  return(list(raw=matPeak,aligned=matPeakAg))
+  return(list(raw=matPeak,aligned=NULL))
 }
 
 
@@ -561,8 +910,7 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
 #' @param mz peak mass axis
 #' @param sp peak spectrum 
 #' @param ppmPeakMinSep the minimum distance between two peeks in ppm 
-#' @param mzToTof function to convert mz to tof
-#' @param tofToMz function  to convert tof to mz
+#' @param calibCoef calibration coeficient a and b
 #' @param minPeakDetect the minimum intenisty for peaks detection. The final threshold for peak detection
 #' will be : max ( \code{minPeakDetect} , thresholdNoise ). The thresholdNoise correspond to
 #'  max(\code{thNoiseRate} * max( noise around the nominal mass), \code{thIntensityRate} * 
@@ -583,7 +931,7 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
 #' @param windowSize peaks will be detected only around  m - windowSize ; m + windowSize, for all 
 #' m in \code{mzNominal}
 #' @return a list that contains the peak list of nomminal mass i, and information to plot the peaks detected
-peakListNominalMass <- function(i,mz,sp,ppmPeakMinSep=130 , mzToTof,tofToMz,
+peakListNominalMass <- function(i,mz,sp,ppmPeakMinSep=130 ,calibCoef,
                                 minPeakDetect=10, fitFunc="Sech2", maxIter=2, autocorNoiseMax=0.3 ,
                                 plotFinal=FALSE, plotAll=FALSE, thNoiseRate=1.1, thIntensityRate=0.01 ,
                                 countFacFWHM=10, daSeparation=0.001, d=3, windowSize=0.4 ){
@@ -638,7 +986,7 @@ peakListNominalMass <- function(i,mz,sp,ppmPeakMinSep=130 , mzToTof,tofToMz,
                                          minPeakDetect)) 
     } else minpeakheight <- max( minpeakheight*0.8 , 1 ) # minimum intenisty
     
-    init <- initializeFit(i,sp.i.fit, sp.i, mz.i, mzToTof,
+    init <- initializeFit(i,sp.i.fit, sp.i, mz.i, calibCoef,
                           minpeakheight, noiseacf,  ppmPeakMinSep,
                           daSeparation,  d, plotAll,c) # Find local maximum with Savitzky golay filter or wavelet
     
@@ -697,7 +1045,7 @@ peakListNominalMass <- function(i,mz,sp,ppmPeakMinSep=130 , mzToTof,tofToMz,
                                        rep(0, n.peak)),ncol = 3)  ))
           
           l.shape<-determinePeakShape(sp,mz)
-          fit <- fit_averagePeak(initTof, l.shape, sp.i, mzToTof(mz.i)) 
+          fit <- fit_averagePeak(initTof, l.shape, sp.i, mzToTof(mz.i,calibCoef)) 
         }
       if(fitFunc =="Sech2"){
         if(c == 1) initMz <-init$mz else initMz <- rbind(init$mz,t(par_estimated))
@@ -752,10 +1100,10 @@ peakListNominalMass <- function(i,mz,sp,ppmPeakMinSep=130 , mzToTof,tofToMz,
           for(k in seq_len(ncol(par_estimated))){
             graphics::lines(mz.i,
                   fit_averagePeak_function(par_estimated[1,k],par_estimated[2,k],par_estimated[3,k],
-                                      l.shape$tofRef,l.shape$peakRef,mzToTof(mz.i)),
+                                      l.shape$tofRef,l.shape$peakRef,mzToTof(mz.i,calibCoef)),
                   lwd=2,col="red",lty=2)
           }
-          graphics::points(tofToMz(par_estimated[1,]),
+          graphics::points(tofToMz(par_estimated[1,],calibCoef),
                  cum_function.fit.peak(fit$fit$par,l.shape$tofRef,l.shape$peakRef,par_estimated[1,],rep(0,length(par_estimated[2,]))),
                  cex=2,col="red",lwd=2)
         }
@@ -828,18 +1176,18 @@ peakListNominalMass <- function(i,mz,sp,ppmPeakMinSep=130 , mzToTof,tofToMz,
       
       upper.cons <- c(t(matrix(c(rep(Inf, n.peak),rep(Inf, n.peak),init[2,]/6000),ncol = 3)))
       
-      bin.i<- mzToTof(mz.i)
+      bin.i<- mzToTof(mz.i,calibCoef)
       fit <- fit_averagePeak(init,l.shape,sp.i,bin.i,lower.cons,upper.cons)
       
       fit.peak<-fit$fit.peak
       par_estimated<-fit$par_estimated
       
-      delta_mz <- apply(par_estimated,2, function(x) diff(tofToMz(c(x[2]-x[3]/2,x[2]+x[3]/2))) )
+      delta_mz <- apply(par_estimated,2, function(x) diff(tofToMz(c(x[2]-x[3]/2,x[2]+x[3]/2),calibCoef)) )
       quanti<- apply(par_estimated,2, function(x){
-        th<-countFacFWHM*0.5*diff(tofToMz(c(x[2]-x[3]/2,x[2]+x[3]/2)))
-        bin.x<- which( tofToMz(x[2]-1) - th < mz & mz < tofToMz(x[2]-1)+th )
+        th<-countFacFWHM*0.5*diff(tofToMz(c(x[2]-x[3]/2,x[2]+x[3]/2),calibCoef))
+        bin.x<- which( tofToMz(x[2]-1,calibCoef) - th < mz & mz < tofToMz(x[2]-1,calibCoef)+th )
         sum(fit_averagePeak_function(x[1],x[2],x[3],l.shape$tofRef,l.shape$peakRef,bin.x))})
-      center_peak<- unname(tofToMz(par_estimated[2,]-1))
+      center_peak<- unname(tofToMz(par_estimated[2,]-1,calibCoef))
       
       peaks <- apply(par_estimated,2,function(x)
         fit_averagePeak_function(x[1],x[2],x[3],l.shape$tofRef,l.shape$peakRef,bin.i))
@@ -907,7 +1255,7 @@ peakListNominalMass <- function(i,mz,sp,ppmPeakMinSep=130 , mzToTof,tofToMz,
     } }
     c=c+1
   } # end second repeat
-  if(fitFunc=="average") pointsPeak<- list(x=tofToMz(par_estimated[1,]),
+  if(fitFunc=="average") pointsPeak<- list(x=tofToMz(par_estimated[1,],calibCoef),
                                           y=fit$function.fit.peak(fit$fit$par,
                                                                 l.shape$tofRef,l.shape$peakRef,
                                                                 par_estimated[1,],
@@ -950,7 +1298,7 @@ peakListNominalMass <- function(i,mz,sp,ppmPeakMinSep=130 , mzToTof,tofToMz,
 #' @param sp.i.fit the vector who will be fetted (spectrum pf residual)
 #' @param sp.i the spectrum around a nominal mass
 #' @param mz.i the mass vector around a nominal mass
-#' @param mzToTof the function for convert mz to Tof
+#' @param calibCoef calibration coeficient
 #' @param minpeakheight the minimum peak intensity
 #' @param noiseacf aytocorelation of the noise
 #' @param ppmPeakMinSep the minimum distance between two peeks in ppm 
@@ -959,7 +1307,7 @@ peakListNominalMass <- function(i,mz,sp,ppmPeakMinSep=130 , mzToTof,tofToMz,
 #' @param plotAll bollean if TRUE, it plot all the initialiation step
 #' @param c the number of current itteration
 #' @return a list with fit input
-initializeFit<-function(i,sp.i.fit, sp.i, mz.i, mzToTof, minpeakheight, noiseacf, ppmPeakMinSep,
+initializeFit<-function(i,sp.i.fit, sp.i, mz.i, calibCoef, minpeakheight, noiseacf, ppmPeakMinSep,
                         daSeparation, d, plotAll,c ){
   
   init <- NULL
@@ -999,7 +1347,7 @@ initializeFit<-function(i,sp.i.fit, sp.i, mz.i, mzToTof, minpeakheight, noiseacf
     
       # in tof fot average fit function 
       resolution_mean <- 10000 #in tof : t/delta(t)
-      t0 <- unname( mzToTof(prePeak[,"mz"]) ) # tof peak center
+      t0 <- unname( mzToTof(prePeak[,"mz"],calibCoef) ) # tof peak center
       delta0 <- t0/resolution_mean # FWHM in tof
       h0 <- unname( prePeak[,"intensity"] )
       initTof<- cbind(t=t0, delta=delta0,h=h0)
@@ -1027,6 +1375,8 @@ initializeFit<-function(i,sp.i.fit, sp.i, mz.i, mzToTof, minpeakheight, noiseacf
 #' @param x vector values
 #' @return numeric value
 sech2<-function(p,lf,lr,h,x) { h/(cosh(lf*(x-p))^2*(x<=p)+cosh(lr*(x-p))^2*(x>p))}
+
+sechInv<-function(p,lf,lr,h,x){c(p-1/lf*acosh(sqrt(h/x)),p+1/lr*acosh(sqrt(h/x)))}
 
 #'fit function average
 #'@param t tof center of peak

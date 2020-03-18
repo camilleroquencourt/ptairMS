@@ -37,7 +37,7 @@ align <- function(peakTab, ppmGroup=70, dmzGroup=0.001){
 
   # Loop on each group
   index_group <- which( diff(masspos,lag=1) >= 1 )
-  for (i in index_group) {
+  for (i in index_group){
 
     start <- masspos[i] # Get start and end of the sub group
     end <- masspos[i + 1] - 1
@@ -254,7 +254,7 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
   
   
   # make subgroup of peak
-  groupList <- align(as.matrix(mat), ppmGroup, dmzGroup)
+  groupList <- ptairMS:::align(as.matrix(mat), ppmGroup, dmzGroup)
   
   # Get number of samples
   nSample<-length(peakList)
@@ -330,16 +330,23 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
     Xbg <- Xbg[keepVar,,drop=FALSE]
     rownames(Xbg) <- rownames(X)
     colnames(Xbg) <- paste("Background -",names(peakList))
+    
 
     # backgroud discarding
     
     ## wilcoxon test
-    #test<-rep(0,nrow(X))
-    #for(i in 1:nrow(X)){
-    #  test[i]<-wilcox.test(x=X[i,],y=Xbg[i,],
-      #       alternative="two.sided",paired=T)$p.value
+    # Xbg[is.na(Xbg)]<-0
+    # test<-rep(0,nrow(X))
+    # for(i in 1:nrow(X)){
+    #   test[i]<-wilcox.test(x=X[i,],y=Xbg[i,],
+    #          alternative="two.sided",paired=T)$p.value }
+    # p<-p.adjust(test,method = "fdr")
+    # rownames(X)[which(! p<0.001)]
+    # 
+    # boxplot(X["41.0389",],Xbg["41.0389",])
+    
 
-    ## fixed threshold
+    # fixed threshold
     if(bgThreshold!=0){
       rap<-Xbg/X
       delete <- which(apply(rap,1,function(x) all( 1/bgThreshold <=x & x<= bgThreshold , na.rm=TRUE) ))
@@ -350,14 +357,24 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
         return(NULL)
       }
     }
-      
-      
-     
-      
+
   } else Xbg<-data.frame(row.names = rownames(X) )
  
 
-  
+  # convertion to ppb 
+  # if(length(raw@prtReaction)!=0 & nrow(transmission) > 1 & ppb ){
+  #   U <- c(reaction$TwData[1,,])
+  #   Td <-c(reaction$TwData[3,,])
+  #   pd <- c(reaction$TwData[2,,])
+  #   list_peak$peak[,"quanti"] <- ppbConvert(peakList = list_peak$peak,
+  #                                           primaryIon = primaryIon,
+  #                                           transmission = transmission,
+  #                                           U = U[indBg] , 
+  #                                           Td = Td[ indBg], 
+  #                                           pd = pd[ indBg])
+  #   namesQuanti<-"quanti (ppb)"
+  #   
+  # }
   
   cat(paste(nrow(X),"peaks aligned \n"))
  

@@ -75,8 +75,9 @@ setMethod("annotateVOC", "ExpressionSet",
               fdataDF[, annotateC] <- annotateDF[, annotateC]
             
             Biobase::fData(x) <- fdataDF
-            x<-findIsotope(x)
-            
+            xIso<-try(findIsotope(x))
+            if(!is.null(attr(xIso,"condition"))) 
+              return(x) 
             x
             
           })
@@ -426,7 +427,7 @@ findIsotope<-function(eSet,ppm=100){
   
   #FIND AND VALIDE ISOTOPE GROUP
   for (i in seq_along(mz)){
-    iso <- isotopeMzMatching(mz[i], mz[(i+1):length(mz)],ppm)
+    iso <- ptairMS:::isotopeMzMatching(mz[i], mz[(i+1):length(mz)],ppm)
     if(length(iso)){
       if(validateGroup(c(mz[i],iso),X)){
         fDATA[i,"isotope"]<- paste(iso,collapse = "/")
@@ -465,7 +466,7 @@ validateGroup<-function(groupIso,X){
       rep(X[as.character(groupIso)[1],,drop=F],2),
       nrow=length(as.character(groupIso)[-1]),byrow=TRUE)
   
-  testRatio<- apply(ratio,1,median) < 0.5
+  testRatio<- apply(ratio,1,function(x) median(x,na.rm = T)) < 0.5
   
   return(all(c(testCor,testRatio)))
 }

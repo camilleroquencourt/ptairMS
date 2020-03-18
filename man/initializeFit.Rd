@@ -9,7 +9,7 @@ initializeFit(
   sp.i.fit,
   sp.i,
   mz.i,
-  mzToTof,
+  calibCoef,
   minpeakheight,
   noiseacf,
   ppmPeakMinSep,
@@ -28,7 +28,7 @@ initializeFit(
 
 \item{mz.i}{the mass vector around a nominal mass}
 
-\item{mzToTof}{the function for convert mz to Tof}
+\item{calibCoef}{calibration coeficient}
 
 \item{minpeakheight}{the minimum peak intensity}
 

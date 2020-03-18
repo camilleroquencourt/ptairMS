@@ -123,7 +123,7 @@ It is possible to apply two filters:
 If you do not want to apply those filters, set `fracGroup` and `bgThreshold` to 0.
 
 ```{r Align patient}
-eSet <- alignSamples(exhaledSet, group="subfolder", fracGroup = 1, bgThreshold = 4 )
+eSet <- alignSamples(exhaledSet, group="subfolder", fracGroup = 1, bgThreshold = 0 )
 ```
 
 ## imputation 

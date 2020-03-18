@@ -38,14 +38,12 @@ methods::setMethod(f = "calibration",
             sp <- rowSums(object@rawM)/dim(object@rawM)[2]
 
             #performs calibration
-            calib<-calibrationFun(sp,mz,mzCalibRef,object@calibMzToTof,tol)
+            calib<-calibrationFun(sp,mz,mzCalibRef,object@calibCoef,tol)
            
             # update object object
             object@mz <- calib$mzVnbis
             rownames(object@rawM) <- calib$mzVnbis
             object@calibMassRef <- calib$mzCalibRef
-            object@calibToftoMz <- calib$calib_formula
-            object@calibMzToTof <- calib$calib_invformula
             object@calibSpectr <- calib$calibSpectr
             object@calibError <- calib$error
             object@calibCoef <- calib$coefs
@@ -60,11 +58,13 @@ methods::setMethod(f = "calibration",
 #' @param sp spectrum
 #' @param mz mass axis 
 #' @param mzCalibRef masses of know reference peaks
-#' @param mzToTofFunc function to convert mz to tof (previous calibration)
+#' @param calibCoef coeficient of the previous calibration
 #' @param tol maximum error tolarated in ppm
 #' @return list 
-calibrationFun<-function(sp,mz,mzCalibRef,mzToTofFunc,tol){
+calibrationFun<-function(sp,mz,mzCalibRef,calibCoef,tol){
+  
   width.window<-0.4
+  mzToTofFunc<-function(mz) mzToTof(mz,calibCoef)
   
   # check if mzCalibRef are in mz
   outMz <- which(vapply(mzCalibRef, 
@@ -126,16 +126,15 @@ calibrationFun<-function(sp,mz,mzCalibRef,mzToTofFunc,tol){
   
   # re estimated calibration coefficient with reference masses
   regression <- stats::nls( rep(1,length(mzCalibRef))  ~  I( ( (tofMax - b) / a) ^ 2 /mzCalibRef ),
-                     start = list(a = 8838, b= -219 ), algorithm = "port")
+                     start = list(a = calibCoef["a",], b= calibCoef["b",] ), algorithm = "port")
   coefs <- stats::coefficients(regression)
-  calib_formula <- function(tof) ((tof - coefs['b']) / coefs['a']) ^ 2
-  calib_invformula <- function(m) sqrt(m)*coefs['a'] + coefs['b']
+  coefs<-as.matrix(coefs)
   
   # the new mass axis calibrated
-  mzVnbis <- calib_formula(tof) 
+  mzVnbis <- tofToMz(tof,coefs) 
   
   # the new position of reference masses
-  mzRefRaw <- calib_formula(tofMax)
+  mzRefRaw <- tofToMz(tofMax,coefs)
   
   # error in ppm
   error <- abs(mzRefRaw-mzCalibRef)*10^6/mzCalibRef
@@ -152,13 +151,15 @@ calibrationFun<-function(sp,mz,mzCalibRef,mzToTofFunc,tol){
   
   return(list(mzVnbis =mzVnbis,
               mzCalibRef = mzCalibRef,
-              calib_formula = calib_formula,
-              calib_invformula= calib_invformula,
               calibSpectr= calibSpectr,
               error= error,
-              coefs= as.matrix(coefs)))
+              coefs= coefs))
   
 }
+
+tofToMz <- function(tof,calibCoef) {((tof - calibCoef['b',]) / calibCoef['a',]) ^ 2}
+mzToTof <- function(m,calibCoef) {sqrt(m)*calibCoef['a',] + calibCoef['b',]}
+
 ## plotRaw ----
 #' @rdname plotRaw
 #' @export
@@ -844,15 +845,15 @@ methods::setMethod(f="PeakList",
                    countFacFWHM=10, daSeparation=0.005, d=3, windowSize=0.4) {
   
   #get raw element 
-  sp <- rowSums(raw@rawM)/(ncol(raw@rawM)*round(raw@time[2]-raw@time[1])) # average spectrum 
+  sp <- rowSums(raw@rawM)/(ncol(raw@rawM)*(raw@time[2]-raw@time[1])) # average spectrum 
   mz <- raw@mz # mass axis
   mzCalibRef <- raw@calibMassRef 
-  tofToMz <- raw@calibToftoMz 
-  mzToTof <- raw@calibMzToTof
+  calibCoef<-raw@calibCoef
+  
   
   if(fctFit=="average") l.shape<-determinePeakShape(sp,mz,massRef = mzCalibRef)
   
-  prePeaklist <- lapply(mzNominal, function(m) peakListNominalMass(m,mz,sp,ppm, mzToTof,tofToMz,
+  prePeaklist <- lapply(mzNominal, function(m) peakListNominalMass(m,mz,sp,ppm, calibCoef,
                                                                     minIntensity, fctFit, maxIter, autocorNoiseMax ,
                                                                     plotFinal, plotAll, thNoiseRate, thIntensityRate ,
                                                                     countFacFWHM, daSeparation, d, windowSize) )
@@ -888,7 +889,7 @@ methods::setMethod(f="detectPeak",
             
             sp<-rowSums(raw@rawM)/ncol(raw@rawM)
             mz<-raw@mz
-            fit<-peakListNominalMass(21,mz,sp,ppmPeakMinSep=500, mzToTof= raw@calibMzToTof,
+            fit<-peakListNominalMass(21,mz,sp,ppmPeakMinSep=500, calibCoef= raw@calibCoef,
                                      minPeakDetect=10, fitFunc="Sech2", maxIter=1, autocorNoiseMax=0.3 ,
                                      plotFinal=F, plotAll=F, thNoiseRate=1.1, thIntensityRate=0.01 ,
                                      countFacFWHM=10, daSeparation=0.1, d=3, windowSize=0.2 )

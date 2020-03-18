@@ -1,3 +1,10 @@
+CHANGES IN VERSION 0.0.8
+------------------------------
+
+NEW FEATURE
+
+    o New process function for detectPeak: processTemporalFile that compute the exctracted chromatogram for all peak finded on theTIS 
+
 CHANGES IN VERSION 0.0.6
 ------------------------------
 

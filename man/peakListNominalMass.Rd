@@ -9,8 +9,7 @@ peakListNominalMass(
   mz,
   sp,
   ppmPeakMinSep = 130,
-  mzToTof,
-  tofToMz,
+  calibCoef,
   minPeakDetect = 10,
   fitFunc = "Sech2",
   maxIter = 2,
@@ -34,9 +33,7 @@ peakListNominalMass(
 
 \item{ppmPeakMinSep}{the minimum distance between two peeks in ppm}
 
-\item{mzToTof}{function to convert mz to tof}
-
-\item{tofToMz}{function  to convert tof to mz}
+\item{calibCoef}{calibration coeficient a and b}
 
 \item{minPeakDetect}{the minimum intenisty for peaks detection. The final threshold for peak detection
 will be : max ( \code{minPeakDetect} , thresholdNoise ). The thresholdNoise correspond to

@@ -278,6 +278,127 @@ plotPeakShape<-function(set){
             return(p)
             }
 
+plotPeakShapeTof<-function(set){
+  mzRef<-set@parameter$mzCalibRef
+  n.files<-length(set@mzCalibRef)
+  npoints<-50
+  
+  interval.ref <- seq(-3,3,length=npoints)# +- 3 * peak width(=1) 
+  
+  #loop over file
+  peak_ref<-array(NA,dim = c(length(mzRef),n.files,npoints))
+  
+  for (n.file in seq_len(n.files) ){
+    massRef <- set@mzCalibRef[[n.file]]
+    interval <- set@signalCalibRef[[n.file]]
+    names(interval)<-massRef
+    n.mass<-length(interval)
+    coefs <-set@coefCalib[[n.file]]
+    delta <- vapply(interval, 
+                   function(x) ptairMS:::width(tof = sqrt(x$mz)*coefs["a",]+coefs["b",],peak = x$signal)$delta,
+                   FUN.VALUE = 1.1)
+    
+    t_centre<-vapply(massRef,function(x) {
+      spectrum<-interval[[as.character(x)]]$signal
+      mz<-interval[[as.character(x)]]$mz
+      delta<- 5000 * log(sqrt(2)+1)*2/x 
+      init<-list(m=x,d1=delta,d2=delta,h=max(spectrum))
+      fit<-suppressWarnings(minpack.lm::nls.lm(par=init, 
+                                               fn =function(par,x,y) y- ptairMS:::sech2(
+                                                 par$m,par$d1,par$d2,par$h,x),
+                                               x= mz , y = spectrum))
+      center<-fit$par$m
+      return(center)
+    },FUN.VALUE = 1.1)
+    
+    t_centre<-sqrt(t_centre)*coefs["a",]+coefs["b",]
+    
+    #normalization of intreval
+    interval.n<-list()
+    for (j in seq_len(n.mass)){
+      interval.n[[j]]<-(sqrt(interval[[j]]$mz)*coefs["a",]+coefs["b",]-t_centre[j])/delta[j]
+    }
+    names(interval.n)<-massRef
+    
+    
+    peak <- matrix(0,ncol=n.mass,nrow=length(interval.ref))
+    
+    for (i in seq_len(n.mass)){
+      
+      #interpolation 
+      interpolation<-stats::spline(interval.n[[i]],interval[[i]]$signal,xout = interval.ref)
+      
+      #baseline correction 
+      interpolation$y <- interpolation$y - ptairMS:::snipBase(interpolation$y,widthI = 4)
+      
+      #normalization
+      indexPeakRef<-which(massRef==massRef[i])
+      peak_ref[indexPeakRef,n.file,]<-interpolation$y/stats::spline(interval.ref,interpolation$y,xout = 0)$y
+      #cumsum(interpolation$y)/sum(interpolation$y)
+    }
+    
+  }
+  
+  # aggreate
+  
+  #mean
+  peaks<-apply(peak_ref,1,function(x){
+    if(all(is.na(x))) return(rep(NA,4*npoints))
+    peak<-apply(x,2,function(x) mean(x,na.rm=TRUE))
+    peak<-stats::spline(interval.ref,peak,n=4*npoints)
+    return(peak$y)
+  }) 
+  
+  interval.ref2<-seq(-3,3,length=4*npoints)
+  peaks<-matrix(peaks,ncol=1)
+  
+  peakData<-data.frame(signal=peaks,
+                       Mz=as.factor(rep(mzRef,each=4*npoints)),
+                       intervalRef=rep(interval.ref2,length(mzRef)))
+  peakData<-peakData[!is.na(peakData$signal),]
+  #plot
+  p<-ggplot2::ggplot(data=peakData) + 
+    ggplot2::geom_line(ggplot2::aes(x=intervalRef,y=signal,group=Mz,colour=Mz),size=1) +
+    ggplot2::ggtitle("Average normalized peak shape") +
+    ggplot2::xlab('Mz interval normalized')+
+    ggplot2::ylab("Intenisty normalized")
+  
+  
+  if(n.files>1){
+    #confidence interval 
+    peaksUp<-apply(peak_ref,1,function(x){
+      if(all(is.na(x))) return(rep(NA,4*npoints))
+      peak<-apply(x,2,function(y) mean(y,na.rm=TRUE)+stats::qnorm(0.975)*stats::sd(y,na.rm=TRUE)/sqrt(length(y)))
+      peak<-stats::spline(interval.ref,peak,n=4*npoints)
+      return(peak$y)
+    }) 
+    
+    peaksDown<-apply(peak_ref,1,function(x){
+      if(all(is.na(x))) return(rep(NA,4*npoints))
+      peak<-apply(x,2,function(y) mean(y,na.rm=TRUE)-stats::qnorm(0.975)*stats::sd(y,na.rm=TRUE)/sqrt(length(y)))
+      peak<-stats::spline(interval.ref,peak,n=4*npoints)
+      return(peak$y)
+    }) 
+    
+    peaksUp<-matrix(peaksUp,ncol=1)
+    peaksDown<-matrix(peaksDown,ncol=1)
+    
+    peakData<-data.frame(signal0=peaksDown,signal1=peaksUp,
+                         Mz=as.factor(rep(mzRef,each=4*npoints)),
+                         intervalRef=rep(interval.ref2,length(mzRef)))
+    peakData<-peakData[!is.na(peakData$signal0),]
+    p<-p +
+      ggplot2::geom_line(data=peakData,ggplot2::aes(x=intervalRef,y=signal0,group=Mz,colour=Mz),size=0.6,
+                         linetype = "dashed")+
+      ggplot2::geom_line(data=peakData,ggplot2::aes(x=intervalRef,y=signal1,group=Mz,colour=Mz),size=0.6,
+                         linetype = "dashed")
+  }
+  
+  
+  return(p)
+}
+
+
 ### plotFiles----
 #' Plot the calibration peaks
 #' 
@@ -1179,10 +1300,10 @@ methods::setMethod(f = "calibration",
               
               #convert mz to tof 
               FirstcalibCoef <- rhdf5::h5read(file,"FullSpectra/MassCalibration",index=list(NULL,1))
-              mzToTof <-function(m) sqrt(m)*FirstcalibCoef[1,1] + FirstcalibCoef[2,1]
-                
+              rownames(FirstcalibCoef)<-c("a","b")
+              
               #calibration 
-              calib <- calibrationFun(spAvg,mz,mzCalibRef,mzToTof,tol)
+              calib <- calibrationFun(spAvg,mz,mzCalibRef,FirstcalibCoef,tol)
               
               x@coefCalib[[basename(file)]]<-calib$coefs
               x@mzCalibRef[[ basename(file) ]] <- calib$mzCalibRef

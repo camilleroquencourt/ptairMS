@@ -4,7 +4,7 @@
 \alias{calibrationFun}
 \title{calibration function}
 \usage{
-calibrationFun(sp, mz, mzCalibRef, mzToTofFunc, tol)
+calibrationFun(sp, mz, mzCalibRef, calibCoef, tol)
 }
 \arguments{
 \item{sp}{spectrum}
@@ -13,7 +13,7 @@ calibrationFun(sp, mz, mzCalibRef, mzToTofFunc, tol)
 
 \item{mzCalibRef}{masses of know reference peaks}
 
-\item{mzToTofFunc}{function to convert mz to tof (previous calibration)}
+\item{calibCoef}{coeficient of the previous calibration}
 
 \item{tol}{maximum error tolarated in ppm}
 }

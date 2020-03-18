@@ -24,7 +24,8 @@ readRaw <- function(filePath, calibTIS=TRUE,
                     mzCalibRef = c(21.022, 29.013424,41.03858, 60.0525,203.943, 330.8495),
                     tolCalibPpm=70){
 
-  if(is.na(filePath) | is.null(filePath) | filePath=="") stop("filePath is empty")
+  if(is.null(filePath) | filePath=="") stop("filePath is empty")
+  if(is.na(filePath)) stop("filePath is empty")
   if(!is.character(filePath)) stop("filePath must be a character")
   if(length(filePath) >1) stop("Only one filePath is required")
   if(!grepl("*h5$",filePath)) stop("The file is not in h5 format")
@@ -51,6 +52,7 @@ readRaw <- function(filePath, calibTIS=TRUE,
   reaction<- try(rhdf5::h5read(filePath,"AddTraces/PTR-Reaction"))
   transmission <- try(rhdf5::h5read(filePath,"PTR-Transmission"))
   calibCoef <- try(rhdf5::h5read(filePath,"FullSpectra/MassCalibration",index=list(NULL,1)))
+  
   attributCalib <- try(rhdf5::h5readAttributes(filePath,"/FullSpectra"))
   #singleIon<-attributCalib$`Single Ion Signal`
   #sampleInterval<-attributCalib$SampleInterval
@@ -77,9 +79,9 @@ readRaw <- function(filePath, calibTIS=TRUE,
   
   # calibration infomration
   if(is.null(attr(calibCoef,'condition'))){
-    names(calibCoef)<-c('a','b')
-    calib_formula <- function(tof) ((tof - calibCoef['b']) / calibCoef['a']) ^ 2
-    calib_invFormula <- function(m) sqrt(m)*calibCoef['a'] + calibCoef['b']
+    rownames(calibCoef)<-c("a","b")
+    calib_formula <- function(tof,calibCoef) ((tof - calibCoef['b',]) / calibCoef['a',]) ^ 2
+    calib_invFormula <- function(m,calibCoef) sqrt(m)*calibCoef['a',] + calibCoef['b',]
     calibMassRef = c(attributCalib$`MassCalibration m1`, attributCalib$`MassCalibration m2`)
     if(is.null(calibMassRef)) calibMassRef <- 0 } else { 
       calibCoef <- matrix(0)
@@ -382,7 +384,7 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC){
     } else {
       sp<-rowSums(raw@rawM)/ncol(raw@rawM)
       mz<-raw@mz
-      fit<-peakListNominalMass(21,mz,sp,ppmPeakMinSep=500, mzToTof= raw@calibMzToTof,
+      fit<-peakListNominalMass(21,mz,sp,ppmPeakMinSep=500, calibCoef = raw@calibCoef,
                                minPeakDetect=10, fitFunc="Sech2", maxIter=1, autocorNoiseMax=0.3 ,
                                plotFinal=FALSE, plotAll=FALSE, thNoiseRate=1.1, thIntensityRate=0.01 ,
                                countFacFWHM=10, daSeparation=0.1, d=3, windowSize=0.2 )

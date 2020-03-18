@@ -113,6 +113,6 @@ peakList$aligned
 library(ptairData)
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 dirSet <- createPtrSet(directory,setName="test")
-dirSet <- detectPeak(dirSet , mzNominal=59)
+dirSet <- detectPeak(dirSet , mzNominal=59,processFun=processFileTemporal)
 getPeakList(dirSet)$aligned
 }
