@@ -643,7 +643,7 @@ methods::setMethod(f="plotTIC",
                                   xlab="time",ylab="intensity",main=paste("TIC of",object@name)) 
             if(showLimits){
               #calculate timeLimit 
-              indLim <- timeLimits(object, fracMaxTIC = fracMaxTIC, plotDel = FALSE)
+              indLim <- timeLimits(object, fracMaxTIC = fracMaxTIC, plotDel = FALSE)$exp
               plot<- plot +
                 ggplot2::geom_vline(ggplot2::aes(xintercept = object@time[c(indLim)],
                                color="time limits")) + ggplot2::scale_fill_manual("Legend")
@@ -669,29 +669,32 @@ methods::setMethod(f="plotTIC",
 #' This function derives limits on the Total Ion Chromatogram TIC, where the intenisty is greater than \code{fracMaxTIC*max(TIC)}, 
 #' where max(TIC)  is the maximum of teh TIC with baseline removal.
 #' In this way,  the expiration limits, or headsapce analysis limits can be detected. So, by setting 
-#' \code{fracMaxTIC} close to 1, the size of teh limits will be restricted.
+#' \code{fracMaxTIC} close to 1, the size of teh limits will be restricted. This function also detemine 
+#' the index corresponding to the backgound, where variation between two succesive point can be control with 
+#' derivThreshold paramter.
 #' 
 #' @param object a ptrRaw or ptrSet object
 #' @param fracMaxTIC between 0 and 1. Percentage of the maximum of the Chromatogram amplitude with baseline removal. 
 #' If you want a finer limitation, increase \code{fracMaxTIC}, indeed decrease
+#' @param derivThreshold the tresphold of the difference between two succesive points of the background
 #' @param traceMasses NULL or a integer. Correspond to a nominal masses of Extract Ion Chromatogram (EIC)
 #'  whose limits you want to compute. If NULL, the limits are calculated on the Total Ion Chromatogram (TIC).
 #' @param minPoints minimum duration of an expiration (in index).
 #' @param plotDel boolean. If TRUE, the Chormatogram is ploted with limits and threshold.
-#' @return a matrix of index, where each colomn correspond to one expriration, the first row 
-#' it is the beginning and the seconde the end, or NA if no limits are detected.
+#' @return a list with expirations limits (a matrix of index, where each colomn correspond to one expriration, the first row 
+#' it is the beginning and the seconde the end, or NA if no limits are detected) and index of the background.
 #' @rdname timeLimits
 #' @examples
 #' library(ptairData)
 #' filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
 #' raw <- readRaw(filePath)
 #' 
-#' ind_lim <- timeLimits(raw, fracMaxTIC=0.9, plotDel=TRUE)
-#' ind_lim_acetone <- timeLimits(raw, fracMaxTIC=0.5, traceMasses = 59,plotDel=TRUE)
+#' timLim <- timeLimits(raw, fracMaxTIC=0.9, plotDel=TRUE)
+#' timLim_acetone <- timeLimits(raw, fracMaxTIC=0.5, traceMasses = 59,plotDel=TRUE)
 #'@export
 methods::setMethod(f="timeLimits",
           signature = "ptrRaw",
-          function(object,fracMaxTIC=0.5, traceMasses= NULL, minPoints = 2, plotDel=FALSE){
+          function(object,fracMaxTIC=0.5,derivThreshold=0.01, traceMasses= NULL, minPoints = 2, plotDel=FALSE){
             
             rawM <-object@rawM
             mz <- object@mz
@@ -699,7 +702,8 @@ methods::setMethod(f="timeLimits",
             if(is.null(dim(rawM))) stop("rawM must be a matrix")
             if(fracMaxTIC <0 || fracMaxTIC > 1) stop("fracMaxTIC must be between 0 and 1")
             if(fracMaxTIC==0) {
-              return(matrix(c(1,ncol(rawM)),ncol=1,nrow=2,dimnames = list(c("start","end"))))
+              return(list(exp=matrix(c(1,ncol(rawM)),ncol=1,nrow=2,dimnames = list(c("start","end"))),
+                          backGround=NULL))
                      }
             if(is.null(traceMasses)) { TIC <- colSums(rawM)
             } else {
@@ -709,19 +713,34 @@ methods::setMethod(f="timeLimits",
               TIC <- colSums(rawM[unlist(index),]) 
             }
             
-            indLim<-timeLimitFun(TIC,fracMaxTIC, traceMasses, minPoints, plotDel)
+            indLim<-timeLimitFun(TIC,fracMaxTIC,derivThreshold, traceMasses, minPoints, plotDel)
             
             return(indLim)
           }
           )
 
-timeLimitFun<-function(TIC,fracMaxTIC=0.5, traceMasses= NULL, minPoints = 3, plotDel=FALSE){
+timeLimitFun<-function(TIC,fracMaxTIC=0.5, derivThreshold=0.01, traceMasses= NULL, minPoints = 3, plotDel=FALSE){
   
   ## baseline corretion
   bl <- try(baselineEstimation(TIC,d=1))
   if(is.null(attr(bl,"condition"))) TIC.blrm<-TIC - bl else TIC.blrm<-TIC
   threshold<-(max(TIC.blrm)-min(TIC.blrm))*fracMaxTIC
+  thresholdBg<-(max(TIC.blrm)-min(TIC.blrm))*0.5
   
+  ## delimitation
+  ind.Exp <- which(TIC.blrm > (threshold) )
+  dTIC <- diff(TIC.blrm)/max(TIC.blrm)
+  ind.Bg<-which(abs(dTIC)<derivThreshold)
+  if(length(which(ind.Bg %in%ind.Exp)) >0) ind.Bg<-ind.Bg[ - which(ind.Bg %in%ind.Exp)]
+  
+  ind.Bg_end <- c(ind.Bg[which(diff(ind.Bg) !=1)],utils::tail(ind.Bg,1))
+  ind.Bg_begin<-c(ind.Bg[1],ind.Bg[which(diff(ind.Bg) !=1)+1])
+  limBg<-unname(rbind(ind.Bg_begin,ind.Bg_end))
+  
+  limBg<-limBg[, limBg[2,]- limBg[1,] >= minPoints,drop=FALSE]
+  if(ncol(limBg)==0) warning("no background detected")
+  indBg<-Reduce(c,apply(limBg,2,function(x) seq(x[1],x[2])))
+
   ## delimitation
   hat <- which(TIC.blrm > (threshold) )
   if(length(hat)==0) {
@@ -740,14 +759,16 @@ timeLimitFun<-function(TIC,fracMaxTIC=0.5, traceMasses= NULL, minPoints = 3, plo
   if(plotDel){
     if(is.null(traceMasses)) subtitle<-"TIC" 
     else subtitle <- paste("EIC mz:",paste(round(traceMasses,2),collapse = "-"))
-    plot(TIC.blrm,type='l',xlab="Time (s)",ylab="intensity",cex.lab=1.5, main = paste("Time limit",subtitle), 
+    plot(seq_along(TIC.blrm),TIC.blrm,type='l',xlab="Time (s)",ylab="intensity",cex.lab=1.5, main = paste("Time limit",subtitle), 
          ylim=c(min(TIC.blrm)-0.2*(max(TIC.blrm)-min(TIC.blrm)),max(TIC.blrm)),lwd=2)
     graphics::abline(v=c(hat_lim),col="red",lty=2,lwd=2)
     graphics::abline(h=threshold,lty=2)
-    graphics::legend("bottomleft",legend=c("threshold", "limit"),col=c("black","red"),lty=c(2,2),horiz = TRUE)
+    graphics::points(seq_along(TIC.blrm)[indBg],TIC.blrm[indBg],col="blue",pch=19)
+    graphics::legend("bottomleft",legend=c("threshold", "limit Exp","Backgound"),
+                     col=c("black","red","blue"),lty=c(2,2,NA),pch=c(NA,NA,19),horiz = TRUE)
   }
   
-  return(hat_lim)
+  return(list(backGround=indBg,exp=hat_lim))
 }
 
 bakgroundDetect<-function(TIC,derivThreshold=0.01,  minPoints = 4, plotDel=FALSE){
@@ -832,7 +853,7 @@ methods::setMethod(f="PeakList",
                    countFacFWHM=10, daSeparation=0.005, d=3, windowSize=0.4) {
   
   #get raw element 
-  sp <- rowSums(raw@rawM)/(ncol(raw@rawM)*(raw@time[2]-raw@time[1])) # average spectrum 
+  sp <- rowSums(raw@rawM)/(ncol(raw@rawM)*(raw@time[3]-raw@time[2])) # average spectrum 
   mz <- raw@mz # mass axis
   mzCalibRef <- raw@calibMassRef 
   calibCoef<-raw@calibCoef
@@ -861,14 +882,14 @@ methods::setMethod(f="PeakList",
 #' library(ptairData)
 #' filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
 #' raw <- readRaw(filePath,mzCalibRef=c(21.022,59.049))
-#' peakList <- detectPeak(raw, mzNominal = c(21,63))
+#' peakList <- detectPeak(raw, mzNominal = c(21,59))
 #' peakList$aligned
 #' @export
 methods::setMethod(f="detectPeak",
           signature = "ptrRaw",
           function(x, 
                    mzNominal=NULL , ppm=130, ppmGroupBkg=50, fracGroup=0.8, minIntensity=10, 
-                   fctFit=c("Sech2","average")[1],normalize=TRUE,fracMaxTIC=0.5,processFun=processFileSepExp,...)
+                   fctFit=c("Sech2","average")[1],fracMaxTIC=0.5,processFun=processFileSepExp,...)
           {
             raw<-x
             #get infomration
@@ -880,13 +901,15 @@ methods::setMethod(f="detectPeak",
                                      minPeakDetect=10, fitFunc="Sech2", maxIter=1, autocorNoiseMax=0.3 ,
                                      plotFinal=F, plotAll=F, thNoiseRate=1.1, thIntensityRate=0.01 ,
                                      countFacFWHM=10, daSeparation=0.1, d=3, windowSize=0.2 )
-            primaryIon<-max(fit$peak[,"quanti"]) #max in case of false positif detected
+            primaryIon<-max(fit$peak[,"quanti_cps"]) #max in case of false positif detected
             
             indTimeLim<- timeLimits(raw, fracMaxTIC = fracMaxTIC)
             
             peakLists<-processFun(raw,massCalib,primaryIon,indTimeLim, mzNominal,
                                                   ppm, ppmGroupBkg, fracGroup,minIntensity, 
-                                                  fctFit,normalize)
+                                                  fctFit)
+            
+            
 
             return(peakLists)
           } )

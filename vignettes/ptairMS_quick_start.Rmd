@@ -176,7 +176,6 @@ knitr::kable(head(features[names(sort(abs(dim1),decreasing = TRUE)),c("vocDB_ion
 ```{r}
 plotFeatures(exhaledSet,mz=67.0539,colorBy="subfolder",typePlot = "ggplot")
 plotFeatures(exhaledSet,mz=69.0699,colorBy="subfolder",typePlot = "ggplot")
-plotFeatures(exhaledSet,mz=109.066,colorBy="subfolder",typePlot = "ggplot")
 plotFeatures(exhaledSet,mz=51.0442,colorBy="subfolder",typePlot = "ggplot")
 ```
 
@@ -208,7 +207,7 @@ bacteriaSet <- detectPeak(bacteriaSet)
 ```
 
 ```{r }
-eSet <- alignSamples(bacteriaSet, group="subfolder", fracGroup = 1, bgThreshold = 0 )
+eSet <- alignSamples(bacteriaSet, group="subfolder", fracGroup = 1, bgThreshold = 2 )
 ```
 
 ```{r }

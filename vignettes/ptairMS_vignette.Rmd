@@ -274,7 +274,7 @@ For each file in the data set, this function:
 The `peakList` is then written in the `ptrSet` object as a list of `data.table`s containing for each file all the peaks detected, with quantification of analytical time periods (exhaled air or culture headspace) and background (ambient air).
 
 ```{r Detect peak}
-exhaledPtrset <- detectPeak(exhaledPtrset ,  mzNominal = NULL,fracGroup=1,normalize = TRUE)
+exhaledPtrset <- detectPeak(exhaledPtrset ,fracGroup=1)
 ```
 
 If you want to restrict the detection to specific nominal masses, indicate them with the `mzNominal` argument: for example `exhaledPtrset <- detectPeak(exhaledPtrset ,  mzNominal = c(21,59))`. 
@@ -332,7 +332,7 @@ It is possible to apply two filters:
 If you do not want to apply those filters, set `fracGroup` and `bgThreshold` to 0.
 
 ```{r Align patient}
-exhaledEset <- alignSamples(exhaledPtrset, group="individual", fracGroup = 1, bgThreshold = 4 )
+exhaledEset <- alignSamples(exhaledPtrset, group="individual", fracGroup = 1, bgThreshold = 2 )
 ```
 
 The three tables from the `ExpressionSet` can be accessed with the classical `exprs`, `pData`, and `fData` accessors:

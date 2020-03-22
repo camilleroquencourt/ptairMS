@@ -41,8 +41,8 @@ a ptrSet objet with slot :
 for each file (see \code{?ptairMS::calibration} for more details.  
 \item resolution: the estimated resolution \eqn{m / \Delta m} for each calibration masses within each file
 \item TIC: The Total Ion Chromatogram for each file
-\item timeLImit: a list containing the matrix of time limit for each file (if \code{fracMaxTIC} is
-different to zero). See ?ptairMS::timeLimits for more details
+\item timeLImit: a list containing list of two element per file: the matrix of time limit for each file 
+(if \code{fracMaxTIC} is different to zero), and the background index. See ?ptairMS::timeLimits for more details
 \item peakListRaw: a list containing for each file a peak list per time interval and background. 
 (the output of \code{detectPeak} function for each file, see \code{?ptairMS::detectPeak})
 \item peakListAligned: one peak list for each file, obtain after alignment betewwen all time period and backgroud.

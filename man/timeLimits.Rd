@@ -9,6 +9,7 @@
 timeLimits(
   object,
   fracMaxTIC = 0.5,
+  derivThreshold = 0.01,
   traceMasses = NULL,
   minPoints = 2,
   plotDel = FALSE
@@ -17,6 +18,7 @@ timeLimits(
 \S4method{timeLimits}{ptrRaw}(
   object,
   fracMaxTIC = 0.5,
+  derivThreshold = 0.01,
   traceMasses = NULL,
   minPoints = 2,
   plotDel = FALSE
@@ -25,6 +27,7 @@ timeLimits(
 \S4method{timeLimits}{ptrSet}(
   object,
   fracMaxTIC = 0.5,
+  derivThreshold = 0.01,
   traceMasses = NULL,
   minPoints = 2,
   plotDel = FALSE
@@ -36,6 +39,8 @@ timeLimits(
 \item{fracMaxTIC}{between 0 and 1. Percentage of the maximum of the Chromatogram amplitude with baseline removal. 
 If you want a finer limitation, increase \code{fracMaxTIC}, indeed decrease}
 
+\item{derivThreshold}{the tresphold of the difference between two succesive points of the background}
+
 \item{traceMasses}{NULL or a integer. Correspond to a nominal masses of Extract Ion Chromatogram (EIC)
 whose limits you want to compute. If NULL, the limits are calculated on the Total Ion Chromatogram (TIC).}
 
@@ -44,20 +49,22 @@ whose limits you want to compute. If NULL, the limits are calculated on the Tota
 \item{plotDel}{boolean. If TRUE, the Chormatogram is ploted with limits and threshold.}
 }
 \value{
-a matrix of index, where each colomn correspond to one expriration, the first row 
-it is the beginning and the seconde the end, or NA if no limits are detected.
+a list with expirations limits (a matrix of index, where each colomn correspond to one expriration, the first row 
+it is the beginning and the seconde the end, or NA if no limits are detected) and index of the background.
 }
 \description{
 This function derives limits on the Total Ion Chromatogram TIC, where the intenisty is greater than \code{fracMaxTIC*max(TIC)}, 
 where max(TIC)  is the maximum of teh TIC with baseline removal.
 In this way,  the expiration limits, or headsapce analysis limits can be detected. So, by setting 
-\code{fracMaxTIC} close to 1, the size of teh limits will be restricted.
+\code{fracMaxTIC} close to 1, the size of teh limits will be restricted. This function also detemine 
+the index corresponding to the backgound, where variation between two succesive point can be control with 
+derivThreshold paramter.
 }
 \examples{
 library(ptairData)
 filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
 raw <- readRaw(filePath)
 
-ind_lim <- timeLimits(raw, fracMaxTIC=0.9, plotDel=TRUE)
-ind_lim_acetone <- timeLimits(raw, fracMaxTIC=0.5, traceMasses = 59,plotDel=TRUE)
+timLim <- timeLimits(raw, fracMaxTIC=0.9, plotDel=TRUE)
+timLim_acetone <- timeLimits(raw, fracMaxTIC=0.5, traceMasses = 59,plotDel=TRUE)
 }

@@ -61,7 +61,7 @@ changeTimeLimits<-function(ptrSet){
     
     # get the time limit of the selected file
     shiny::observeEvent(input$fileName, {
-      rv$data <- t(ptrSetNew()@timeLimit[[input$fileName]])
+      rv$data <- t(ptrSetNew()@timeLimit[[input$fileName]]$exp)
     })
     
     #delete the selected expirations
@@ -73,7 +73,7 @@ changeTimeLimits<-function(ptrSet){
           shiny::removeNotification("warnings")
           rv$data <- rv$data[-rowNum,,drop=FALSE]
           ptrSet<-ptrSetNew()
-          ptrSet@timeLimit[[input$fileName]] <- t(rv$data)
+          ptrSet@timeLimit[[input$fileName]]$exp <- t(rv$data)
           ptrSetNew(ptrSet)
         }
   
@@ -82,9 +82,9 @@ changeTimeLimits<-function(ptrSet){
     # reset the expirations with timeLimit function
     shiny::observeEvent(input$reset, {
       shiny::removeNotification("warnings")
-      rv$data <- t(timeLimitFun(ptrSet@TIC[[input$fileName]],fracMaxTIC = ptrSet@parameter$fracMaxTIC ))
+      rv$data <- t(timeLimitFun(ptrSet@TIC[[input$fileName]],fracMaxTIC = ptrSet@parameter$fracMaxTIC )$exp)
       ptrSet<-ptrSetNew()
-      ptrSet@timeLimit[[input$fileName]] <- t(rv$data)
+      ptrSet@timeLimit[[input$fileName]]$exp <- t(rv$data)
       ptrSetNew(ptrSet)
     })
     

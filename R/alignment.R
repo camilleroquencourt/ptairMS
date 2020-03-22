@@ -1,4 +1,4 @@
-utils::globalVariables(c("Mz","quanti","group","delta_mz","background"))
+utils::globalVariables(c("Mz","quanti","group","background","fracExp"))
 
 #' Alignment with kernel gaussian density
 #'
@@ -12,8 +12,13 @@ align <- function(peakTab, ppmGroup=70, dmzGroup=0.001){
   peaksL <- peakTab[ porder , ,drop=FALSE]
   
   #delete the unit in col names
-  colnames(peaksL)[grep("quanti",colnames(peaksL))]<-"quanti"
   legList <- colnames(peaksL)
+  quantiName<-legList[grep("quanti",legList)]
+  legList[grep("quanti",legList)]<-"quanti"
+  bgName<-legList[grep("background",legList)]
+  legList[grep("background",legList)]<-"background"
+  
+  colnames(peaksL)<-legList
   
   # Get the number of different values in group
   n.group <- nlevels( as.factor( peaksL[, "group"] ) ) 
@@ -69,12 +74,18 @@ align <- function(peakTab, ppmGroup=70, dmzGroup=0.001){
     } # end of repeat
   } # end of error
   
+  #remettre l'unite dans le nom de la colonne 
+  # groupPeakList<-lapply(groupPeakList,function(x){
+  #   colnames(x)[grep("quanti",colnames(x))]<-quantiName
+  #   colnames(x)[grep("background",colnames(x))]<-bgName
+  #   x
+  # })
   return(groupPeakList)
   
   }
 
 #' Use in align function. return a peak group thanks to kernel gaussian density in a peak matrix.
-#' @param subpeakl a matrix with mz, ppb, delta_mz, resolution and group column. 
+#' @param subpeakl a matrix with mz, ppb, background and group column. 
 #' @param den the kernel gaussian density estimated on subpeakl
 #' @param plim the limit of a peak in the density of the group who will pe fromed
 #' @return the sub peakgroup  
@@ -89,14 +100,12 @@ makeSubGroup <- function(subpeakl,den,plim) {
   if( ( length(unique(subpeakl.group[,"group"])) < dim(subpeakl.group)[1] ) ){
     subpeakl.group <- data.table::as.data.table(subpeakl.group)
     if("background" %in% colnames(subpeakl.group)){
-      subpeakl.group<-as.matrix(subpeakl.group[,list(`Mz`=`Mz`[which.max(quanti)], 
-                                                  quanti=sum(quanti),
-                                                  background =  sum(background),
-                                                  delta_mz=max(delta_mz)), 
+      subpeakl.group<-as.matrix(subpeakl.group[,list(`Mz`=`Mz`[which.max(quanti)],
+                                                  quanti=sum(quanti,na.rm = TRUE),
+                                                  background =  sum(background,na.rm = TRUE)), 
                                                by=group] )
-    } else subpeakl.group<-as.matrix(subpeakl.group[,list(`Mz`=`Mz`[which.max(quanti)], 
-                                                       quanti=sum(quanti),
-                                                       delta_mz=max(delta_mz)), 
+    } else subpeakl.group<-as.matrix(subpeakl.group[,list(`Mz`=`Mz`[which.max(quanti)],
+                                                       quanti=sum(quanti,na.rm = TRUE)), 
                                                     by=group] )
     
     
@@ -113,7 +122,7 @@ makeSubGroup <- function(subpeakl,den,plim) {
 #' @param fracGroup We will keep variables only present in \code{fracGroup} of expirations
 #' @param dmzGroup difference of mz of a group for little mz
 #' @return A list of data.table with same length as PeakList input, but the alignment between 
-#' expirations is done: each matrix contains columns "mz", "delta_mz" and "ppb", "fracExp" and "background"
+#' expirations is done: each matrix contains columns "mz", "quanti_cps", "fracExp" and "background_cps"
 alignExpirations <- function(PeakMat, ppmGroup = 70, fracGroup=0.8, 
                             dmzGroup = 0.001 ){
   
@@ -121,7 +130,7 @@ alignExpirations <- function(PeakMat, ppmGroup = 70, fracGroup=0.8,
 
   #test if there is several group
   if(length(unique(PeakMat$group))==1) {
-  PeakMat<-data.table::data.table(PeakMat[,c("Mz","quanti","delta_mz")])
+  PeakMat<-data.table::data.table(PeakMat[,c("Mz","quanti_cps")])
   PeakMat$fracExp<-rep(1,nrow(PeakMat))
   PeakMat$background<-rep(NA,nrow(PeakMat))
   cat(nrow(PeakMat),"peaks detected \n")
@@ -131,6 +140,9 @@ alignExpirations <- function(PeakMat, ppmGroup = 70, fracGroup=0.8,
   # we apply at each matrix the function align 
   alignExpList <- align(PeakMat, ppmGroup = ppmGroup)
     
+  #remettre l'unite dans le nom de la colonne 
+
+  
   #Get the number of expiration 
   dim.group.exp <- vapply(alignExpList, function(x) length(which(x[,"group"]!=0)), 
                             FUN.VALUE=0L)
@@ -141,7 +153,11 @@ alignExpirations <- function(PeakMat, ppmGroup = 70, fracGroup=0.8,
  
   #filter on the reproductibility 
   aligExpMat <- aligExpMat[ aligExpMat$fracExp >= fracGroup, ]
- 
+  
+  colnames(aligExpMat)[grep("quanti",colnames(aligExpMat))]<-"quanti_cps"
+  colnames(aligExpMat)[grep("background",colnames(aligExpMat))]<-"background_cps"
+  
+  
   cat(paste(nrow(aligExpMat),"peaks detected \n"))
   return(aligExpMat)
 }
@@ -156,8 +172,8 @@ aggregate <- function(subGroupPeak, n.exp) {
   if(nrow(subGroupPeak) == 0) return(subGroupPeak) #empty data frame
   subGroupPeak <- data.table::data.table(subGroupPeak)
   subGroupPeak<-subGroupPeak[,list(Mz=mean(Mz),quanti=mean(`quanti`[`group`!=0]),
-                  delta_mz=mean(`delta_mz`[group!=0]),fracExp= round( sum(`group`!=0) /n.exp, 1 ),
-                  background=mean(`quanti`[group==0]))]
+                                   background=mean(`quanti`[group==0]),
+                                   fracExp= round( sum(`group`!=0) /n.exp, 1 ))]
   if(is.na(subGroupPeak[,`quanti`])) return(NULL)
   
   return(subGroupPeak)
@@ -178,7 +194,7 @@ aggregate <- function(subGroupPeak, n.exp) {
 #' quantity > bgThreshold x background or quantity < bgThreshold x background for all
 #' samples are keeped. 
 #' @param dmzGroup difference of mz of a group for little mz
-#' @param normalize normalization method 
+#' @param quantiUnit ppb, ncps or cps
 #' @param ... not used
 #' @return an expressionSet (Biobase object), with annotaTion in features Data
 #' @examples 
@@ -196,32 +212,13 @@ aggregate <- function(subGroupPeak, n.exp) {
 #'@export
 setMethod(f="alignSamples",signature = "ptrSet",
             function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL, bgThreshold=2,
-                         dmzGroup = 0.001,normalize=FALSE,...
+                         dmzGroup = 0.001,quantiUnit=c("ppb","ncps","cps")[1],...
                          ){
               
-              # if(normalize){
-              #   if(length(reaction)!=0 & nrow(transmission) > 1){
-              #     U <- c(reaction$TwData[1,,])
-              #     Td <-c(reaction$TwData[3,,])
-              #     pd <- c(reaction$TwData[2,,])
-              #     list_peak$peak[,"quanti"] <- ppbConvert(peakList = list_peak$peak,
-              #                                             primaryIon = X@primaryIon,
-              #                                             transmission = transmission,
-              #                                             U = U[indBg] , 
-              #                                             Td = Td[ indBg], 
-              #                                             pd = pd[ indBg])
-              #     namesQuanti<-"quanti (ppb)"
-              #     
-              #   } else {
-              #     #normalize by primary ions
-              #     list_peak$peak[,"quanti"] <- list_peak$peak[,"quanti"]/(primaryIon*4.9*10^6)
-              #     namesQuanti<-"quanti (ncps)"
-              #   }
-              # }
             sampleMetadata <- X@sampleMetadata
             peakList <- X@peakListAligned
             eSet<- alignSamplesFunc(peakList,sampleMetadata,ppmGroup, fracGroup , group,
-                          dmzGroup,bgThreshold)
+                          dmzGroup,bgThreshold,quantiUnit)
   
   return(eSet)
 })
@@ -242,7 +239,33 @@ setMethod(f="alignSamples",signature = "data.frame",
 
 
 alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100, 
-                             fracGroup=0.8, group=NULL, dmzGroup=0.001,bgThreshold=2){
+                             fracGroup=0.8, group=NULL, dmzGroup=0.001,bgThreshold=2,
+                             quantiUnit=c("ppb","ncps","cps")[1]){
+  
+  testquantiUnit<-Reduce(c,lapply(peakList,function(x) all(is.na(x[,paste0("quanti_",quantiUnit)]))))
+  
+  if(any(testquantiUnit)){
+    if(quantiUnit == "ppb"){
+      testquantiUnitncps<-Reduce(c,lapply(peakList,function(x) all(is.na(x[,paste0("quanti_","ncps")]))))
+      if(all(testquantiUnitncps)){
+        quantiUnit<-"ncps"
+      } else{
+        quantiUnit<-"cps"
+      }
+    }else {
+      quantiUnit<-"cps"
+    }
+  }
+  peakList<-lapply(peakList,function(x) {
+   quanti<- which(grepl("quanti",colnames(x)))
+   bg <- which(grepl("background",colnames(x)))
+   other<- seq_len(ncol(x))[-c(quanti,bg)]
+   quanti<-quanti[which(grepl(quantiUnit,colnames(x)[quanti]))]
+   bg<-bg[which(grepl(quantiUnit,colnames(x)[bg]))]
+    .SD<-data.table::.SD
+   x<-x[,.SD,.SD=colnames(x)[c(other,quanti,bg)]]
+   x
+  })
   
   ## add column group with Samples group number
   mat<-NULL
@@ -252,9 +275,8 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
   }
   
   
-  
   # make subgroup of peak
-  groupList <- ptairMS:::align(as.matrix(mat), ppmGroup, dmzGroup)
+  groupList <- align(as.matrix(mat), ppmGroup, dmzGroup)
   
   # Get number of samples
   nSample<-length(peakList)
@@ -330,21 +352,7 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
     Xbg <- Xbg[keepVar,,drop=FALSE]
     rownames(Xbg) <- rownames(X)
     colnames(Xbg) <- paste("Background -",names(peakList))
-    
-
-    # backgroud discarding
-    
-    ## wilcoxon test
-    # Xbg[is.na(Xbg)]<-0
-    # test<-rep(0,nrow(X))
-    # for(i in 1:nrow(X)){
-    #   test[i]<-wilcox.test(x=X[i,],y=Xbg[i,],
-    #          alternative="two.sided",paired=T)$p.value }
-    # p<-p.adjust(test,method = "fdr")
-    # rownames(X)[which(! p<0.001)]
-    # 
-    # boxplot(X["41.0389",],Xbg["41.0389",])
-    
+  
 
     # fixed threshold
     if(bgThreshold!=0){
@@ -372,7 +380,7 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
   sampleMetadata<-as.data.frame(sampleMetadata[colnames(X),,drop=FALSE])
   return(Biobase::ExpressionSet(assayData=X,
                                 phenoData = Biobase::AnnotatedDataFrame(sampleMetadata),
-                                featureData = featureData)
+                                featureData = featureData,annotation=quantiUnit)
   )
 }
 
@@ -427,7 +435,7 @@ impute <- function(eSet,ptrSet){
     indexMz<-Reduce(union,indexMzList)
     
     #get index time
-    indexLim <- ptrSet@timeLimit[[file]]
+    indexLim <- ptrSet@timeLimit[[file]]$exp
     indexTime<-Reduce(c,apply(indexLim,2,function(x) seq(x["start"],x["end"])))
     nbExp<-ncol(indexLim)
     
@@ -462,8 +470,11 @@ impute <- function(eSet,ptrSet){
       indexExp<-Reduce(c,apply(indexLim,2,function(x) seq(x[1],x[2])))
       length.exp<-length(indexExp)
       quantiMat<-matrix(0,ncol=length(mz),nrow=nbExp)
-        spectrum <- rowSums(rawMn[which(indexMz %in% indexMzList[[as.character(m)]]),
+        
+      spectrum <- rowSums(rawMn[which(indexMz %in% indexMzList[[as.character(m)]]),
                                   indexExp]) /length.exp
+      
+      spectrum<-spectrum-snipBase(spectrum)
         
         #substract fitted peak also find
         peakAlsoDetected <- peakListRaw.j[round(peakListRaw.j$Mz)==m & peakListRaw.j$group==1,]
@@ -481,11 +492,12 @@ impute <- function(eSet,ptrSet){
         #fit on the missing values
         resolution_upper<-8000
         resolution_mean<- 5000
-        resolution_lower<-3500
+        resolution_lower<-3000
         
         n.peak<-length(mz)
         delta<-rep(m/resolution_mean,2*n.peak)
         h<- vapply(mz, function(m) max(max(spectrum[which(abs(mzAxis.m-m)<(m*50/10^6))]),1),0)
+        
         
         initMz <- matrix(c(mz,log(sqrt(2)+1)*2/delta,
                            h),nrow=n.peak)
@@ -524,23 +536,23 @@ impute <- function(eSet,ptrSet){
         
         # convert to ppb or ncps
         #if there is reaction ans transmission information
-        if(ptrSet@parameter$detectPeakParam$normalize){
-          if(is.null(attr(transmission,'condition')) & is.null(attr(reaction,'condition'))){
+        if(Biobase::annotation(eSet)=="ppb"){
             U <- c(reaction$TwData[1,,])
             Td <-c(reaction$TwData[3,,])
             pd <- c(reaction$TwData[2,,])
             quanti.m <- ppbConvert(peakList = list_peak,
                                    primaryIon = primaryIon[[file]],
                                    transmission = transmission$Data,
-                                   U = U[ indexExp] , 
-                                   Td = Td[ indexExp], 
+                                   U = U[indexExp] , 
+                                   Td = Td[indexExp], 
                                    pd = pd[indexExp])
             
-          } else {
-            #normalize by primary ions
+          }
+        if(Biobase::annotation(eSet)=="ncps"){
+          #normalize by primary ions
             quanti.m <- quanti.m/(primaryIon[[basename(file)]]*4.9*10^6)
           }
-        }
+        
 
 
       # add to peak table

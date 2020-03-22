@@ -18,7 +18,7 @@ alignExpirations(PeakMat, ppmGroup = 70, fracGroup = 0.8, dmzGroup = 0.001)
 }
 \value{
 A list of data.table with same length as PeakList input, but the alignment between 
-expirations is done: each matrix contains columns "mz", "delta_mz" and "ppb", "fracExp" and "background"
+expirations is done: each matrix contains columns "mz", "quanti_cps", "fracExp" and "background_cps"
 }
 \description{
 Align mass tables of different expirations

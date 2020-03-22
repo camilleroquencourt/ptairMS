@@ -19,6 +19,7 @@
 #' library(ptairData)
 #' filePathRaw <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
 #' raw <- readRaw(filePathRaw,mzCalibRef=c(21.022, 41.03858, 60.0525))
+#' @import bit64
 #' @export
 readRaw <- function(filePath, calibTIS=TRUE, 
                     mzCalibRef = c(21.022, 29.013424,41.03858, 60.0525,203.943, 330.8495),
@@ -139,8 +140,8 @@ readRaw <- function(filePath, calibTIS=TRUE,
 #' for each file (see \code{?ptairMS::calibration} for more details.  
 #' \item resolution: the estimated resolution \eqn{m / \Delta m} for each calibration masses within each file
 #' \item TIC: The Total Ion Chromatogram for each file
-#' \item timeLImit: a list containing the matrix of time limit for each file (if \code{fracMaxTIC} is
-#' different to zero). See ?ptairMS::timeLimits for more details
+#' \item timeLImit: a list containing list of two element per file: the matrix of time limit for each file 
+#' (if \code{fracMaxTIC} is different to zero), and the background index. See ?ptairMS::timeLimits for more details
 #' \item peakListRaw: a list containing for each file a peak list per time interval and background. 
 #' (the output of \code{detectPeak} function for each file, see \code{?ptairMS::detectPeak})
 #' \item peakListAligned: one peak list for each file, obtain after alignment betewwen all time period and backgroud.
@@ -377,20 +378,6 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC){
     
     #primary ion quantification
     
-    # check if mass 21 contains in mass axis
-    if( ! 21 %in% unique(round(raw@mz)) ) {
-      warning("mass 21 not in mass Axis,the ppb quantification can not be done.")
-      primaryIon[[ fileName[j] ]] <- NA
-    } else {
-      sp<-rowSums(raw@rawM)/ncol(raw@rawM)
-      mz<-raw@mz
-      fit<-peakListNominalMass(21,mz,sp,ppmPeakMinSep=500, calibCoef = raw@calibCoef,
-                               minPeakDetect=10, fitFunc="Sech2", maxIter=1, autocorNoiseMax=0.3 ,
-                               plotFinal=FALSE, plotAll=FALSE, thNoiseRate=1.1, thIntensityRate=0.01 ,
-                               countFacFWHM=10, daSeparation=0.1, d=3, windowSize=0.2 )
-      primaryIon[[ fileName[j] ]]<- fit$peak[1,"quanti"]
-    }
-    
     #time unit 
     #BlockPeriodNS <- try(rhdf5::h5readAttributes(files[j],"/TimingData"))$BlockPeriod #nano seconde
     
@@ -398,8 +385,25 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC){
     TIC[[fileName[j]]] <- colSums(raw@rawM)
     
     # timeLimit
-    indLim <- timeLimits(raw, fracMaxTIC = fracMaxTIC, plotDel = FALSE)
+    indLim <- timeLimits(raw, fracMaxTIC = fracMaxTIC)
     timeLimit[[ fileName[j] ]] <- indLim
+    
+    # check if mass 21 contains in mass axis
+    if( ! 21 %in% unique(round(raw@mz)) ) {
+      warning("mass 21 not in mass Axis,the ppb quantification can not be done.")
+      primaryIon[[ fileName[j] ]] <- NA
+    } else {
+      ## sur le background
+      if(! is.null(indLim$backGound)) indBg<- indLim$backGound else indBg<-seq_along(raw@time)
+      sp<-rowSums(raw@rawM[,indBg])/length(indBg)*(raw@time[3]-raw@time[2]) #mean per acquisition
+      mz<-raw@mz
+      fit<-peakListNominalMass(21,mz,sp, ppmPeakMinSep=500, calibCoef = raw@calibCoef,
+                               minPeakDetect=10, fitFunc="Sech2", maxIter=1, autocorNoiseMax=0.3 ,
+                               plotFinal=FALSE, plotAll=FALSE, thNoiseRate=1.1, thIntensityRate=0.01 ,
+                               countFacFWHM=10, daSeparation=0.1, d=3, windowSize=0.2 )
+      primaryIon[[ fileName[j] ]]<- fit$peak[1,"quanti_cps"]
+    }
+    
     
     message( paste(fileName[j]," check"))
   }  

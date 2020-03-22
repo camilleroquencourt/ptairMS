@@ -23,7 +23,7 @@ alignSamples(
   group = NULL,
   bgThreshold = 2,
   dmzGroup = 0.001,
-  normalize = FALSE,
+  quantiUnit = c("ppb", "ncps", "cps")[1],
   ...
 )
 
@@ -57,7 +57,7 @@ samples are keeped.}
 
 \item{...}{not used}
 
-\item{normalize}{normalization method}
+\item{quantiUnit}{ppb, ncps or cps}
 
 \item{sampleMetadata}{if X is a ptrSet, not used, else a data.frame containing sample Metadata}
 }

@@ -25,6 +25,7 @@ test_peakSet<-function(){
   dirSet <- createPtrSet(dir, setName = "test", mzCalibRef = c(21.022,59.049))
   ListFiles <- names(dirSet@TIC)
   peakLists <- detectPeak(dirSet, mzNominal  = c(21, 60))
+  peakLists2 <- detectPeak(dirSet, mzNominal  = c(21, 60),processFun=ptairMS:::processFileTemporal)
 
   # type
   testthat::expect_is(peakLists,'ptrSet')

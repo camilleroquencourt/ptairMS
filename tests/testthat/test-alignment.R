@@ -24,7 +24,7 @@ test_align <- function() {
 test_alignExpirations <- function(){
   
   Ex<- cbind(Mz=c(21.002,21.0021,21.0019,21.002),quanti=c(100,120,115,40), 
-                       delta_mz=rep(0.5,4), resolution = rep(5000,4),group=c(1,2,3,0))
+                       background_cps=rep(0.5,4), group=c(1,2,3,0))
   res <- alignExpirations(as.data.frame(Ex))
   testthat::expect_equal(dim(res)[1],1)
   testthat::expect_is(res,'data.table')  

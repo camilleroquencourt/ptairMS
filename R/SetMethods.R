@@ -295,7 +295,7 @@ plotPeakShapeTof<-function(set){
     n.mass<-length(interval)
     coefs <-set@coefCalib[[n.file]]
     delta <- vapply(interval, 
-                   function(x) ptairMS:::width(tof = sqrt(x$mz)*coefs["a",]+coefs["b",],peak = x$signal)$delta,
+                   function(x) width(tof = sqrt(x$mz)*coefs["a",]+coefs["b",],peak = x$signal)$delta,
                    FUN.VALUE = 1.1)
     
     t_centre<-vapply(massRef,function(x) {
@@ -304,7 +304,7 @@ plotPeakShapeTof<-function(set){
       delta<- 5000 * log(sqrt(2)+1)*2/x 
       init<-list(m=x,d1=delta,d2=delta,h=max(spectrum))
       fit<-suppressWarnings(minpack.lm::nls.lm(par=init, 
-                                               fn =function(par,x,y) y- ptairMS:::sech2(
+                                               fn =function(par,x,y) y- sech2(
                                                  par$m,par$d1,par$d2,par$h,x),
                                                x= mz , y = spectrum))
       center<-fit$par$m
@@ -329,7 +329,7 @@ plotPeakShapeTof<-function(set){
       interpolation<-stats::spline(interval.n[[i]],interval[[i]]$signal,xout = interval.ref)
       
       #baseline correction 
-      interpolation$y <- interpolation$y - ptairMS:::snipBase(interpolation$y,widthI = 4)
+      interpolation$y <- interpolation$y - snipBase(interpolation$y,widthI = 4)
       
       #normalization
       indexPeakRef<-which(massRef==massRef[i])
@@ -534,7 +534,7 @@ methods::setMethod(f="plotTIC",
             
             #get the TIC and time limit
             TIC<-set@TIC[basename(fileNames)]
-            indLim<-set@timeLimit[basename(fileNames)]
+            indLim<-set@timeLimit[basename(fileNames)]$exp
             
             #getSampleMetadata
             SMD<-set@sampleMetadata
@@ -603,7 +603,7 @@ methods::setMethod(f="plotTIC",
                   }
                   
                   limitdf<-lapply(Legend, 
-                                  function(j) data.frame(x= as.numeric(names(set@TIC[[j]]))[c(set@timeLimit[[j]])],
+                                  function(j) data.frame(x= as.numeric(names(set@TIC[[j]]))[c(set@timeLimit[[j]]$exp)],
                                                          Legend=rep(j,2)))
                   limitdf <- Reduce(rbind,limitdf) 
                   p <- p + ggplot2::geom_vline(mapping=ggplot2::aes(xintercept =x,color=Legend),data=limitdf,
@@ -982,7 +982,9 @@ methods::setMethod(f="plotFeatures",
                 thLarge<-max(0.4,mz*(ppm/2)/10^6)
                 indexMz<-which(mz-thLarge < mzAxis & mzAxis < mz+thLarge)
                 
-                indLim <- set@timeLimit[[basename(file)]]
+                indLim <- set@timeLimit[[basename(file)]]$exp
+                indLimBg<-set@timeLimit[[basename(file)]]$backGround
+                
                 n.limit <- dim(indLim)[2]
                 
                 raw <- rhdf5::h5read(file, name = "/FullSpectra/TofData",index=list(indexMz,NULL,NULL,NULL))
@@ -1020,24 +1022,19 @@ methods::setMethod(f="plotFeatures",
                 }
                 
                 #get the background
-                indExpLarge<-unique(Reduce(c,apply(indLim,2,function(x) seq( max( x["start"]-3 , 1 ),
-                                                                             min( x["end"]+3 , ncol(rawMn) ) 
-                                                                             )
-                                                   )
-                                           )
-                                    )
-                indLimBg <- seq(1,ncol(rawMn))[-indExpLarge]
-                background<-rowSums(rawMn[,indLimBg])/length(indLimBg)
-                data=data.frame(mz=mzNew[indexSub], intensity=background[indexSub], timePeriods="background")
+                if(!is.null(indLimBg)){
+                  background<-rowSums(rawMn[,indLimBg])/length(indLimBg)
+                  data=data.frame(mz=mzNew[indexSub], intensity=background[indexSub], timePeriods="background")
+                  
+                  #plot background to the file plot
+                  plotFile <- plotFile + 
+                    ggplot2::geom_point(mapping = ggplot2::aes(x=mz, y=intensity, color=timePeriods),data=data) + 
+                    ggplot2::geom_line(mapping = ggplot2::aes(x=mz, y=intensity, color=timePeriods), data=data,
+                                       linetype = "dashed")
+                }
                 
-                #plot background to the file plot
-                plotFile <- plotFile + 
-                  ggplot2::geom_point(mapping = ggplot2::aes(x=mz, y=intensity, color=timePeriods),data=data) + 
-                  ggplot2::geom_line(mapping = ggplot2::aes(x=mz, y=intensity, color=timePeriods), data=data,
-                            linetype = "dashed")
                 plotFile <- plotFile + ggplot2::ggtitle(basename(file))
                 listPlotFile[[j]]<-plotFile
-                
                 ## add summary line to plotAll
                 # get the average time periods spectrum
                 spectrum <- rowSums(rawMn[, indexTimeVec]) / length(indexTimeVec)
@@ -1060,13 +1057,16 @@ methods::setMethod(f="plotFeatures",
                                          fun=splineInterpol ,n = 1000,size=1)
                 
                 # spline interpolation for background
-                splineInterpol<- stats::splinefun(mzNew,background)
+                if(!is.null(indLimBg)){
+                  background<-rowSums(rawMn[,indLimBg])/length(indLimBg)
+                  splineInterpol<- stats::splinefun(mzNew,background)
                 
-                #plot background
-                data= data.frame(mz = mzNew[indexSub], Legend = colour)
-                plotAll<-plotAll + 
-                  ggplot2::stat_function(mapping=ggplot2::aes(x=mz,color=Legend),data=data, 
+                  #plot background
+                  data= data.frame(mz = mzNew[indexSub], Legend = colour)
+                  plotAll<-plotAll + 
+                    ggplot2::stat_function(mapping=ggplot2::aes(x=mz,color=Legend),data=data, 
                                          fun=splineInterpol ,n = 1000,linetype="dashed",size=1)
+                }
                 
                 #plot vertical line line
                 if(addFeatureLine) plotAll<- plotAll+ ggplot2::geom_vline(xintercept = mz)
@@ -1247,12 +1247,12 @@ importSampleMetadata<-function(set,file){
 #' @export
 methods::setMethod(f="timeLimits",
           signature = "ptrSet",
-          function(object,fracMaxTIC=0.5, traceMasses= NULL, minPoints = 2, plotDel=FALSE){
+          function(object,fracMaxTIC=0.5, derivThreshold=0.01,traceMasses= NULL, minPoints = 2, plotDel=FALSE){
             
             fileNames<-basename(object@parameter$listFile)
             for (file in fileNames){
               TIC<-object@TIC[[file]]
-              indLim<-timeLimitFun(TIC,fracMaxTIC, traceMasses, minPoints, plotDel)
+              indLim<-timeLimitFun(TIC,fracMaxTIC, derivThreshold , traceMasses, minPoints, plotDel)
               object@timeLimit[[file]]<-indLim
             }
             object@parameter$fracMaxTIC<-fracMaxTIC

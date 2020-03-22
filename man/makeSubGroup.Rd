@@ -7,7 +7,7 @@
 makeSubGroup(subpeakl, den, plim)
 }
 \arguments{
-\item{subpeakl}{a matrix with mz, ppb, delta_mz, resolution and group column.}
+\item{subpeakl}{a matrix with mz, ppb, background and group column.}
 
 \item{den}{the kernel gaussian density estimated on subpeakl}
 

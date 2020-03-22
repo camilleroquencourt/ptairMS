@@ -39,7 +39,7 @@ setGeneric("plotRaw",
 #' @rdname timeLimits
 #' @export
 setGeneric("timeLimits",
-           function(object,fracMaxTIC=0.5, traceMasses=NULL, minPoints=2 , plotDel=FALSE ) {
+           function(object,fracMaxTIC=0.5, derivThreshold=0.01,traceMasses=NULL, minPoints=2 , plotDel=FALSE ) {
              standardGeneric("timeLimits")
            })
 

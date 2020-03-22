@@ -17,7 +17,6 @@ detectPeak(x, ...)
   fracGroup = 0.8,
   minIntensity = 10,
   fctFit = c("Sech2", "average")[1],
-  normalize = TRUE,
   fracMaxTIC = 0.5,
   processFun = processFileSepExp,
   ...
@@ -33,7 +32,6 @@ detectPeak(x, ...)
   fctFit = c("Sech2", "average")[1],
   parallelize = FALSE,
   nbCores = 2,
-  normalize = TRUE,
   saving = TRUE,
   saveDir = x@parameter$saveDir,
   processFun = processFileSepExp,
@@ -61,8 +59,6 @@ will be : max ( \code{minPeakDetect} , threshold noise ). The theshold noise cor
  max( intenisty in the nominal mass)}
 
 \item{fctFit}{the function for the quantification of Peak, should be sech2 or Average}
-
-\item{normalize}{boolean. if TRUE result in ppb or ncps, normalized by primary ions}
 
 \item{fracMaxTIC}{if x is a ptrRaw, the same paramter as \code{createPtrSet} function:Percentage 
 (between 0 and 1) of the maximum of the Total Ion Chromatogram (TIC) amplitude with baseline removal. 
@@ -108,7 +104,7 @@ for each time periods and background : \code{PeakList} \cr
 library(ptairData)
 filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
 raw <- readRaw(filePath,mzCalibRef=c(21.022,59.049))
-peakList <- detectPeak(raw, mzNominal = c(21,63))
+peakList <- detectPeak(raw, mzNominal = c(21,59))
 peakList$aligned
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 dirSet <- createPtrSet(directory,setName="test")

@@ -33,7 +33,6 @@ utils::globalVariables("::<-")
 #' @param fctFit the function for the quantification of Peak, should be sech2 or Average
 #' @param parallelize boolean. If \code{TRUE} loop aver files will be parallelized
 #' @param nbCores number of cluster to use for parrallel computation.
-#' @param normalize boolean. if TRUE result in ppb or ncps, normalized by primary ions
 #' @param fracMaxTIC if x is a ptrRaw, the same paramter as \code{createPtrSet} function:Percentage 
 #' (between 0 and 1) of the maximum of the Total Ion Chromatogram (TIC) amplitude with baseline removal. 
 #' We will analyze only the part of the spectrum where the TIC intensity is higher than 'fracMaxTIC * max(TIC) '. 
@@ -59,7 +58,7 @@ setMethod(f="detectPeak",
             signature = "ptrSet",
           function(x, 
                    mzNominal=NULL , ppm=130, ppmGroupBkg=50, fracGroup=0.8, minIntensity=10, 
-                   fctFit=c("Sech2","average")[1],parallelize=FALSE,nbCores=2,normalize=TRUE,
+                   fctFit=c("Sech2","average")[1],parallelize=FALSE,nbCores=2,
                    saving=TRUE,saveDir=x@parameter$saveDir,processFun=processFileSepExp,...)
           {
             ptrset<-x
@@ -79,7 +78,7 @@ setMethod(f="detectPeak",
             fileName <- basename(files)
            
             paramNew <- list(mzNominal=mzNominalParam, ppmGroupBkg=ppmGroupBkg,fracGroup=fracGroup,
-                          ppm=ppm, minIntensity=minIntensity, fctFit=fctFit,normalize=normalize)
+                          ppm=ppm, minIntensity=minIntensity, fctFit=fctFit)
 
            # keep files that not alreday processed
             fileDone <- names(peakListRaw)
@@ -113,11 +112,12 @@ setMethod(f="detectPeak",
             
             
             FUN <- function(x) { 
-              test<-try(processFun(x,massCalib[[basename(x)]],
-                                                  primaryIon[[basename(x)]],
-                                                  indTimeLim[[basename(x)]], mzNominal,
-                                                      ppm, ppmGroupBkg, fracGroup,minIntensity, 
-                                                   fctFit,normalize))
+              test<-try(processFun(fullNamefile = x,massCalib = massCalib[[basename(x)]],
+                                   primaryIon = primaryIon[[basename(x)]],
+                                   indTimeLim = indTimeLim[[basename(x)]], 
+                                   mzNominal = mzNominal,ppm = ppm,
+                                   ppmGroupBkg =  ppmGroupBkg, fracGroup = fracGroup,
+                                   minIntensity = minIntensity,fctFit = fctFit))
               if(!is.null(attr(test,'condition'))){
                 return(list(raw=0,aligned=0))
               } else return(test)
@@ -180,14 +180,14 @@ setMethod(f="detectPeak",
 #'of VOC and a list of all raw EIC (EIClist)
 computeTemporalFile<-function(raw,peak,timeCalib=20,deconvMethod=deconv2d2linearIndependant){
   
-  listCalib<-multiCalib(raw,timeCalib)
+  listCalib <- multiCalib(raw,timeCalib)
   
-  EICex<-extractEIC(raw,peak)
+  EICex <-  extractEIC(raw,peak)
   
-  borne<-EICex$borne
-  EIC<-EICex$EIC
+  borne <- EICex$borne
+  EIC <- EICex$EIC
   
-  nbPeak <- sum(borne[,"overlap"])
+  nbPeakOvelap <- sum(borne[,"overlap"])
   
   # compute EIC
   
@@ -199,11 +199,11 @@ computeTemporalFile<-function(raw,peak,timeCalib=20,deconvMethod=deconv2d2linear
   borne[borne[,"overlap"]==0,5:ncol(borne)] <- Reduce(rbind,lapply(EIC[borneUnique[,"overlap"]==0], colSums))
   
   #with overlapp
-  XICdeconv2<-matrix(0,ncol=length(raw@time),nrow=nbPeak)
+  XICdeconv2<-matrix(0,ncol=length(raw@time),nrow=nbPeakOvelap)
   c<-1
   for(j in which(borneUnique[,"overlap"]==1)){
     mz<-borne[which(borne[,"lower"]==borneUnique[j,"lower"]),"Mz"]
-    peak.detect<-peak[peak[,"Mz"]%in% mz,,drop=F]
+    peak.detect<-peak[peak[,"Mz"]%in% mz,,drop=FALSE]
     
     rawM<-EIC[[j]]
     deconv2<-deconvMethod(rawM,raw@time,peak.detect,raw,listCalib)
@@ -219,18 +219,17 @@ computeTemporalFile<-function(raw,peak,timeCalib=20,deconvMethod=deconv2d2linear
   
   # test significativité
   # comparaison de moyenne normal 
-  indLim<-timeLimits(raw,fracMaxTIC = 0.7)
-  indExp<-Reduce(c,apply(indLim,2,function(x) seq(from=x[1],to=x[2])))
-  indLimBg<- bakgroundDetect(colSums(raw@rawM))
-  indBg<-Reduce(c,apply(indLimBg,2,function(x) seq(from=x[1],to=x[2])))
+  indLim <-timeLimits(raw,fracMaxTIC = 0.7)
+  indExp <-Reduce(c,apply(indLim$exp,2,function(x) seq(from=x[1],to=x[2])))
+  indBg<- indLim$backGround
   
-  XIC<-borne[,5:ncol(borne),drop=F]
-  p.greater<-apply(XIC,1,function(x) t.test(x[indExp],x[indBg],alternative="greater")$p.value)
-  p.less<-apply(XIC,1,function(x) t.test(x[indExp],x[indBg],alternative="less")$p.value)
-  p.greater<-p.adjust(p.greater,method = "fdr")
-  p.less<-p.adjust(p.less,method = "fdr")
+  XIC<-borne[,5:ncol(borne),drop=FALSE]
+  p.greater<-apply(XIC,1,function(x) stats::t.test(x[indExp],x[indBg],alternative="greater")$p.value)
+  p.less<-apply(XIC,1,function(x) stats::t.test(x[indExp],x[indBg],alternative="less")$p.value)
+  p.greater<-stats::p.adjust(p.greater,method = "fdr")
+  p.less<-stats::p.adjust(p.less,method = "fdr")
   
-  borne<-cbind(borne, data.frame(p.less=p.less,p.upper=p.greater))
+  borne<-cbind(borne, data.frame(pValLess=p.less,pValGreater=p.greater))
   
   return(list(matPeak=borne,EIClist=EIC))
 }
@@ -263,7 +262,7 @@ extractEIC<-function(raw,peak,peakQuantil=0.05){
       if(length(o)>1){
         #change
         borne[o,"lower"]<-borne[o[1],"lower"]
-        borne[o,"upper"]<-borne[tail(o,1),"upper"]
+        borne[o,"upper"]<-borne[utils::tail(o,1),"upper"]
         c<-c+1
         overlap[[c]]<-o
       }
@@ -273,7 +272,7 @@ extractEIC<-function(raw,peak,peakQuantil=0.05){
   if(length(o)>1){
     #change
     borne[o,"lower"]<-borne[o[1],"lower"]
-    borne[o,"upper"]<-borne[tail(o,1),"upper"]
+    borne[o,"upper"]<-borne[utils::tail(o,1),"upper"]
     c<-c+1
     overlap[[c]]<-o
   }
@@ -394,7 +393,7 @@ calibShiftCorr<-function(rawM,raw,peak,listCalib){
   for (i in seq_along(listCalib)){
     index<-listCalib[[i]]$index
     rawMCorr[,index]<-vapply(index,function(j){
-      approx(x=as.numeric(rownames(rawM)) ,
+      stats::approx(x=as.numeric(rownames(rawM)) ,
              y=rawM[,j],
              xout=as.numeric(rownames(rawM))+ calibShit[1,i])$y
     },FUN.VALUE = rep(0,nrow(rawM)))
@@ -431,7 +430,7 @@ deconv2dLinearCoupled<-function(rawM,t,peak.detect,raw,listCalib,K=round(length(
   #time function 
   tic<- function(t,K,tRef,smp){
     smooth<-mgcv::smooth.construct(mgcv::s(t,k=K,bs="cr",sp=smp),data=list(t=tRef),
-                                   list(t=quantile(tRef,probs = seq(0,1,length=K))))
+                                   list(t=stats::quantile(tRef,probs = seq(0,1,length=K))))
     return(list(TIC=mgcv::Predict.matrix(smooth,data.frame(t=t)),S=smooth$S))
   }
   
@@ -517,7 +516,7 @@ deconv2d2linearIndependant<-function(rawM,time,peak.detect,raw,listCalib){
                   function(x) 1/(cosh(x["lf"]*(mzAxis-x["mz"]))^2*(mzAxis<=x["mz"])+
                                    cosh(x["lr"]*(mzAxis-x["mz"]))^2*(mzAxis>x["mz"])))
     
-    fit<-lm(spectrum.m ~ model-1)
+    fit<-stats::lm(spectrum.m ~ model-1)
     
     par_estimated<-fit$coefficients
     fit.peak<- fit$fitted.values
@@ -527,14 +526,6 @@ deconv2d2linearIndependant<-function(rawM,time,peak.detect,raw,listCalib){
     #quantification 
     quanti <- apply(rbind(mz,par_estimated,lf,lr),2, function(x){
       sum(sech2(x[1],x[3],x[4],x[2],mzAxis))})
-    
-    ## normalisation
-    #if there is reaction ans transmission information
-    # if(normalize){
-    #   #normalize by primary ions
-    #   quanti <- quanti/(primaryIon*4.9*10^6)
-    #   namesQuanti<-"quanti (ncps)"
-    # }
     
     matPeak[i,]<-quanti
     
@@ -640,16 +631,9 @@ deconv2d2NonlinearIndependant<-function(rawM,time,peak.detect,raw,listCalib){
     
     #quantification 
     quanti <- apply(rbind(par_estimated,lf,lr),2, function(x){
-      lines(mzAxis,sech2(x[1],x[3],x[4],x[2],mzAxis))
+      #lines(mzAxis,sech2(x[1],x[3],x[4],x[2],mzAxis))
       return(sum(sech2(x[1],x[3],x[4],x[2],mzAxis)))})
-    
-    ## normalisation
-    #if there is reaction ans transmission information
-    # if(normalize){
-    #   #normalize by primary ions
-    #   quanti <- quanti/(primaryIon*4.9*10^6)
-    #   namesQuanti<-"quanti (ncps)"
-    # }
+
     
     matPeak[i,]<-quanti
     
@@ -659,104 +643,10 @@ deconv2d2NonlinearIndependant<-function(rawM,time,peak.detect,raw,listCalib){
 }
 
 
-processFileAvgExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNominal, ppm, 
-                             ppmGroupBkg, fracGroup,
-                             minIntensity, 
-                             fctFit,normalize){
-  
-  if(is.character(fullNamefile)){
-    cat(basename(fullNamefile),": ")
-    # read file
-    raw <- readRaw(fullNamefile, calibTIS = FALSE)
-  } else raw <- fullNamefile
-
-  # information for ppb convertion
-  reaction = raw@prtReaction
-  transmission = raw@ptrTransmisison
-  
-  # time limit and background
-  bg<-FALSE
-  matPeak.bg<-NULL
-  indLim <- indTimeLim
-  if(ncol(indLim) == 0 || all(is.na(indLim)) ) {
-    indLim <- matrix(c(1,length(raw@time)),
-                     dimnames =list(c("start","end"),NULL) )
-  } else {
-    bg<-TRUE
-    indLimExpLarge <- timeLimits(raw,fracMaxTIC = 0.1)
-    indExp<-unique(Reduce(c,apply(indLimExpLarge,2,function(x) seq(x["start"]-2,x["end"]+2))))
-    indBg<-seq(1,length(raw@time))[-indExp]
-    raw.bg <- raw
-    raw.bg@rawM <- raw.bg@rawM[, indBg]
-    raw.bg@time <-  raw.bg@time[ indBg]
-    
-    ## calibration
-    raw.bg <- calibration(raw.bg, massCalib)
-    
-    ## peak detection 
-    if(is.null(mzNominal)) mzNominal= unique(round(raw@mz))
-    list_peak <- PeakList(raw=raw.bg, mzNominal = mzNominal, 
-                          ppm=ppm, minIntensity=minIntensity,
-                          fctFit=fctFit)
-    
-    ## normalisation
-    #if there is reaction ans transmission information
-    namesQuanti<-"quanti (cps)"
-    if(normalize){
-       
-        #normalize by primary ions
-        list_peak$peak[,"quanti"] <- list_peak$peak[,"quanti"]/(primaryIon*4.9*10^6)
-        namesQuanti<-"quanti (ncps)"
-      
-    }
-    matPeak.bg<- cbind(list_peak$peak , group=rep(0,dim(list_peak$peak)[1]))
-  } 
-  
-
-    indLimAll<-Reduce(c,apply(indLim,2,function(x) seq(x[1],x[2])))
-    ## average on expriration
-    raw.i <- raw
-    raw.i@rawM <- raw.i@rawM[, indLimAll]
-    raw.i@time <-  raw.i@time[ indLimAll]
-    
-    ## calibration
-    raw.i <- calibration(raw.i, massCalib)
-    
-    ## peak detection 
-    if(is.null(mzNominal)) mzNominal= unique(round(raw@mz))
-    list_peak <- try(PeakList(raw=raw.i, mzNominal = mzNominal, 
-                          ppm=ppm, minIntensity=minIntensity,
-                          fctFit=fctFit))
-    
-    
-    ## normalisation
-    #if there is reaction ans transmission information
-    namesQuanti<-"quanti (cps)"
-    if(normalize){
-        #normalize by primary ions
-        list_peak$peak[,"quanti"] <- list_peak$peak[,"quanti"]/(primaryIon*4.9*10^6)
-        namesQuanti<-"quanti (ncps)"
-    }
-    
-    list_peak.exp<- cbind(list_peak$peak , group=rep(1,dim(list_peak$peak)[1]))
-    
-  
-  ## Concatenate all expirations peak lists 
-  
-  matPeak.j<-rbind(matPeak.bg,list_peak.exp)
-  
-  ## align expirations and bakcground
-  matAligned <- alignExpirations(matPeak.j, ppmGroup=ppmGroupBkg, fracGroup=fracGroup)
-  names(matAligned)[grep("quanti",names(matAligned))]<-namesQuanti
-  
-  #return(matPeak.j)
-  return(list(raw=matPeak.j,aligned=matAligned))
-}
-
 processFileSepExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNominal, ppm, 
                       ppmGroupBkg, fracGroup,
                       minIntensity, 
-                      fctFit,normalize){
+                      fctFit){
   
   if(is.character(fullNamefile)){
     cat(basename(fullNamefile),": ")
@@ -772,15 +662,11 @@ processFileSepExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNo
   # time limit and background
   bg <- FALSE
   matPeak.bg <- NULL
-  indLim <- indTimeLim
-  if(ncol(indLim) == 0 || all(is.na(indLim)) ) {
-    indLim <- matrix(c(1,length(raw@time)),
-                     dimnames =list(c("start","end"),NULL) ) } 
-  if( indLim[1,1] > 1 || utils::tail(c(indLim),1) < length(raw@time) ) {
-    bg <- TRUE
-    LimBg<-bakgroundDetect(colSums(raw@rawM))
-    LimBg<-LimBg[,1] 
-    indBg<-seq(LimBg[1],LimBg[2])
+  indLim <- indTimeLim$exp
+  indBg<-indTimeLim$backGround
+
+  if( !is.null(indBg) ) {
+    bg<-TRUE
     raw.bg <- raw
     raw.bg@rawM <- raw.bg@rawM[, indBg]
     raw.bg@time <-  raw.bg@time[ indBg]
@@ -794,15 +680,6 @@ processFileSepExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNo
                           ppm=ppm, minIntensity=minIntensity,
                           fctFit=fctFit)
     
-    ## normalisation
-    #if there is reaction ans transmission information
-    namesQuanti<-"quanti (cps)"
-    if(normalize){
-      
-        #normalize by primary ions
-        list_peak$peak[,"quanti"] <- list_peak$peak[,"quanti"]/(primaryIon*4.9*10^6)
-        namesQuanti<-"quanti (ncps)"
-    }
     matPeak.bg<- cbind(list_peak$peak , group=rep(0,dim(list_peak$peak)[1]))
   } 
   
@@ -823,17 +700,6 @@ processFileSepExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNo
                           ppm=ppm, minIntensity=minIntensity,
                           fctFit=fctFit)
     
-    ## normalisation
-    #if there is reaction ans transmission information
-    namesQuanti<-"quanti (cps)"
-    if(normalize){
-      
-        #normalize by primary ions
-        list_peak$peak[,"quanti"] <- list_peak$peak[,"quanti"]/(primaryIon*4.9*10^6)
-        namesQuanti<-"quanti (ncps)"
-      
-    }
-    
    list_peak.j[[i]]<- cbind(list_peak$peak , group=rep(i,dim(list_peak$peak)[1]))
     
   } # end loop over expirations
@@ -845,9 +711,32 @@ processFileSepExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNo
   
   ## align expirations and bakcground
   matAligned <- alignExpirations(matPeak.j, ppmGroup=ppmGroupBkg, fracGroup=fracGroup)
-  names(matAligned)[grep("quanti",names(matAligned))]<-namesQuanti
-  
-  #return(matPeak.j)
+
+  #normalize by primary ions and ppb conversion
+  if(!is.na(primaryIon)){
+    
+    matAligned[,"quanti_ncps"] <-matAligned[,"quanti_cps"]/(primaryIon*488)
+   if(bg) matAligned[,"background_ncps"] <-matAligned[,"background_cps"]/(primaryIon*488)
+    
+    indExp<-Reduce(c,apply(indLim,2,function(x) seq(x[1],x[2])))
+    if( length(reaction)!=0 & nrow(transmission) > 1){
+      matAligned[,"quanti_ppb"]<-ppbConvert(peakList = data.frame(Mz=matAligned$Mz,
+                                                                            quanti=matAligned$quanti_cps),
+                                                      primaryIon = primaryIon,
+                                                      transmission =raw@ptrTransmisison,
+                                                      U=c(raw@prtReaction$TwData[1,,])[indExp],
+                                                      Td=c(raw@prtReaction$TwData[3,,])[indExp],
+                                                      pd=c(raw@prtReaction$TwData[2,,])[indExp])
+      
+      if(bg) matAligned[,"background_ppb"]<-ppbConvert(peakList = data.frame(Mz=matAligned$Mz,
+                                                                                quanti=matAligned$background_cps),
+                                                          primaryIon = primaryIon,
+                                                          transmission =raw@ptrTransmisison,
+                                                          U=c(raw@prtReaction$TwData[1,,])[indBg],
+                                                          Td=c(raw@prtReaction$TwData[3,,])[indBg],
+                                                          pd=c(raw@prtReaction$TwData[2,,])[indBg])
+    }
+  }
   return(list(raw=matPeak.j,aligned=matAligned))
 }
 
@@ -855,18 +744,15 @@ processFileSepExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNo
 processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNominal, ppm, 
                       ppmGroupBkg, fracGroup,
                       minIntensity, 
-                      fctFit,normalize,...){
+                      fctFit,funAggreg=mean,...){
   
   if(is.character(fullNamefile)){
     cat(basename(fullNamefile),": ")
     # read file
-    raw <- readRaw(fullNamefile)
+    raw <- readRaw(fullNamefile,mzCalibRef =massCalib )
   } else raw <- fullNamefile
   
-  # information for ppb convertion
-  reaction = raw@prtReaction
-  transmission = raw@ptrTransmisison
-  
+
   # peak detection on TIS 
   if(is.null(mzNominal)) mzNominal= unique(round(raw@mz))
   list_peak <- PeakList(raw, mzNominal = mzNominal, 
@@ -875,32 +761,64 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
 
   
   # compute temporal profile
-  fileProccess<-ptairMS:::computeTemporalFile(raw,list_peak)
-  
+  fileProccess<- computeTemporalFile(raw = raw,peak = list_peak)
   matPeak<-data.table::as.data.table(fileProccess$matPeak)
-  #apply(matPeak,1,function(x) plot(x[5:(length(x)-2)],main=round(x[1],2)))
+  
+  #change names of quanti
+  colnames(matPeak)[5:(ncol(matPeak)-2)] <- paste("quanti_cps",colnames(matPeak)[5:(ncol(matPeak)-2)] ,
+                                                  sep = " - ")
   
   # agregation of expirations and bg
 
   # adjustement of time limit
-  # indLim <- indTimeLim
-  # if(ncol(indLim) == 0 || is.na(indLim) ) {
-  #   indLim <- matrix(c(1,length(raw@time)),
-  #                    dimnames =list(c("start","end"),NULL) )
-  # } else if(indLim[1,1] > 4) indLim <- cbind( matrix( c(1, indLim[1, 1] - 3)), indLim)
-  # 
-  # bg<-raw@time[seq(indLim["start",1],indLim["end",1])]
-  # if(ncol(indLim)>1){
-  #   exp<-raw@time[Reduce(c,lapply(seq(2,ncol(indLim)),function(i) seq(indLim["start",i],
-  #                                                                     indLim["end",i])))]
-  #   matPeakAg<-matPeak[ , list(mz=stats:: median(mz), quanti=mean(quanti[t %in% exp]), 
-  #                           background=mean(quanti[t %in% bg])),by=group]
-  #   #matPeakAg[group `:=` NULL] #delete column group 
-  # }else matPeakAg<-matPeak[,list(mz=stats:: median(mz), quanti=mean(quanti)),by=group]
-  # 
-  # names(matPeakAg)[grep("quanti",names(matPeakAg))]<-namesQuanti
+  indLim <- indTimeLim$exp
+  indBg<-indTimeLim$backGround
   
-  return(list(raw=matPeak,aligned=NULL))
+  if(!is.null(indBg)){
+    bg <- raw@time[indBg]
+    exp <-raw@time[Reduce(c,lapply(seq(1,ncol(indLim)),function(i) seq(indLim["start",i],
+                                                                      indLim["end",i])))]
+    matPeakSub <- matPeak[,5:(ncol(matPeak)-2)]
+    colnames(matPeakSub) <- as.character(raw@time)
+    quantiExp <- apply(matPeakSub,1,function(x) funAggreg(x[colnames(matPeakSub) %in% exp]))
+    quantiBg <-apply(matPeakSub,1,function(x) mean(x[colnames(matPeakSub) %in% bg]))
+    matPeakAg <-cbind(matPeak[,1],quanti_cps=quantiExp,background_cps=quantiBg,
+                     matPeak[,c("pValLess","pValGreater")])
+  }else {
+    quantiExp<- apply(matPeakSub,1,function(x) mean(x))
+    matPeakAg<-cbind(matPeak[,1],quanti_cps=quantiExp,background_cps=NA,
+                     matPeak[,c("pValLess","pValGreater")])
+  }
+   
+  #normalize by primary ions and ppb conversion
+  if(!is.na(primaryIon)){
+    
+    matPeakAg[,"quanti_ncps"] <-matPeakAg[,"quanti_cps"]/(primaryIon*488)
+    matPeakAg[,"backGroundg_ncps"] <-matPeakAg[,"background_cps"]/(primaryIon*488)
+    
+    indExp<-Reduce(c,apply(indLim,2,function(x) seq(x[1],x[2])))
+    if( length(raw@prtReaction)!=0 & nrow(raw@ptrTransmisison) > 1){
+      matPeakAg[,"quanti_ppb"]<-ppbConvert(peakList = data.frame(Mz=matPeakAg$Mz,
+                                                                            quanti=matPeakAg$quanti_cps),
+                                                      primaryIon = primaryIon,
+                                                      transmission =raw@ptrTransmisison,
+                                                      U=c(raw@prtReaction$TwData[1,,])[indExp],
+                                                      Td=c(raw@prtReaction$TwData[3,,])[indExp],
+                                                      pd=c(raw@prtReaction$TwData[2,,])[indExp])
+      
+      matPeakAg[,"background_ppb"]<-ppbConvert(peakList = data.frame(Mz=matPeakAg$Mz,
+                                                                                quanti=matPeakAg$background_cps),
+                                                          primaryIon = primaryIon,
+                                                          transmission =raw@ptrTransmisison,
+                                                          U=c(raw@prtReaction$TwData[1,,])[indBg],
+                                                          Td=c(raw@prtReaction$TwData[3,,])[indBg],
+                                                          pd=c(raw@prtReaction$TwData[2,,])[indBg])
+    }
+  }
+  
+  
+  cat(paste(nrow(matPeakAg),"peaks detected \n"))
+  return(list(raw=matPeak,aligned=matPeakAg))
 }
 
 
@@ -1052,7 +970,7 @@ peakListNominalMass <- function(i,mz,sp,ppmPeakMinSep=130 ,calibCoef,
         n.peak<- nrow(initMz)
         resolution_upper<-8000
         resolution_mean<- 5000
-        resolution_lower<-3500
+        resolution_lower<-3000
         
         lower.cons <- c(t(initMz * matrix(c(rep(1, n.peak),
                                             rep(0, n.peak*2),
@@ -1219,7 +1137,7 @@ peakListNominalMass <- function(i,mz,sp,ppmPeakMinSep=130 ,calibCoef,
     R2 <-1-sum(sp.i.fit^2)/sum((sp.i-mean(sp.i))^2)
     
     X<-data.frame(Mz=center_peak,
-             quanti=quanti,delta_mz=delta_mz, resolution = center_peak/delta_mz, 
+             quanti_cps=quanti,delta_mz=delta_mz, resolution = center_peak/delta_mz, 
              R2=R2 , parameter = t(par_estimated[-1,])  )
     X<-X[quanti>1,,drop=FALSE]
     par_estimated<-par_estimated[,quanti>1,drop=FALSE]
@@ -1754,7 +1672,7 @@ ppbConvert <- function(peakList, primaryIon,transmission, U, Td, pd, k=2*10^-9 )
     Tr_primary<-transmission[2,1]
     x<-transmission[1,][transmission[1,]!=0]
     y<-transmission[2,][transmission[1,]!=0]
-    TrCurve<-TransmissionCurve(x, y)
+    TrCurve<- TransmissionCurve(x, y)
     TrCurve$y<-vapply(TrCurve$y,function(x) max(0.001,x),0.1)
     
     ppb <- peakList[,"quanti"]*
@@ -1764,7 +1682,7 @@ ppbConvert <- function(peakList, primaryIon,transmission, U, Td, pd, k=2*10^-9 )
       22400*1013^2*
       (273.15+mean(Td))^2*Tr_primary/
       (k*9.2^2*
-         primaryIon*488* 
+         as.numeric(primaryIon)*488* 
          mean(pd)^2*
          6022*10^23*
          273.15^2 *
