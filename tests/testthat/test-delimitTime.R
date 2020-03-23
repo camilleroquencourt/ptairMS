@@ -19,7 +19,7 @@ test_delimitTime<-function(){
   testthat::expect_equal(c(resExp),c(11,22,31,45))
   
   testthat::expect_is(resBg,'integer')
-  testthat::expect_equal(resBg,c(1,2,3,4,5,6,7,25,26,27,28,47,48,49))
+  testthat::expect_equal(unname(resBg),c(1,2,3,4,5,6,7,25,26,27,28,47,48,49))
   
   # Bad ratio input 
   testthat::expect_error(timeLimits(file,fracMaxTIC = 2))

@@ -10,18 +10,18 @@ test_annotateVOC <- function(){
   
   # numeric vector
   annotateVectorDF <- ptairMS::annotateVOC(as.numeric(Biobase::featureNames(bacteria.eset)))
-  testthat::expect_identical(annotateVectorDF["59.0492", "vocDB_name_iupac"],
+  testthat::expect_identical(annotateVectorDF["59.0493", "vocDB_name_iupac"],
                              "prop-2-en-1-ol, propan-2-one, propanal")
   
   # data.frame
   fdataDF <- Biobase::fData(bacteria.eset)
   annotateDataFrameDF <- annotateVOC(fdataDF)
-  testthat::expect_identical(annotateDataFrameDF["59.0492", "vocDB_name_iupac"],
+  testthat::expect_identical(annotateDataFrameDF["59.0493", "vocDB_name_iupac"],
                              "prop-2-en-1-ol, propan-2-one, propanal")
   
   # ExpressionSet
   bacteria.eset <- annotateVOC(bacteria.eset)
-  testthat::expect_identical(Biobase::fData(bacteria.eset)["59.0492", "vocDB_name_iupac"],
+  testthat::expect_identical(Biobase::fData(bacteria.eset)["59.0493", "vocDB_name_iupac"],
                              "prop-2-en-1-ol, propan-2-one, propanal")
   
 }
