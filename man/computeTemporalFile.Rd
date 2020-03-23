@@ -7,6 +7,7 @@
 computeTemporalFile(
   raw,
   peak,
+  indTimeLim,
   timeCalib = 20,
   deconvMethod = deconv2d2linearIndependant
 )
@@ -15,6 +16,8 @@ computeTemporalFile(
 \item{raw}{ptrRaw object}
 
 \item{peak}{a data.frame with a column named "Mz". The Mz of the VOC detected}
+
+\item{indTimeLim}{expiration and and bg limit}
 
 \item{timeCalib}{duration in second of every calibration}
 

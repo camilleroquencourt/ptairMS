@@ -173,12 +173,13 @@ setMethod(f="detectPeak",
 #'extract quantity over time of VOC in a pre-defined peak list
 #'@param raw ptrRaw object 
 #'@param peak a data.frame with a column named "Mz". The Mz of the VOC detected
+#'@param indTimeLim expiration and and bg limit
 #'@param timeCalib duration in second of every calibration
 #'@param deconvMethod the deconvolution 2d method. Should be "deconv2d2linearIndependant",
 #'"deconv2d2LinearCoupled" or "deconv2d2NonlinearIndependant"
 #'@return list containing the matrix with all temporal profile (matPeak) 
 #'of VOC and a list of all raw EIC (EIClist)
-computeTemporalFile<-function(raw,peak,timeCalib=20,deconvMethod=deconv2d2linearIndependant){
+computeTemporalFile<-function(raw,peak,indTimeLim,timeCalib=20,deconvMethod=deconv2d2linearIndependant){
   
   listCalib <- multiCalib(raw,timeCalib)
   
@@ -219,9 +220,8 @@ computeTemporalFile<-function(raw,peak,timeCalib=20,deconvMethod=deconv2d2linear
   
   # test significativité
   # comparaison de moyenne normal 
-  indLim <-timeLimits(raw,fracMaxTIC = 0.7)
-  indExp <-Reduce(c,apply(indLim$exp,2,function(x) seq(from=x[1],to=x[2])))
-  indBg<- indLim$backGround
+  indExp <-indTimeLim$exp
+  indBg<- indTimeLim$backGround
   
   XIC<-borne[,5:ncol(borne),drop=FALSE]
   p.greater<-apply(XIC,1,function(x) stats::t.test(x[indExp],x[indBg],alternative="greater")$p.value)
@@ -761,7 +761,7 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
 
   
   # compute temporal profile
-  fileProccess<- computeTemporalFile(raw = raw,peak = list_peak)
+  fileProccess<- computeTemporalFile(raw = raw,peak = list_peak,indTimeLim=indTimeLim)
   matPeak<-data.table::as.data.table(fileProccess$matPeak)
   
   #change names of quanti

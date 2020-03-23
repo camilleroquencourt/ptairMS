@@ -730,16 +730,13 @@ timeLimitFun<-function(TIC,fracMaxTIC=0.5, derivThreshold=0.01, traceMasses= NUL
   ## delimitation
   ind.Exp <- which(TIC.blrm > (threshold) )
   dTIC <- diff(TIC.blrm)/max(TIC.blrm)
-  ind.Bg<-which(abs(dTIC)<derivThreshold)
-  if(length(which(ind.Bg %in%ind.Exp)) >0) ind.Bg<-ind.Bg[ - which(ind.Bg %in%ind.Exp)]
+  indBg<-which(abs(dTIC)<derivThreshold)
+  if(length(which(indBg %in%ind.Exp)) >0) indBg<-indBg[ - which(indBg %in%ind.Exp)]
   
-  ind.Bg_end <- c(ind.Bg[which(diff(ind.Bg) !=1)],utils::tail(ind.Bg,1))
-  ind.Bg_begin<-c(ind.Bg[1],ind.Bg[which(diff(ind.Bg) !=1)+1])
-  limBg<-unname(rbind(ind.Bg_begin,ind.Bg_end))
-  
-  limBg<-limBg[, limBg[2,]- limBg[1,] >= minPoints,drop=FALSE]
-  if(ncol(limBg)==0) warning("no background detected")
-  indBg<-Reduce(c,apply(limBg,2,function(x) seq(x[1],x[2])))
+  if(length(indBg)==0) {
+    warning("no background detect")
+    indBg<-NULL
+  }
 
   ## delimitation
   hat <- which(TIC.blrm > (threshold) )
