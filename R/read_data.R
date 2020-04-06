@@ -41,7 +41,7 @@ readRaw <- function(filePath, calibTIS=TRUE,
   if(nbrWrite == 0) { stop("The file is empty (0 seconde of acquisition)")}
   
   # acquiqision time limit to 900 spectra, indeed the rawAn is more than 3.4 GB
-  NbrWriteMax <- ceiling(900/nbrBuf)
+  NbrWriteMax <- ceiling(1200/nbrBuf)
   rhdf5::h5closeAll()
   
   #read information needed
@@ -69,6 +69,7 @@ readRaw <- function(filePath, calibTIS=TRUE,
                    ncol = prod(utils::tail(dim(rawAn),2)),
                    dimnames = list(mzVn, timVn))  
   index_zero<-which(timVn==0)[-1] # remove index where timVn =0 except the first time
+  rm(rawAn)
   if(length(index_zero)!=0){
     timVn<- timVn[-index_zero]
     rawMn<- rawMn[,-index_zero]
@@ -156,7 +157,7 @@ readRaw <- function(filePath, calibTIS=TRUE,
 #' fracMaxTIC=0.9,saveDir= NULL)
 createPtrSet<-function(dir, setName,
                        mzCalibRef= c(21.022, 29.013424, 41.03858, 59.049141,75.04406, 203.943, 330.8495),
-                       fracMaxTIC=0.5,
+                       fracMaxTIC=0.5,mzBreathTracer=NULL,
                        saveDir=NULL){
   
   # test on parameter
@@ -178,7 +179,7 @@ createPtrSet<-function(dir, setName,
   
   # save parameters
   parameter <- list(dir = dir, listFile= filesFullName, name = setName, mzCalibRef = mzCalibRef,  
-                    fracMaxTIC = fracMaxTIC, saveDir = saveDir)
+                    timeLimit= list(fracMaxTIC = fracMaxTIC), mzBreathTracer=mzBreathTracer,saveDir = saveDir)
   
   # create sampleMetadata 
   # test if there is subfolder
@@ -199,20 +200,20 @@ createPtrSet<-function(dir, setName,
   }
   
   # checkSet
-  check <- checkSet(filesFullName, mzCalibRef, fracMaxTIC) 
+  check <- checkSet(filesFullName, mzCalibRef, fracMaxTIC,mzBreathTracer) 
   
   if(length(check$failed) > 0) {
     parameter$listFile <- parameter$listFile[ - which(
     basename(parameter$listFile) %in% check$failed )]
     sampleMetadata<-sampleMetadata[ - which(
-     row.names(sampleMetadata) %in% check$failed ),]
+     row.names(sampleMetadata) %in% check$failed ),,drop=FALSE]
   }
   
   # create ptrSet object
   ptrSet <- methods::new(Class = "ptrSet", parameter = parameter, sampleMetadata = sampleMetadata,
               mzCalibRef= check$mzCalibRefList, timeLimit = check$timeLimit, signalCalibRef = check$signalCalibRef, 
               errorCalibPpm= check$errorCalibPpm, coefCalib= check$coefCalibList, primaryIon=check$primaryIon,
-              resolution = check$resolution, TIC = check$TIC, peakListRaw = check$peakListRaw, 
+              resolution = check$resolution, TIC = check$TIC, breathTracer=check$breathTracer,peakListRaw = check$peakListRaw, 
               peakListAligned = check$peakListAligned)
   
   #save in Rdata with the name choosen 
@@ -285,7 +286,8 @@ updatePtrSet<-function(ptrset){
     ptrset@peakListRaw[deletedFiles] <-  NULL
     ptrset@peakListAligned[deletedFiles] <-  NULL
     ptrset@parameter$listFile <-filesDirFullName
-    
+    ptrset@breathTracer[deletedFiles]<-NULL
+  
     message(paste(deletedFiles," deleted \n"))
   }
   
@@ -299,8 +301,10 @@ updatePtrSet<-function(ptrset){
     # same order as list.file
     sampleMetadata<-sampleMetadata[basename(filesDirFullName),]
     
+    
     #checkset 
-    check <- checkSet(newFilesFullNames,mzCalibRef = parameter$mzCalibRef,fracMaxTIC = parameter$fracMaxTIC)
+    check <- checkSet(newFilesFullNames,mzCalibRef = parameter$mzCalibRef,fracMaxTIC = parameter$timeLimit$fracMaxTIC,
+                      mzBreathTracer = parameter$mzBreathTracer)
     if(length(check$failed) > 0) {
       filesDirFullName <- filesDirFullName[ - which(
       basename(filesDirFullName) %in% check$failed )]
@@ -318,6 +322,7 @@ updatePtrSet<-function(ptrset){
     ptrset@TIC <- c(ptrset@TIC, check$TIC)[basename(filesDirFullName)]
     ptrset@timeLimit <-c(ptrset@timeLimit,check$timeLimit)[basename(filesDirFullName)]
     ptrset@primaryIon<-c( ptrset@primaryIon,check$primaryIon)[basename(filesDirFullName)]
+    ptrset@breathTracer<-c(ptrset@breathTracer,check$breathTracer)[basename(filesDirFullName)]
   }
   
   saveDir<-parameter$saveDir
@@ -342,12 +347,13 @@ updatePtrSet<-function(ptrset){
 #' nominal mass interval (without overlapping)
 #' @param fracMaxTIC timeLimits argument
 #' @return list containing in ptrSet object slot
-checkSet <- function(files, mzCalibRef , fracMaxTIC){
+checkSet <- function(files, mzCalibRef , fracMaxTIC, mzBreathTracer){
   
   # init output list
   mzCalibRefList <- list()
   signalCalibRef <- list()
   TIC <- list()
+  breathTracer<-list()
   timeLimit <- list()
   resolution <- list()
   errorCalibPpm<-list()
@@ -383,9 +389,17 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC){
     
     # TIC
     TIC[[fileName[j]]] <- colSums(raw@rawM)
-    
+    if(is.null(mzBreathTracer)){ 
+      breathTracer[[fileName[j]]]<-colSums(raw@rawM)} 
+    else {
+      index<- lapply(mzBreathTracer, function(x) {
+        th<-350*x/10^6
+        which( x - th < raw@mz & raw@mz < x + th)
+      })
+      breathTracer[[fileName[j]]] <- colSums(raw@rawM[unlist(index),]) 
+    }
     # timeLimit
-    indLim <- timeLimits(raw, fracMaxTIC = fracMaxTIC)
+    indLim <- timeLimits(raw, fracMaxTIC = fracMaxTIC,traceMasses = mzBreathTracer)
     timeLimit[[ fileName[j] ]] <- indLim
     
     # check if mass 21 contains in mass axis
@@ -395,13 +409,11 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC){
     } else {
       ## sur le background
       if(! is.null(indLim$backGound)) indBg<- indLim$backGound else indBg<-seq_along(raw@time)
-      sp<-rowSums(raw@rawM[,indBg])/length(indBg)*(raw@time[3]-raw@time[2]) #mean per acquisition
-      mz<-raw@mz
-      fit<-peakListNominalMass(21,mz,sp, ppmPeakMinSep=500, calibCoef = raw@calibCoef,
-                               minPeakDetect=10, fitFunc="Sech2", maxIter=1, autocorNoiseMax=0.3 ,
-                               plotFinal=FALSE, plotAll=FALSE, thNoiseRate=1.1, thIntensityRate=0.01 ,
-                               countFacFWHM=10, daSeparation=0.1, d=3, windowSize=0.2 )
-      primaryIon[[ fileName[j] ]]<- fit$peak[1,"quanti_cps"]
+      raw.bg<-raw
+      raw.bg@rawM<-raw.bg@rawM[,indBg]
+      raw.bg@time<-raw.bg@time[indBg]
+      p<-PeakList(raw.bg,mz=21,ppm = 500,thIntensityRate = 0.5)
+      primaryIon[[ fileName[j] ]]<- sum(p$peak$quanti_cps)
     }
     
     
@@ -411,6 +423,7 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC){
   return(list(mzCalibRefList=mzCalibRefList,
               signalCalibRef=signalCalibRef,
               TIC=TIC ,
+              breathTracer=breathTracer,
               timeLimit=timeLimit,
               resolution=resolution,
               errorCalibPpm=errorCalibPpm,

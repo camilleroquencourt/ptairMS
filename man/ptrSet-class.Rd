@@ -29,6 +29,8 @@ with the \code{createPtrSet} function.
 
 \item{\code{TIC}}{the TIC for each file}
 
+\item{\code{breathTracer}}{EIC for expirations/head spaces detection}
+
 \item{\code{timeLimit}}{the index of time limit for each file}
 
 \item{\code{peakListRaw}}{the peak list before a potential aggregation  of expirations}

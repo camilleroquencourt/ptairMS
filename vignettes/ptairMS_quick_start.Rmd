@@ -179,7 +179,6 @@ plotFeatures(exhaledSet,mz=69.0699,colorBy="subfolder",typePlot = "ggplot")
 plotFeatures(exhaledSet,mz=51.0442,colorBy="subfolder",typePlot = "ggplot")
 ```
 
-
 # Mycobacteria: head space analysis
 
 ```{r ptairDataBacteria}

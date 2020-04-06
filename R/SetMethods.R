@@ -513,7 +513,7 @@ methods::setMethod(f="plotCalib",
 methods::setMethod(f="plotTIC",
           signature = "ptrSet",
           function(object, type, baselineRm, showLimits, pdfFile=NULL, 
-                   fileNames = NULL,colorBy="rownames",...){
+                   fileNames = NULL,colorBy="rownames",normalizePrimariIon=FALSE,...){
             
             set<- object 
             # get list files
@@ -566,9 +566,12 @@ methods::setMethod(f="plotTIC",
               p<-ggplot2::ggplot()  
                
               for (j in seq_along(TIC)){
+                ticPlot<-TIC[[j]]
+                time<-as.numeric(names(ticPlot))
+                if(normalizePrimariIon) ticPlot<-ticPlot/set@primaryIon[[j]]
                 if(!is.null(pdfFile)) {
-                  plot<- ggplot2::qplot(x=as.numeric(names(TIC[[j]])),y=TIC[[j]],
-                        xlab="time",ylab="intensity",main=paste(j,names(TIC)[j],sep=" - "),size=0.8) 
+                  plot<- ggplot2::qplot(x=time,y=ticPlot/(time[2]-time[1]),
+                        xlab="time",ylab="Sum cps",main=paste(j,names(TIC)[j],sep=" - "),size=0.8) 
                     if(ncol(indLim[[j]])>0) plot <- plot + 
                         ggplot2::geom_vline(ggplot2::aes(xintercept = as.numeric(names(TIC[[j]]))[c(indLim[[j]])],
                                                          color="time limits")) +ggplot2:: scale_fill_manual("Legend") +
@@ -586,12 +589,10 @@ methods::setMethod(f="plotTIC",
                   colour<- as.factor(SMD[names(TIC)[j],colorBy])
                 }
                 
-                
-                data <- data.frame(time=as.numeric(names(TIC[[j]])),intensity=TIC[[j]],Legend=colour)
+                data <- data.frame(time=time,Sum_cps=ticPlot/(time[2]-time[1]),Legend=colour)
                  
-                
-                p <- p + ggplot2::geom_point(mapping=ggplot2::aes(time,intensity, color = Legend ),data=data) + 
-                  ggplot2::geom_line(mapping=ggplot2::aes (time,intensity, color = Legend ),data=data,size=1)
+                p <- p + ggplot2::geom_point(mapping=ggplot2::aes(time,Sum_cps, color = Legend ),data=data) + 
+                  ggplot2::geom_line(mapping=ggplot2::aes (time,Sum_cps, color = Legend ),data=data,size=1)
                 }
                 if(!is.null(pdfFile)) dev.off()
                 
@@ -722,9 +723,11 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
    
     #time axis
     timeVn <- as.numeric(names(set@TIC[[basename(file)]]))
-    timeRange[1] <- max(min(timeVn), timeRange[1], na.rm = TRUE)
-    timeRange[2] <- min(max(timeVn), timeRange[2], na.rm = TRUE)
-    indexTime<- which(timeVn >= timeRange[1] & timeVn <= timeRange[2])
+    timeiNTER<-(timeVn[3]-timeVn[2])
+    timeRange.file<-rep(0,0)
+    timeRange.file[1] <- max(min(timeVn), timeRange[1], na.rm = TRUE)
+    timeRange.file[2] <- min(max(timeVn), timeRange[2], na.rm = TRUE)
+    indexTime<- which(timeVn >= timeRange.file[1] & timeVn <= timeRange.file[2])
     timeVn<-timeVn[indexTime]
     
     #calibrate mass axis
@@ -839,7 +842,7 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
              
              specVn <- apply(rawSubMN, 1,
                              function(intVn)
-                               mean(intVn, na.rm = TRUE))
+                               mean(intVn, na.rm = TRUE)/timeiNTER)
              
              plot(specVn,
                   as.numeric(names(specVn)),
@@ -851,7 +854,7 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
                   yaxs = "i",
                   yaxt = "n")
              
-             graphics::mtext("Mean of intensity",
+             graphics::mtext("Count Per Second (cps)",
                    cex = 0.8,
                    side = 1,
                    line = 2.5)
@@ -988,6 +991,9 @@ methods::setMethod(f="plotFeatures",
                 n.limit <- dim(indLim)[2]
                 
                 raw <- rhdf5::h5read(file, name = "/FullSpectra/TofData",index=list(indexMz,NULL,NULL,NULL))
+                time<-c(rhdf5::h5read(file, name = "/TimingData/BufTimes"))
+                index_zero<-which(time==0)[-1] 
+                if(length(index_zero)) time<-time[-index_zero]
                 mzAxis.j <- mzAxis[indexMz]
                 rawMn <- matrix(raw,
                                 nrow = dim(raw)[1],
@@ -1010,26 +1016,26 @@ methods::setMethod(f="plotFeatures",
                   #get index of the time period
                   indexTime<-seq(indLim["start", i], indLim["end", i])
                   indexTimeVec<-c(indexTimeVec,indexTime)
-                  spectrum<-rowSums(rawMn[, indexTime])/ncol(rawMn[, indexTime])
+                  spectrum<-rowSums(rawMn[, indexTime])/(ncol(rawMn[, indexTime])*(time[3]-time[2]))
                   
                   data <-data.frame(mz=mzNew[indexSub],
-                                     intensity=spectrum[indexSub] ,
+                                     cps=spectrum[indexSub] ,
                                     timePeriods=as.character(i))
                   plotFile <- plotFile + 
-                    ggplot2::geom_point(mapping = ggplot2::aes(x=mz, y=intensity, color=timePeriods),data=data) + 
-                    ggplot2::geom_line(mapping = ggplot2::aes(x=mz, y=intensity, color=timePeriods),data=data,size=1)
+                    ggplot2::geom_point(mapping = ggplot2::aes(x=mz, y=cps, color=timePeriods),data=data) + 
+                    ggplot2::geom_line(mapping = ggplot2::aes(x=mz, y=cps, color=timePeriods),data=data,size=1)
                    
                 }
                 
                 #get the background
                 if(!is.null(indLimBg)){
-                  background<-rowSums(rawMn[,indLimBg])/length(indLimBg)
-                  data=data.frame(mz=mzNew[indexSub], intensity=background[indexSub], timePeriods="background")
+                  background<-rowSums(rawMn[,indLimBg])/(length(indLimBg)*(time[3]-time[2]))
+                  data=data.frame(mz=mzNew[indexSub], cps=background[indexSub], timePeriods="background")
                   
                   #plot background to the file plot
                   plotFile <- plotFile + 
-                    ggplot2::geom_point(mapping = ggplot2::aes(x=mz, y=intensity, color=timePeriods),data=data) + 
-                    ggplot2::geom_line(mapping = ggplot2::aes(x=mz, y=intensity, color=timePeriods), data=data,
+                    ggplot2::geom_point(mapping = ggplot2::aes(x=mz, y=cps, color=timePeriods),data=data) + 
+                    ggplot2::geom_line(mapping = ggplot2::aes(x=mz, y=cps, color=timePeriods), data=data,
                                        linetype = "dashed")
                 }
                 
@@ -1037,7 +1043,7 @@ methods::setMethod(f="plotFeatures",
                 listPlotFile[[j]]<-plotFile
                 ## add summary line to plotAll
                 # get the average time periods spectrum
-                spectrum <- rowSums(rawMn[, indexTimeVec]) / length(indexTimeVec)
+                spectrum <- rowSums(rawMn[, indexTimeVec]) / (length(indexTimeVec)*(time[3]-time[2]))
                 
                 # spline intrepolation for spectrum
                 splineInterpol<- stats::splinefun(mzNew, spectrum)
@@ -1049,16 +1055,16 @@ methods::setMethod(f="plotFeatures",
                     colour<- as.factor(SMD[basename(file),colorBy])
                   }
                   
-                data=data.frame( mz = mzNew[indexSub], intensity = spectrum[indexSub], 
+                data=data.frame( mz = mzNew[indexSub], cps = spectrum[indexSub], 
                                  Legend = colour)
                 plotAll <- plotAll +
-                  ggplot2::geom_point(ggplot2::aes(x=mz,y=intensity,color=Legend),data=data) +
+                  ggplot2::geom_point(ggplot2::aes(x=mz,y=cps,color=Legend),data=data) +
                   ggplot2::stat_function(mapping=ggplot2::aes(x=mz,color=Legend),data=data, 
                                          fun=splineInterpol ,n = 1000,size=1)
                 
                 # spline interpolation for background
                 if(!is.null(indLimBg)){
-                  background<-rowSums(rawMn[,indLimBg])/length(indLimBg)
+                  background<-rowSums(rawMn[,indLimBg])/(length(indLimBg)*(time[3]-time[2]))
                   splineInterpol<- stats::splinefun(mzNew,background)
                 
                   #plot background
@@ -1247,16 +1253,26 @@ importSampleMetadata<-function(set,file){
 #' @export
 methods::setMethod(f="timeLimits",
           signature = "ptrSet",
-          function(object,fracMaxTIC=0.5, derivThreshold=0.01,traceMasses= NULL, minPoints = 2, plotDel=FALSE){
+          function(object,fracMaxTIC=0.5,fracMaxTICBg=0.5, derivThresholdExp=0.5,derivThresholdBg=0.01,
+                   minPoints = 2,degreeBaseline=1, plotDel=FALSE){
             
             fileNames<-basename(object@parameter$listFile)
             for (file in fileNames){
-              TIC<-object@TIC[[file]]
-              indLim<-timeLimitFun(TIC,fracMaxTIC, derivThreshold , traceMasses, minPoints, plotDel)
+              TIC<-object@breathTracer[[file]]
+              indLim<-timeLimitFun(TIC,fracMaxTIC = fracMaxTIC, fracMaxTICBg = fracMaxTICBg,
+                                   derivThresholdExp = derivThresholdExp,
+                                   derivThresholdBg = derivThresholdBg ,
+                                   degreeBaseline=degreeBaseline,
+                                   minPoints = minPoints, 
+                                   plotDel = plotDel)
               object@timeLimit[[file]]<-indLim
             }
-            object@parameter$fracMaxTIC<-fracMaxTIC
             
+            paramterTimeLimit<-list(fracMaxTIC=fracMaxTIC,fracMaxTICBg=fracMaxTICBg, derivThresholdExp=derivThresholdExp,
+                           derivThresholdBg=derivThresholdBg,degreeBaseline=degreeBaseline,
+                           minPoints = minPoints)
+            
+            object@parameter$timeLimit<-paramterTimeLimit
             saveDir<-object@parameter$saveDir
             objName<-object@parameter$name
             if(!is.null(saveDir)){

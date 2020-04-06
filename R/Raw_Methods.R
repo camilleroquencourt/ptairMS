@@ -35,10 +35,11 @@ methods::setMethod(f = "calibration",
             
             # get mz axis and average spectrum
             mz <- object@mz
-            sp <- rowSums(object@rawM)/dim(object@rawM)[2]
+            time<-c(object@time)
+            sp <- rowSums(object@rawM)/(dim(object@rawM)[2]*(time[3]-time[2]))
 
             #performs calibration
-            calib<-calibrationFun(sp,mz,mzCalibRef,object@calibCoef,tol)
+            calib<-calibrationFun(sp,mz,mzCalibRef,calibCoef = object@calibCoef,tol)
            
             # update object object
             object@mz <- calib$mzVnbis
@@ -91,7 +92,7 @@ calibrationFun<-function(sp,mz,mzCalibRef,calibCoef,tol){
   # test if there is a only one peak
   nLocalMax <-vapply(spTronc, function(x) {
     length( LocalMaximaSG( sp = x$signal,
-                           minPeakHeight = 0.1*max(x$signal)) )
+                           minPeakHeight = 0.2*max(x$signal)) )
     
   }, FUN.VALUE = 0 )
   
@@ -182,6 +183,7 @@ methods::setMethod(f = "plotRaw",
             
             mzVn <- object@mz
             timeVn <- object@time
+            timeiNTER<-(timeVn[3]-timeVn[2])
             rawMN <- object@rawM
             
             
@@ -195,6 +197,7 @@ methods::setMethod(f = "plotRaw",
             
             mzVi <- which(mzVn > mzRange[1] & mzVn < mzRange[2])
             timeVi <- which(timeVn > timeRange[1] & timeVn < timeRange[2])
+            
             
             rawSubMN <- rawMN[mzVi, timeVi]
             mzVn <- mzVn[mzVi]
@@ -309,7 +312,7 @@ methods::setMethod(f = "plotRaw",
                      
                      specVn <- apply(rawSubMN, 1,
                                      function(intVn)
-                                       mean(intVn, na.rm = TRUE))
+                                       mean(intVn, na.rm = TRUE)/timeiNTER )
                      
                      plot(specVn,
                           as.numeric(names(specVn)),
@@ -321,7 +324,7 @@ methods::setMethod(f = "plotRaw",
                           yaxs = "i",
                           yaxt = "n")
                      
-                     graphics::mtext("Mean of intensity",
+                     graphics::mtext("Count Per Second (cps)",
                            cex = 0.8,
                            side = 1,
                            line = 2.5)
@@ -674,12 +677,15 @@ methods::setMethod(f="plotTIC",
 #' derivThreshold paramter.
 #' 
 #' @param object a ptrRaw or ptrSet object
-#' @param fracMaxTIC between 0 and 1. Percentage of the maximum of the Chromatogram amplitude with baseline removal. 
-#' If you want a finer limitation, increase \code{fracMaxTIC}, indeed decrease
-#' @param derivThreshold the tresphold of the difference between two succesive points of the background
+#' @param fracMaxTIC between 0 and 1. Percentage of the maximum of the Chromatogram amplitude with baseline 
+#' removal. If you want a finer limitation, increase \code{fracMaxTIC}, indeed decrease
+#' @param fracMaxTICBg same as fracMaxTIC but for backgroud dettcion (lower than fracMaxTIC*max(TIC))
+#' @param derivThresholdExp the tresphold of the difference between two succesive points of the expiration
+#' @param derivThresholdBg the tresphold of the difference between two succesive points of the background
 #' @param traceMasses NULL or a integer. Correspond to a nominal masses of Extract Ion Chromatogram (EIC)
 #'  whose limits you want to compute. If NULL, the limits are calculated on the Total Ion Chromatogram (TIC).
 #' @param minPoints minimum duration of an expiration (in index).
+#' @param degreeBaseline the degree of polynomial baseline function
 #' @param plotDel boolean. If TRUE, the Chormatogram is ploted with limits and threshold.
 #' @return a list with expirations limits (a matrix of index, where each colomn correspond to one expriration, the first row 
 #' it is the beginning and the seconde the end, or NA if no limits are detected) and index of the background.
@@ -694,7 +700,9 @@ methods::setMethod(f="plotTIC",
 #'@export
 methods::setMethod(f="timeLimits",
           signature = "ptrRaw",
-          function(object,fracMaxTIC=0.5,derivThreshold=0.01, traceMasses= NULL, minPoints = 2, plotDel=FALSE){
+          function(object,fracMaxTIC=0.5,fracMaxTICBg=0.5,derivThresholdExp=0.5,derivThresholdBg=0.01, 
+                   traceMasses= NULL, 
+                   minPoints = 2,degreeBaseline=1, plotDel=FALSE){
             
             rawM <-object@rawM
             mz <- object@mz
@@ -708,29 +716,36 @@ methods::setMethod(f="timeLimits",
             if(is.null(traceMasses)) { TIC <- colSums(rawM)
             } else {
               index<- lapply(traceMasses, function(x) {
-                which( x - 0.4 < mz & mz < x + 0.4)
+                th<-350*x/10^6
+                which( x - th < mz & mz < x + th)
               })
               TIC <- colSums(rawM[unlist(index),]) 
             }
             
-            indLim<-timeLimitFun(TIC,fracMaxTIC,derivThreshold, traceMasses, minPoints, plotDel)
+            indLim<-timeLimitFun(TIC,fracMaxTIC,fracMaxTICBg,derivThresholdExp,derivThresholdBg, 
+                                 traceMasses, 
+                                 minPoints,degreeBaseline, plotDel)
             
             return(indLim)
           }
           )
 
-timeLimitFun<-function(TIC,fracMaxTIC=0.5, derivThreshold=0.01, traceMasses= NULL, minPoints = 3, plotDel=FALSE){
+timeLimitFun<-function(TIC,fracMaxTIC=0.5, fracMaxTICBg=0.5,derivThresholdExp=0.5,derivThresholdBg=0.01, 
+                       traceMasses= NULL, 
+                       minPoints = 3, degreeBaseline=1,plotDel=FALSE){
   
   ## baseline corretion
-  bl <- try(baselineEstimation(TIC,d=1))
+  bl <- try(baselineEstimation(TIC,d=degreeBaseline))
   if(is.null(attr(bl,"condition"))) TIC.blrm<-TIC - bl else TIC.blrm<-TIC
   threshold<-(max(TIC.blrm)-min(TIC.blrm))*fracMaxTIC
-  thresholdBg<-(max(TIC.blrm)-min(TIC.blrm))*0.5
+  thresholdBg<-(max(TIC.blrm)-min(TIC.blrm))*fracMaxTICBg
   
   ## delimitation
-  ind.Exp <- which(TIC.blrm > (threshold) )
+  ind.Exp <- which(TIC.blrm > (thresholdBg) )
   dTIC <- diff(TIC.blrm)/max(TIC.blrm)
-  indBg<-which(abs(dTIC)<derivThreshold)
+  bool<-abs(dTIC)<derivThresholdBg
+  indBg<-seq(2,length(TIC))[bool]
+  if(bool[1]) indBg<-c(1,indBg)
   if(length(which(indBg %in%ind.Exp)) >0) indBg<-indBg[ - which(indBg %in%ind.Exp)]
   
   if(length(indBg)==0) {
@@ -745,24 +760,36 @@ timeLimitFun<-function(TIC,fracMaxTIC=0.5, derivThreshold=0.01, traceMasses= NUL
     plot(TIC,type='l',xlab="Time (s)",ylab="intensity",cex.lab=1.5, main = "Time limit") 
     return(NA)
   }
-  
+   
+ 
   hat_end <- c(hat[which(diff(hat) !=1)],utils::tail(hat,1))
   hat_begin<-c(hat[1],hat[which(diff(hat) !=1)+1])
   hat_lim<-unname(rbind(hat_begin,hat_end))
   row.names(hat_lim)<-c("start","end")
-  
+
+  hat_lim<-hat_lim[, hat_lim["end",]- hat_lim["start",] >= minPoints,drop=FALSE]
+
+  for(j in seq_len(ncol(hat_lim))){
+    index <- seq(hat_lim[1,j],hat_lim[2,j])
+    dTIC <- diff(TIC.blrm[index])/max(TIC.blrm[index])
+    indexNEW <- index[abs(dTIC) < derivThresholdExp]
+    hat_lim[,j]<-range(indexNEW)
+  }
+    
   hat_lim<-hat_lim[, hat_lim["end",]- hat_lim["start",] >= minPoints,drop=FALSE]
   
+  
+  inExp<-Reduce(c,apply(hat_lim,2,function(x) seq(x[1],x[2])))
   if(plotDel){
     if(is.null(traceMasses)) subtitle<-"TIC" 
     else subtitle <- paste("EIC mz:",paste(round(traceMasses,2),collapse = "-"))
     plot(seq_along(TIC.blrm),TIC.blrm,type='l',xlab="Time (s)",ylab="intensity",cex.lab=1.5, main = paste("Time limit",subtitle), 
          ylim=c(min(TIC.blrm)-0.2*(max(TIC.blrm)-min(TIC.blrm)),max(TIC.blrm)),lwd=2)
-    graphics::abline(v=c(hat_lim),col="red",lty=2,lwd=2)
+    graphics::points(seq_along(TIC.blrm)[inExp],TIC.blrm[inExp],col="red",pch=19)
     graphics::abline(h=threshold,lty=2)
     graphics::points(seq_along(TIC.blrm)[indBg],TIC.blrm[indBg],col="blue",pch=19)
-    graphics::legend("bottomleft",legend=c("threshold", "limit Exp","Backgound"),
-                     col=c("black","red","blue"),lty=c(2,2,NA),pch=c(NA,NA,19),horiz = TRUE)
+    graphics::legend("bottomleft",legend=c("threshold", "Exp","Backgound"),
+                     col=c("black","red","blue"),lty=c(2,NA,NA),pch=c(NA,19,19),horiz = TRUE)
   }
   
   return(list(backGround=indBg,exp=hat_lim))
@@ -806,6 +833,7 @@ bakgroundDetect<-function(TIC,derivThreshold=0.01,  minPoints = 4, plotDel=FALSE
 #' @param raw ptrRaw object 
 #' @param mzNominal the vector of nominal mass where peaks will be detected 
 #' @param ppm the minimum distance between two peeks in ppm 
+#' @param resMinMaxMean vector with resolution min, resolution Mean, and resolution max of the PTR
 #' @param minIntensity the minimum intenisty for peaks detection. The final threshold for peak detection
 #' will be : max ( \code{minPeakDetect} , thresholdNoise ). The thresholdNoise correspond to
 #'  max(\code{thNoiseRate} * max( noise around the nominal mass), \code{thIntensityRate} * 
@@ -844,7 +872,7 @@ bakgroundDetect<-function(TIC,derivThreshold=0.01,  minPoints = 4, plotDel=FALSE
 methods::setMethod(f="PeakList",
           signature = "ptrRaw",
           function(raw,
-                   mzNominal = unique(round(raw@mz)), ppm = 130, 
+                   mzNominal = unique(round(raw@mz)), ppm = 130, resMinMeanMax=c(300,5000,8000),
                    minIntensity=5, fctFit=c("Sech2","average")[1], maxIter=2, autocorNoiseMax = 0.3,
                    plotFinal=FALSE, plotAll=FALSE, thNoiseRate=1.1, thIntensityRate = 0.01,
                    countFacFWHM=10, daSeparation=0.005, d=3, windowSize=0.4) {
@@ -858,7 +886,7 @@ methods::setMethod(f="PeakList",
   
   if(fctFit=="average") l.shape<-determinePeakShape(sp,mz,massRef = mzCalibRef)
   
-  prePeaklist <- lapply(mzNominal, function(m) peakListNominalMass(m,mz,sp,ppm, calibCoef,
+  prePeaklist <- lapply(mzNominal, function(m) peakListNominalMass(m,mz,sp,ppm, calibCoef,resMinMeanMax,
                                                                     minIntensity, fctFit, maxIter, autocorNoiseMax ,
                                                                     plotFinal, plotAll, thNoiseRate, thIntensityRate ,
                                                                     countFacFWHM, daSeparation, d, windowSize) )
@@ -885,26 +913,25 @@ methods::setMethod(f="PeakList",
 methods::setMethod(f="detectPeak",
           signature = "ptrRaw",
           function(x, 
-                   mzNominal=NULL , ppm=130, ppmGroupBkg=50, fracGroup=0.8, minIntensity=10, 
-                   fctFit=c("Sech2","average")[1],fracMaxTIC=0.5,processFun=processFileSepExp,...)
+                   mzNominal=NULL , timeLimit, ppm=130, resMinMeanMax=c(3000,5000,8000), 
+                   ppmGroupBkg=50, fracGroup=0.8, minIntensity=10, 
+                   fctFit=c("Sech2","average")[1],thIntensityRate=0.01,processFun=processFileSepExp,...)
           {
             raw<-x
             #get infomration
             massCalib<-raw@calibMassRef
             
-            sp<-rowSums(raw@rawM)/ncol(raw@rawM)
-            mz<-raw@mz
-            fit<-peakListNominalMass(21,mz,sp,ppmPeakMinSep=500, calibCoef= raw@calibCoef,
-                                     minPeakDetect=10, fitFunc="Sech2", maxIter=1, autocorNoiseMax=0.3 ,
-                                     plotFinal=F, plotAll=F, thNoiseRate=1.1, thIntensityRate=0.01 ,
-                                     countFacFWHM=10, daSeparation=0.1, d=3, windowSize=0.2 )
-            primaryIon<-max(fit$peak[,"quanti_cps"]) #max in case of false positif detected
-            
-            indTimeLim<- timeLimits(raw, fracMaxTIC = fracMaxTIC)
-            
-            peakLists<-processFun(raw,massCalib,primaryIon,indTimeLim, mzNominal,
-                                                  ppm, ppmGroupBkg, fracGroup,minIntensity, 
-                                                  fctFit)
+            if(! is.null(timeLimit$backGound)) indBg<- timeLimit$backGound else indBg<-seq_along(raw@time)
+            raw.bg<-raw
+            raw.bg@rawM<-raw.bg@rawM[,indBg]
+            raw.bg@time<-raw.bg@time[indBg]
+            p<-PeakList(raw.bg,mz=21,ppm=500)
+            primaryIon<- p$peak$quanti_cps
+        
+            peakLists<-processFun(raw,massCalib,primaryIon,timeLimit, mzNominal,
+                                                  ppm, resMinMeanMax,ppmGroupBkg, 
+                                                  fracGroup,minIntensity, 
+                                                  fctFit,thIntensityRate=thIntensityRate)
             
             
 

@@ -4,7 +4,7 @@
 \alias{checkSet}
 \title{check all files in a directory}
 \usage{
-checkSet(files, mzCalibRef, fracMaxTIC)
+checkSet(files, mzCalibRef, fracMaxTIC, mzBreathTracer)
 }
 \arguments{
 \item{files}{list of full names files to chexk}

@@ -12,12 +12,14 @@ detectPeak(x, ...)
 \S4method{detectPeak}{ptrRaw}(
   x,
   mzNominal = NULL,
+  timeLimit,
   ppm = 130,
+  resMinMeanMax = c(3000, 5000, 8000),
   ppmGroupBkg = 50,
   fracGroup = 0.8,
   minIntensity = 10,
   fctFit = c("Sech2", "average")[1],
-  fracMaxTIC = 0.5,
+  thIntensityRate = 0.01,
   processFun = processFileSepExp,
   ...
 )
@@ -26,9 +28,11 @@ detectPeak(x, ...)
   x,
   mzNominal = NULL,
   ppm = 130,
+  resMinMeanMax = c(3000, 5000, 8000),
   ppmGroupBkg = 50,
   fracGroup = 0.8,
   minIntensity = 10,
+  thIntensityRate = 0.01,
   fctFit = c("Sech2", "average")[1],
   parallelize = FALSE,
   nbCores = 2,
@@ -60,11 +64,6 @@ will be : max ( \code{minPeakDetect} , threshold noise ). The theshold noise cor
 
 \item{fctFit}{the function for the quantification of Peak, should be sech2 or Average}
 
-\item{fracMaxTIC}{if x is a ptrRaw, the same paramter as \code{createPtrSet} function:Percentage 
-(between 0 and 1) of the maximum of the Total Ion Chromatogram (TIC) amplitude with baseline removal. 
-We will analyze only the part of the spectrum where the TIC intensity is higher than 'fracMaxTIC * max(TIC) '. 
-If you want to analyze the entire spectrum, set this parameter to 0.}
-
 \item{processFun}{the function used to process a file. Can not be changed for the moent}
 
 \item{parallelize}{boolean. If \code{TRUE} loop aver files will be parallelized}
@@ -75,6 +74,13 @@ If you want to analyze the entire spectrum, set this parameter to 0.}
 \code{setName} paramter of \code{createPtrSet} function}
 
 \item{saveDir}{The directory where the ptrSet object will be saved in .RData. If NULL, nothing will be saved}
+
+\item{resMinMaxMean}{vector with resolution min, resolution Mean, and resolution max of the PTR}
+
+\item{fracMaxTIC}{if x is a ptrRaw, the same paramter as \code{createPtrSet} function:Percentage 
+(between 0 and 1) of the maximum of the Total Ion Chromatogram (TIC) amplitude with baseline removal. 
+We will analyze only the part of the spectrum where the TIC intensity is higher than 'fracMaxTIC * max(TIC) '. 
+If you want to analyze the entire spectrum, set this parameter to 0.}
 }
 \value{
 a S4 object ptrSet, that contains ptrset and a list of data.frame (data.table), which contains : \cr

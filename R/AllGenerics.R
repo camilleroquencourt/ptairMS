@@ -39,7 +39,8 @@ setGeneric("plotRaw",
 #' @rdname timeLimits
 #' @export
 setGeneric("timeLimits",
-           function(object,fracMaxTIC=0.5, derivThreshold=0.01,traceMasses=NULL, minPoints=2 , plotDel=FALSE ) {
+           function(object,fracMaxTIC=0.5,fracMaxTICBg=0.5, derivThresholdExp=0.5,derivThresholdBg=0.01,
+                    traceMasses=NULL, minPoints=2 ,degreeBaseline=1, plotDel=FALSE ) {
              standardGeneric("timeLimits")
            })
 
@@ -50,7 +51,7 @@ setGeneric("timeLimits",
 setGeneric("PeakList",
            function(raw,
                     mzNominal = unique(round(raw@mz)), 
-                    ppm = 130, 
+                    ppm = 130, resMinMeanMax=c(3000,5000,8000),
                     minIntensity=5, fctFit=c("Sech2","average")[1], maxIter=2, autocorNoiseMax = 0.3,
                     plotFinal=FALSE, plotAll=FALSE, thNoiseRate=1.1, thIntensityRate = 0.01,
                     countFacFWHM=10, daSeparation=0.005, d=3, windowSize=0.4){
@@ -163,7 +164,8 @@ setGeneric("annotateVOC",
 ##aligneSamples----
 #' @rdname alignSamples
 #' @export
-setGeneric("alignSamples",function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL,bgThreshold=2,
+setGeneric("alignSamples",function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL,
+                                   bgThreshold=2,pValThres= 2e-26,
                                    dmzGroup = 0.001,...){standardGeneric("alignSamples")})
 
 ##writte----

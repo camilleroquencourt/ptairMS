@@ -12,6 +12,7 @@ alignSamples(
   fracGroup = 0.8,
   group = NULL,
   bgThreshold = 2,
+  pValThres = 2e-26,
   dmzGroup = 0.001,
   ...
 )
@@ -22,6 +23,7 @@ alignSamples(
   fracGroup = 0.8,
   group = NULL,
   bgThreshold = 2,
+  pValThres = 2e-26,
   dmzGroup = 0.001,
   quantiUnit = c("ppb", "ncps", "cps")[1],
   ...
@@ -33,6 +35,7 @@ alignSamples(
   fracGroup = 0.8,
   group = NULL,
   bgThreshold = 2,
+  pValThres = 2e-26,
   dmzGroup = 0.001,
   sampleMetadata
 )
@@ -52,6 +55,8 @@ in \code{fracGroup} percent in each group will be deleted.}
 \item{bgThreshold}{if the background quantity is analyzed, only variables where
 quantity > bgThreshold x background or quantity < bgThreshold x background for all
 samples are keeped.}
+
+\item{pValThres}{for temporal quantification}
 
 \item{dmzGroup}{difference of mz of a group for little mz}
 

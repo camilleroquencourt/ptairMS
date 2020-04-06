@@ -1,4 +1,4 @@
-utils::globalVariables(c("Mz","quanti","group","background","fracExp"))
+utils::globalVariables(c("Mz","quanti","group","background","fracExp","pValGreater","pValLess"))
 
 #' Alignment with kernel gaussian density
 #'
@@ -100,11 +100,21 @@ makeSubGroup <- function(subpeakl,den,plim) {
   if( ( length(unique(subpeakl.group[,"group"])) < dim(subpeakl.group)[1] ) ){
     subpeakl.group <- data.table::as.data.table(subpeakl.group)
     if("background" %in% colnames(subpeakl.group)){
-      subpeakl.group<-as.matrix(subpeakl.group[,list(`Mz`=`Mz`[which.max(quanti)],
-                                                  quanti=sum(quanti,na.rm = TRUE),
-                                                  background =  sum(background,na.rm = TRUE)), 
-                                               by=group] )
-    } else subpeakl.group<-as.matrix(subpeakl.group[,list(`Mz`=`Mz`[which.max(quanti)],
+      if("pValGreater" %in% colnames(subpeakl.group)) {
+        subpeakl.group<-as.matrix(subpeakl.group[,list(`Mz`=`Mz`[which.max(quanti)],
+                                                       quanti=sum(quanti,na.rm = TRUE),
+                                                       background =  sum(background,na.rm = TRUE),
+                                                       pValGreater=pValGreater[which.max(quanti)],
+                                                       pValLess= pValLess[which.max(quanti)]), 
+                                                 by=group] )}
+      else {
+        subpeakl.group<-as.matrix(subpeakl.group[,list(`Mz`=`Mz`[which.max(quanti)],
+                                                       quanti=sum(quanti,na.rm = TRUE),
+                                                       background =  sum(background,na.rm = TRUE)), 
+                                                 by=group] )
+        }
+     
+    }else subpeakl.group<-as.matrix(subpeakl.group[,list(`Mz`=`Mz`[which.max(quanti)],
                                                        quanti=sum(quanti,na.rm = TRUE)), 
                                                     by=group] )
     
@@ -179,6 +189,46 @@ aggregate <- function(subGroupPeak, n.exp) {
   return(subGroupPeak)
 }
 
+
+aggregateTemporalFileprocessed<-function(time, indTimeLim, matPeak, funAggreg,bl=TRUE,dbl=3){
+  # agregation of expirations and bg
+  indLim <- indTimeLim$exp
+  indBg<-indTimeLim$backGround
+  bg<-FALSE
+  
+  if(!is.null(indBg)){
+    bg<-TRUE
+    XIC<-as.matrix(matPeak[,5:ncol(matPeak),drop=FALSE])
+    
+    ##baseline Corrected
+    if(bl) XIC <- t(apply(XIC,1,function(x) x-baselineEstimation(x,d = dbl)))
+    
+    # test significativité
+    # comparaison de moyenne normal 
+    indExp<-Reduce(c,apply(indLim,2,function(x) seq(x[1],x[2])))
+    
+    pValGreater<-apply(XIC,1,function(x) stats::t.test(x[indExp],x[indBg],alternative="greater")$p.value)
+    pValLess<-apply(XIC,1,function(x) stats::t.test(x[indExp],x[indBg],alternative="less")$p.value)
+    pValGreater<-stats::p.adjust(pValGreater,method = "fdr")
+    pValLess<-stats::p.adjust(pValLess,method = "fdr")
+
+    ##aggregate
+    bgIn <- time[indBg]
+    exp <-time[indExp]
+    colnames(XIC) <- as.character(time)
+    quantiExp <- apply(XIC,1,function(x) funAggreg(x[colnames(XIC) %in% exp]))
+    quantiBg <-apply(XIC,1,function(x) mean(x[colnames(XIC) %in% bgIn]))
+    matPeakAg <-cbind(matPeak[,1],quanti_cps=quantiExp,background_cps=quantiBg,
+                      pValLess,pValGreater)
+  } else {
+    quantiExp<- apply(XIC,1,function(x) mean(x))
+    matPeakAg<-cbind(matPeak[,1],quanti_cps=quantiExp,background_cps=NA)
+  }
+  
+  return(matPeakAg)
+}
+
+
 ### Alignsamples method -----
 
 #' Align mass tables of different samples 
@@ -193,6 +243,7 @@ aggregate <- function(subGroupPeak, n.exp) {
 #' @param bgThreshold if the background quantity is analyzed, only variables where
 #' quantity > bgThreshold x background or quantity < bgThreshold x background for all
 #' samples are keeped. 
+#' @param pValThres for temporal quantification
 #' @param dmzGroup difference of mz of a group for little mz
 #' @param quantiUnit ppb, ncps or cps
 #' @param ... not used
@@ -211,14 +262,15 @@ aggregate <- function(subGroupPeak, n.exp) {
 #' @import data.table
 #'@export
 setMethod(f="alignSamples",signature = "ptrSet",
-            function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL, bgThreshold=2,
+            function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL, 
+                     bgThreshold=2,pValThres= 2e-26,
                          dmzGroup = 0.001,quantiUnit=c("ppb","ncps","cps")[1],...
                          ){
               
             sampleMetadata <- X@sampleMetadata
             peakList <- X@peakListAligned
             eSet<- alignSamplesFunc(peakList,sampleMetadata,ppmGroup, fracGroup , group,
-                          dmzGroup,bgThreshold,quantiUnit)
+                          dmzGroup,bgThreshold,pValThres,quantiUnit)
   
   return(eSet)
 })
@@ -227,7 +279,8 @@ setMethod(f="alignSamples",signature = "ptrSet",
 #' @param sampleMetadata if X is a ptrSet, not used, else a data.frame containing sample Metadata
 #' @export
 setMethod(f="alignSamples",signature = "data.frame",
-          function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL,bgThreshold=2,
+          function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL,
+                   bgThreshold=2,pValThres= 2e-26,
                    dmzGroup = 0.001,sampleMetadata
           ){
             
@@ -239,7 +292,8 @@ setMethod(f="alignSamples",signature = "data.frame",
 
 
 alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100, 
-                             fracGroup=0.8, group=NULL, dmzGroup=0.001,bgThreshold=2,
+                             fracGroup=0.8, group=NULL, dmzGroup=0.001,
+                             bgThreshold=2, pValThres= 2e-26,
                              quantiUnit=c("ppb","ncps","cps")[1]){
   
   testquantiUnit<-Reduce(c,lapply(peakList,function(x) all(is.na(x[,paste0("quanti_",quantiUnit)]))))
@@ -256,16 +310,30 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
       quantiUnit<-"cps"
     }
   }
-  peakList<-lapply(peakList,function(x) {
-   quanti<- which(grepl("quanti",colnames(x)))
-   bg <- which(grepl("background",colnames(x)))
-   other<- seq_len(ncol(x))[-c(quanti,bg)]
-   quanti<-quanti[which(grepl(quantiUnit,colnames(x)[quanti]))]
-   bg<-bg[which(grepl(quantiUnit,colnames(x)[bg]))]
-    .SD<-data.table::.SD
-   x<-x[,.SD,.SD=colnames(x)[c(other,quanti,bg)]]
-   x
-  })
+  
+  if(any(grepl("background",Reduce(c,lapply(peakList,colnames))))){
+    peakList<-lapply(peakList,function(x) {
+      quanti<- which(grepl("quanti",colnames(x)))
+      bg <- which(grepl("background",colnames(x)))
+      other<- seq_len(ncol(x))[-c(quanti,bg)]
+      quanti<-quanti[which(grepl(quantiUnit,colnames(x)[quanti]))]
+      bg <- bg[which(grepl(quantiUnit,colnames(x)[bg]))]
+      .SD<-data.table::.SD
+      x<-x[,.SD,.SD=colnames(x)[c(other,quanti,bg)]]
+      x
+    })
+  } else {
+    peakList<-lapply(peakList,function(x) {
+      quanti<- which(grepl("quanti",colnames(x)))
+      other<- seq_len(ncol(x))[-c(quanti)]
+      quanti<-quanti[which(grepl(quantiUnit,colnames(x)[quanti]))]
+      .SD<-data.table::.SD
+      x<-x[,.SD,.SD=colnames(x)[c(other,quanti)]]
+      x
+    })
+  }
+  
+ 
   
   ## add column group with Samples group number
   mat<-NULL
@@ -335,7 +403,7 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
     return(NULL)
   }
   
-  if("background" %in% colnames(groupMat) & bgThreshold!=0 ){
+  if("background" %in% colnames(groupMat) ){
     mat.final.bg<-apply(groupMat[,c("background","Samples")], MARGIN=1, function(x){
       output<-rep(NA,nSample)
       ch.Area <- x[1]
@@ -353,9 +421,7 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
     rownames(Xbg) <- rownames(X)
     colnames(Xbg) <- paste("Background -",names(peakList))
   
-
-    # fixed threshold
-    if(bgThreshold!=0){
+    if(bgThreshold!=0 & "fracExp" %in% colnames(peakList[[1]])){
       rap<-Xbg/X
       delete <- which(apply(rap,1,function(x) all( 1/bgThreshold <=x & x<= bgThreshold , na.rm=TRUE) ))
       X <- X[-delete,,drop=FALSE]
@@ -365,9 +431,67 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
         return(NULL)
       }
     }
-  } else Xbg<-data.frame(row.names = rownames(X) )
- 
-
+    
+    if(pValThres !=1 & "pValGreater" %in%  colnames(peakList[[1]])){
+      groupMatpVal <- do.call(rbind, lapply( groupList, 
+                                         function(y){
+                                           y<-data.table::as.data.table(y)
+                                           y <- y[,list(Mz= stats::median(Mz), 
+                                                        pValGreater= paste(pValGreater,collapse = "_"),
+                                                        pValLess= paste(pValLess,collapse = "_"),
+                                                        Samples=paste(group,collapse="_"),
+                                                        nSamples= round(length(group)/nSample,1))]
+                                           y
+                                         }
+      ) 
+      )
+      
+      matPvalGreater<-apply(groupMatpVal[,c("pValGreater","Samples")], MARGIN=1, function(x){
+        output<-rep(NA,nSample)
+        ch.Area <- x[1]
+        ch.Area.split <- strsplit(ch.Area, split = "_")[[1]]
+        vec.Area <- as.numeric(ch.Area.split)
+        
+        ch.samples <- x[2]
+        vec.samples <- as.numeric(strsplit(ch.samples, split = "_")[[1]])
+        
+        output[vec.samples]<-vec.Area
+        output
+      })
+      
+      matPvalGreater <- t(matrix(matPvalGreater, nrow = nSample))
+      matPvalGreater <- matPvalGreater[keepVar,,drop=FALSE]
+      delete1<- which(apply(matPvalGreater,1,function(x) all( x > pValThres,na.rm=T)))
+      
+      # matPvalLess<-apply(groupMatpVal[,c("pValLess","Samples")], MARGIN=1, function(x){
+      #   output<-rep(NA,nSample)
+      #   ch.Area <- x[1]
+      #   ch.Area.split <- strsplit(ch.Area, split = "_")[[1]]
+      #   vec.Area <- as.numeric(ch.Area.split)
+      #   
+      #   ch.samples <- x[2]
+      #   vec.samples <- as.numeric(strsplit(ch.samples, split = "_")[[1]])
+      #   
+      #   output[vec.samples]<-vec.Area
+      #   output
+      # })
+      # 
+      # matPvalLess <- t(matrix(matPvalLess, nrow = nSample))
+      # matPvalLess <- matPvalLess[keepVar,,drop=FALSE]
+      # delete2<- which(apply(matPvalGreater,1,function(x) all( x > pValThres,na.rm=T)))
+      
+      # if(length(intersect(delete1,delete2))!=0) {
+      #   X<-X[-intersect(delete1,delete2),,drop=FALSE]
+      #   Xbg<-Xbg[-intersect(delete1,delete2),,drop=FALSE]
+      # }
+      if(length(delete1)!=0) {
+        X<-X[-(delete1),,drop=FALSE]
+        Xbg<-Xbg[-(delete1),,drop=FALSE]
+      }
+    }
+    
+}else Xbg<-data.frame(row.names = rownames(X) )
+    
   # adding the ion_mass as the first column in the fData
   Xbg <- cbind.data.frame(ion_mass = as.numeric(rownames(X)),
                           as.data.frame(Xbg, stringsAsFactors = FALSE),
@@ -472,7 +596,7 @@ impute <- function(eSet,ptrSet){
       quantiMat<-matrix(0,ncol=length(mz),nrow=nbExp)
         
       spectrum <- rowSums(rawMn[which(indexMz %in% indexMzList[[as.character(m)]]),
-                                  indexExp]) /length.exp
+                                  indexExp]) /(length.exp*(diff(as.numeric(names(ptrSet@TIC[[file]]))[1:2])))
       
       spectrum<-spectrum-snipBase(spectrum)
         
@@ -561,5 +685,171 @@ impute <- function(eSet,ptrSet){
     message(basename(file)," done")
   }#end for file
   return(eSet)
+}
+
+#' Impute missing values on an matrix set from an ptrSet
+#'
+#' Imputing missing values by returning back to the raw data and fitting the 
+#' peak shape function on the noise / residuals
+#' @param eSet an expression set retun by alignSamples function 
+#' @param ptrSet processed by detectPeak function
+#' @return the same expression set as in input, with missing values imputing
+#' @export 
+imputeMat <- function(X,ptrSet,quantiUnit){
+  
+  #get peak list 
+  peakList <- getPeakList(ptrSet)$aligned
+  
+  #get index of missing values
+  missingValues <-which(is.na(X),arr.ind=TRUE)
+  indexFilesMissingValues <- unique(missingValues[,"col"])
+  namesFilesMissingValues <- colnames(X)[indexFilesMissingValues]
+  
+  #get primry ion quantity
+  primaryIon<-ptrSet@primaryIon
+  
+  #get files full names in ptrSet object
+  filesFullName<-ptrSet@parameter$listFile
+  for (file in namesFilesMissingValues){
+    j<-which(file==colnames(X))
+    filesFullName.j<-filesFullName[which(basename(filesFullName)==file)]
+    
+    mzMissing <- as.numeric(rownames(missingValues[missingValues[,"col"]==j,,drop=FALSE]))
+    
+    #open mz Axis 
+    mzAxis <- rhdf5::h5read(filesFullName.j,name="FullSpectra/MassAxis")
+    indexMzList <- lapply(unique(round(mzMissing)),function(m) which( m - 0.6 < mzAxis & 
+                                                                        mzAxis < m+ 0.6))
+    names(indexMzList)<-unique(round(mzMissing))
+    indexMz<-Reduce(union,indexMzList)
+    
+    #get index time
+    indexLim <- ptrSet@timeLimit[[file]]$exp
+    indexTime<-Reduce(c,apply(indexLim,2,function(x) seq(x["start"],x["end"])))
+    nbExp<-ncol(indexLim)
+    
+    #open raw data
+    raw <- rhdf5::h5read(filesFullName.j, name = "/FullSpectra/TofData",
+                         index=list(indexMz,NULL,NULL,NULL))
+    
+    
+    rawMn <- matrix(raw,
+                    nrow = dim(raw)[1],
+                    ncol = prod(utils::tail(dim(raw),2))) #* 0.2 ns / 2.9 (single ion signal) if convert to cps
+    
+    # information for ppb convertion
+    reaction <-  try(reaction<- rhdf5::h5read(filesFullName.j,"AddTraces/PTR-Reaction"))
+    transmission <-try(rhdf5::h5read(filesFullName.j,"PTR-Transmission"))
+    
+    #calibrate mass axis
+    FirstcalibCoef <- rhdf5::h5read(filesFullName.j,"FullSpectra/MassCalibration",index=list(NULL,1))
+    tof <- sqrt(mzAxis)*FirstcalibCoef[1,1] + FirstcalibCoef[2,1]
+    coefCalib<-ptrSet@coefCalib[[file]]
+    mzAxis <- ((tof-coefCalib['b',])/coefCalib['a',])^2
+    
+    #peak list raw
+    peakListRaw.j<-ptrSet@peakListRaw[[file]]
+    
+    for (m in unique(round(mzMissing))){
+      #exact missing mz
+      mz <- mzMissing[round(mzMissing)==m]
+      
+      #mzAxis around m
+      mzAxis.m <- mzAxis[indexMzList[[as.character(m)]]]
+      
+      indexExp<-Reduce(c,apply(indexLim,2,function(x) seq(x[1],x[2])))
+      length.exp<-length(indexExp)
+      quantiMat<-matrix(0,ncol=length(mz),nrow=nbExp)
+      
+      spectrum <- rowSums(rawMn[which(indexMz %in% indexMzList[[as.character(m)]]),
+                                indexExp]) / (length.exp*(diff(as.numeric(names(ptrSet@TIC[[file]]))[1:2])))
+      
+      spectrum<-spectrum-snipBase(spectrum)
+      
+      #substract fitted peak also find
+      peakAlsoDetected <- peakListRaw.j[round(peakListRaw.j$Mz)==m & peakListRaw.j$group==1,]
+      if(nrow(peakAlsoDetected)!=0){ 
+        # cumFitPeak
+        
+        fitPeaks <- apply(peakAlsoDetected,1,
+                          function(x) sech2(x["Mz"],x["parameter.1"],
+                                            x["parameter.2"],x["parameter.3"],x = mzAxis.m)
+        )
+        if(nrow(peakAlsoDetected)>1) cumFitPeak <- rowSums(fitPeaks) else cumFitPeak <- c(fitPeaks)
+        spectrum<- spectrum-cumFitPeak
+      }
+      
+      #fit on the missing values
+      resolution_upper<-8000
+      resolution_mean<- 5000
+      resolution_lower<-3000
+      
+      n.peak<-length(mz)
+      delta<-rep(m/resolution_mean,2*n.peak)
+      h<- vapply(mz, function(m) max(max(spectrum[which(abs(mzAxis.m-m)<(m*50/10^6))]),1),0)
+      
+      
+      initMz <- matrix(c(mz,log(sqrt(2)+1)*2/delta,
+                         h),nrow=n.peak)
+      colnames(initMz)<-c("m","delta1","delta2","h")
+      
+      lower.cons <- c(t(initMz * matrix(c(rep(1, n.peak),
+                                          rep(0, n.peak*2),
+                                          rep(0.1, n.peak)),ncol = 4) 
+                        -
+                          matrix(c(initMz[,"m"]/(resolution_mean*100),
+                                   -resolution_lower*log(sqrt(2)+1)*2/initMz[,"m"],
+                                   -resolution_lower*log(sqrt(2)+1)*2/initMz[,"m"],
+                                   rep(0, n.peak)),ncol = 4)))
+      
+      upper.cons <- c(t( initMz * matrix(c(rep(1, n.peak),
+                                           rep(0, n.peak*2),
+                                           rep(Inf, n.peak)),ncol = 4) 
+                         +
+                           matrix(c(initMz[,"m"]/(resolution_mean*100),
+                                    resolution_upper*log(sqrt(2)+1)*2/initMz[,"m"],
+                                    resolution_upper*log(sqrt(2)+1)*2/initMz[,"m"],
+                                    rep(0, n.peak)),ncol = 4)))
+      
+      
+      fit <- fit_sech2(initMz, spectrum, mzAxis.m, lower.cons, upper.cons)
+      
+      fit.peak <- fit$fit.peak
+      par_estimated<-fit$par_estimated
+      
+      quanti.m <- apply(par_estimated,2, function(x){
+        th<-10*0.5*(log(sqrt(2)+1)/x[2]+log(sqrt(2)+1)/x[3])
+        mz.x <- mzAxis.m[ x[1] - th < mz & mz < x[1]+th ]
+        sum(sech2(x[1],x[2],x[3],x[4],mz.x),na.rm =TRUE)}) 
+      
+      list_peak<-cbind(Mz=mz,quanti=quanti.m)
+      
+      # convert to ppb or ncps
+      #if there is reaction ans transmission information
+      if(quantiUnit=="ppb"){
+        U <- c(reaction$TwData[1,,])
+        Td <-c(reaction$TwData[3,,])
+        pd <- c(reaction$TwData[2,,])
+        quanti.m <- ppbConvert(peakList = list_peak,
+                               primaryIon = primaryIon[[file]],
+                               transmission = transmission$Data,
+                               U = U[indexExp] , 
+                               Td = Td[indexExp], 
+                               pd = pd[indexExp])
+        
+      }
+      if(quantiUnit=="ncps"){
+        #normalize by primary ions
+        quanti.m <- quanti.m/(primaryIon[[basename(file)]]*4.9*10^6)
+      }
+      
+      
+      
+      # add to peak table
+      X[as.character(mz),file] <- quanti.m
+    }
+    message(basename(file)," done")
+  }#end for file
+  return(X)
 }
 

@@ -10,6 +10,7 @@ peakListNominalMass(
   sp,
   ppmPeakMinSep = 130,
   calibCoef,
+  resMinMeanMax = c(300, 5000, 8000),
   minPeakDetect = 10,
   fitFunc = "Sech2",
   maxIter = 2,
@@ -65,6 +66,8 @@ centered in the mass peak center.}
 
 \item{windowSize}{peaks will be detected only around  m - windowSize ; m + windowSize, for all 
 m in \code{mzNominal}}
+
+\item{resMinMaxMean}{vector with resolution min, resolution Mean, and resolution max of the PTR}
 }
 \value{
 a list that contains the peak list of nomminal mass i, and information to plot the peaks detected

@@ -9,6 +9,7 @@ PeakList(
   raw,
   mzNominal = unique(round(raw@mz)),
   ppm = 130,
+  resMinMeanMax = c(3000, 5000, 8000),
   minIntensity = 5,
   fctFit = c("Sech2", "average")[1],
   maxIter = 2,
@@ -27,6 +28,7 @@ PeakList(
   raw,
   mzNominal = unique(round(raw@mz)),
   ppm = 130,
+  resMinMeanMax = c(300, 5000, 8000),
   minIntensity = 5,
   fctFit = c("Sech2", "average")[1],
   maxIter = 2,
@@ -78,6 +80,8 @@ centered in the mass peak center.}
 
 \item{windowSize}{peaks will be detected only around  m - windowSize ; m + windowSize, for all 
 m in \code{mzNominal}}
+
+\item{resMinMaxMean}{vector with resolution min, resolution Mean, and resolution max of the PTR}
 }
 \value{
 a list containning: \itemize{

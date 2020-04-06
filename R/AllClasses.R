@@ -50,6 +50,7 @@ setClass(
 #' @slot primaryIon the quantity in count per acquisition time of the isotope of primary ion (H30_18, mz 21.022) for each file
 #' @slot resolution estimation of the resolution for each file based on the calibration reference masses
 #' @slot TIC the TIC for each file
+#' @slot breathTracer EIC for expirations/head spaces detection
 #' @slot timeLimit the index of time limit for each file 
 #' @slot peakListRaw the peak list before a potential aggregation  of expirations 
 #' @slot peakListAligned the peakList with expirations aggregation  for each file 
@@ -69,6 +70,7 @@ setClass(
     primaryIon="list",
     resolution ="list",
     TIC = "list",
+    breathTracer="list",
     timeLimit="list",
     peakListRaw ="list",
     peakListAligned = "list"

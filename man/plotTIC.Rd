@@ -24,6 +24,7 @@ plotTIC(
   pdfFile = NULL,
   fileNames = NULL,
   colorBy = "rownames",
+  normalizePrimariIon = FALSE,
   ...
 )
 }

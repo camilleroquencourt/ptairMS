@@ -41,7 +41,18 @@ changeTimeLimits<-function(ptrSet){
     # delete or reset expirations
     shiny::fluidRow(
       shiny::p(class='text-center', shiny::actionButton('delete', 'Delete selected rows'),
-        shiny::actionButton('reset', 'Reset time limits'))
+               shiny::actionButton('reset', 'Reset time limits'))
+    ),
+    
+    
+    # change parameter of timeLimit
+    shiny::fluidRow(
+      shiny::numericInput("fracMaxTIC", "FracMaxTIC", ptrSet@parameter$timeLimit$fracMaxTIC,0, 1, 0.05),
+               shiny::numericInput("fracMaxTICBg", "fracMaxTICBg",0.2,0, 1, 0.05),
+               shiny::numericInput("derivThresholdExp", "derivThresholdExp", 1, 0, 5, 0.05),
+               shiny::numericInput("derivThresholdBg", "derivThresholdBg",0.05,0, 2, 0.05),
+               shiny::numericInput("minPoints", "minPoints", 1, 1, 10, 1),
+               shiny::numericInput("degreeBaseline", "degreeBaseline", 1, 1, 30, 1)
     ),
     
     shiny::fluidRow(shiny::p("When you have done all file, save the changes and the new ptrSet will be return, 
@@ -57,11 +68,12 @@ changeTimeLimits<-function(ptrSet){
     
     ptrSetNew <- shiny::reactiveVal(value= ptrSet)
     
-    rv <- shiny::reactiveValues( data = NULL )
+    rv <- shiny::reactiveValues( data = NULL , bgPoints=NULL)
     
     # get the time limit of the selected file
     shiny::observeEvent(input$fileName, {
       rv$data <- t(ptrSetNew()@timeLimit[[input$fileName]]$exp)
+      rv$bgPoints <- ptrSetNew()@timeLimit[[input$fileName]]$backGround
     })
     
     #delete the selected expirations
@@ -82,9 +94,31 @@ changeTimeLimits<-function(ptrSet){
     # reset the expirations with timeLimit function
     shiny::observeEvent(input$reset, {
       shiny::removeNotification("warnings")
-      rv$data <- t(timeLimitFun(ptrSet@TIC[[input$fileName]],fracMaxTIC = ptrSet@parameter$fracMaxTIC )$exp)
+      fracMaxTICNew <- input$fracMaxTIC
+      ##default value
+      fracMaxTICBgNew <- input$fracMaxTICBg
+      derivThresholdExpNew <- input$derivThresholdExp
+      derivThresholdBgNew <-input$derivThresholdBg
+      minPointsNew <-input$minPoints
+      degreeBaselineNew <- input$degreeBaseline
+      
+      timeLimit<-ptairMS:::timeLimitFun(TIC = ptrSet@breathTracer[[input$fileName]],
+                                        fracMaxTIC =fracMaxTICNew ,fracMaxTICBg = fracMaxTICBgNew,
+                                        derivThresholdExp = derivThresholdExpNew,derivThresholdBg = derivThresholdBgNew,
+                                        minPoints =minPointsNew ,degreeBaseline = degreeBaselineNew)
+      rv$data <- t(timeLimit$exp)
+      rv$bgPoints<- timeLimit$backGround
       ptrSet<-ptrSetNew()
       ptrSet@timeLimit[[input$fileName]]$exp <- t(rv$data)
+      ptrSet@timeLimit[[input$fileName]]$backGround <- rv$bgPoints
+      paramterTimeLimit<-list(fracMaxTIC=fracMaxTICNew,
+                              fracMaxTICBg=fracMaxTICBgNew, 
+                              derivThresholdExp=derivThresholdExpNew,
+                              derivThresholdBg=derivThresholdBgNew,
+                              minPoints = minPointsNew,
+                              degreeBaseline=degreeBaselineNew)
+      
+      ptrSet@parameter$timeLimit<-paramterTimeLimit
       ptrSetNew(ptrSet)
     })
     
@@ -100,12 +134,17 @@ changeTimeLimits<-function(ptrSet){
     output$TIC <- plotly::renderPlotly({
       s <- input$table_rows_selected
       fileName <- input$fileName
-      TIC <- ptrSet@TIC[[fileName]]
+      TIC <- ptrSet@breathTracer[[fileName]]
       time <- as.numeric(names(TIC))
       indexTimeLimit <- t(rv$data)
+      expPoint<-Reduce(c,apply(indexTimeLimit,2,function(x) seq(x[1],x[2])))
+      bgPoint<-rv$bgPoints
       p <- ggplot2::qplot(x=time,y=TIC,
                           xlab="time",ylab="intensity",main=paste("TIC of",input$fileName))  +
-        ggplot2::geom_vline(ggplot2::aes(xintercept = time[c(indexTimeLimit)]))
+        ggplot2::geom_point(mapping=ggplot2::aes(time ,y,color=point),
+                             data=data.frame(time= time[expPoint],y=TIC[expPoint],point="exp")) +
+        ggplot2::geom_point(mapping=ggplot2::aes(time ,y,color=point),
+                             data=data.frame(time= time[bgPoint],y=TIC[bgPoint],point="Background"))
       if( length(s) ){
         s <- s[s<=ncol(indexTimeLimit)] #to avoid warnings
         if(length(s)) p <- p + ggplot2::geom_vline(ggplot2::aes(xintercept = time[c(indexTimeLimit[,s])],colour="selected"))

@@ -4,7 +4,7 @@
 \alias{extractEIC}
 \title{extract all raw EIC from a pre-definied peak List}
 \usage{
-extractEIC(raw, peak, peakQuantil = 0.05)
+extractEIC(raw, peak, peakQuantil = 0.01)
 }
 \arguments{
 \item{raw}{ptrRaw object}

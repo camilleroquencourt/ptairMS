@@ -9,42 +9,56 @@
 timeLimits(
   object,
   fracMaxTIC = 0.5,
-  derivThreshold = 0.01,
+  fracMaxTICBg = 0.5,
+  derivThresholdExp = 0.5,
+  derivThresholdBg = 0.01,
   traceMasses = NULL,
   minPoints = 2,
+  degreeBaseline = 1,
   plotDel = FALSE
 )
 
 \S4method{timeLimits}{ptrRaw}(
   object,
   fracMaxTIC = 0.5,
-  derivThreshold = 0.01,
+  fracMaxTICBg = 0.5,
+  derivThresholdExp = 0.5,
+  derivThresholdBg = 0.01,
   traceMasses = NULL,
   minPoints = 2,
+  degreeBaseline = 1,
   plotDel = FALSE
 )
 
 \S4method{timeLimits}{ptrSet}(
   object,
   fracMaxTIC = 0.5,
-  derivThreshold = 0.01,
-  traceMasses = NULL,
+  fracMaxTICBg = 0.5,
+  derivThresholdExp = 0.5,
+  derivThresholdBg = 0.01,
   minPoints = 2,
+  degreeBaseline = 1,
   plotDel = FALSE
 )
 }
 \arguments{
 \item{object}{a ptrRaw or ptrSet object}
 
-\item{fracMaxTIC}{between 0 and 1. Percentage of the maximum of the Chromatogram amplitude with baseline removal. 
-If you want a finer limitation, increase \code{fracMaxTIC}, indeed decrease}
+\item{fracMaxTIC}{between 0 and 1. Percentage of the maximum of the Chromatogram amplitude with baseline 
+removal. If you want a finer limitation, increase \code{fracMaxTIC}, indeed decrease}
 
-\item{derivThreshold}{the tresphold of the difference between two succesive points of the background}
+\item{fracMaxTICBg}{same as fracMaxTIC but for backgroud dettcion (lower than fracMaxTIC*max(TIC))}
+
+\item{derivThresholdExp}{the tresphold of the difference between two succesive points of the expiration}
+
+\item{derivThresholdBg}{the tresphold of the difference between two succesive points of the background}
 
 \item{traceMasses}{NULL or a integer. Correspond to a nominal masses of Extract Ion Chromatogram (EIC)
 whose limits you want to compute. If NULL, the limits are calculated on the Total Ion Chromatogram (TIC).}
 
 \item{minPoints}{minimum duration of an expiration (in index).}
+
+\item{degreeBaseline}{the degree of polynomial baseline function}
 
 \item{plotDel}{boolean. If TRUE, the Chormatogram is ploted with limits and threshold.}
 }

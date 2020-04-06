@@ -40,7 +40,7 @@ test_checkSet <- function(){
   library(ptairData)
   directory <- system.file("extdata/mycobacteria", package = "ptairData")
   files <- list.files(directory,full.names = TRUE,recursive = TRUE,pattern = "\\.h5*")
-  check<- checkSet(files,mzCalibRef =c(21.022,59.049), fracMaxTIC = 0.6 )
+  check<- checkSet(files,mzCalibRef =c(21.022,59.049), fracMaxTIC = 0.6,mzBreathTracer=NULL )
   testthat::expect_is(check,"list")
   
   }

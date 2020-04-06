@@ -9,6 +9,7 @@ createPtrSet(
   setName,
   mzCalibRef = c(21.022, 29.013424, 41.03858, 59.049141, 75.04406, 203.943, 330.8495),
   fracMaxTIC = 0.5,
+  mzBreathTracer = NULL,
   saveDir = NULL
 )
 }
