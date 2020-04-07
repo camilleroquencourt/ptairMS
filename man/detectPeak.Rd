@@ -64,6 +64,8 @@ will be : max ( \code{minPeakDetect} , threshold noise ). The theshold noise cor
 
 \item{fctFit}{the function for the quantification of Peak, should be sech2 or Average}
 
+\item{thIntensityRate}{The rate who is mutluplie by the max signal intensity}
+
 \item{processFun}{the function used to process a file. Can not be changed for the moent}
 
 \item{parallelize}{boolean. If \code{TRUE} loop aver files will be parallelized}
@@ -76,11 +78,6 @@ will be : max ( \code{minPeakDetect} , threshold noise ). The theshold noise cor
 \item{saveDir}{The directory where the ptrSet object will be saved in .RData. If NULL, nothing will be saved}
 
 \item{resMinMaxMean}{vector with resolution min, resolution Mean, and resolution max of the PTR}
-
-\item{fracMaxTIC}{if x is a ptrRaw, the same paramter as \code{createPtrSet} function:Percentage 
-(between 0 and 1) of the maximum of the Total Ion Chromatogram (TIC) amplitude with baseline removal. 
-We will analyze only the part of the spectrum where the TIC intensity is higher than 'fracMaxTIC * max(TIC) '. 
-If you want to analyze the entire spectrum, set this parameter to 0.}
 }
 \value{
 a S4 object ptrSet, that contains ptrset and a list of data.frame (data.table), which contains : \cr
@@ -110,7 +107,8 @@ for each time periods and background : \code{PeakList} \cr
 library(ptairData)
 filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
 raw <- readRaw(filePath,mzCalibRef=c(21.022,59.049))
-peakList <- detectPeak(raw, mzNominal = c(21,59))
+timeLimit<-timeLimits(raw,fracMaxTIC=0.7)
+peakList <- detectPeak(raw, timeLimit=timeLimit, mzNominal = c(21,59))
 peakList$aligned
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 dirSet <- createPtrSet(directory,setName="test")
