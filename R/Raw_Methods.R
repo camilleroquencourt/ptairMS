@@ -907,7 +907,8 @@ methods::setMethod(f="PeakList",
 #' library(ptairData)
 #' filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
 #' raw <- readRaw(filePath,mzCalibRef=c(21.022,59.049))
-#' peakList <- detectPeak(raw, mzNominal = c(21,59))
+#' timeLimit<-timeLimits(raw,fracMaxTIC=0.7)
+#' peakList <- detectPeak(raw, timeLimit=timeLimit, mzNominal = c(21,59))
 #' peakList$aligned
 #' @export
 methods::setMethod(f="detectPeak",

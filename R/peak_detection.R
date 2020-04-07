@@ -34,10 +34,7 @@ utils::globalVariables("::<-")
 #' @param fctFit the function for the quantification of Peak, should be sech2 or Average
 #' @param parallelize boolean. If \code{TRUE} loop aver files will be parallelized
 #' @param nbCores number of cluster to use for parrallel computation.
-#' @param fracMaxTIC if x is a ptrRaw, the same paramter as \code{createPtrSet} function:Percentage 
-#' (between 0 and 1) of the maximum of the Total Ion Chromatogram (TIC) amplitude with baseline removal. 
-#' We will analyze only the part of the spectrum where the TIC intensity is higher than 'fracMaxTIC * max(TIC) '. 
-#' If you want to analyze the entire spectrum, set this parameter to 0. 
+#' @param thIntensityRate The rate who is mutluplie by the max signal intensity
 #' @param saving boolean. If TRUE, the object will be saved in saveDir with the
 #' \code{setName} paramter of \code{createPtrSet} function
 #' @param saveDir The directory where the ptrSet object will be saved in .RData. If NULL, nothing will be saved
