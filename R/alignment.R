@@ -190,7 +190,7 @@ aggregate <- function(subGroupPeak, n.exp) {
 }
 
 
-aggregateTemporalFileprocessed<-function(time, indTimeLim, matPeak, funAggreg,bl=TRUE,dbl=3){
+aggregateTemporalFileprocessed<-function(time, indTimeLim, matPeak, funAggreg,bl=TRUE,dbl=5){
   # agregation of expirations and bg
   indLim <- indTimeLim$exp
   indBg<-indTimeLim$backGround
@@ -243,7 +243,6 @@ aggregateTemporalFileprocessed<-function(time, indTimeLim, matPeak, funAggreg,bl
 #' @param bgThreshold if the background quantity is analyzed, only variables where
 #' quantity > bgThreshold x background or quantity < bgThreshold x background for all
 #' samples are keeped. 
-#' @param pValThres for temporal quantification
 #' @param dmzGroup difference of mz of a group for little mz
 #' @param quantiUnit ppb, ncps or cps
 #' @param ... not used
@@ -263,14 +262,17 @@ aggregateTemporalFileprocessed<-function(time, indTimeLim, matPeak, funAggreg,bl
 #'@export
 setMethod(f="alignSamples",signature = "ptrSet",
             function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL, 
-                     bgThreshold=2,pValThres= 2e-26,
+                     bgThreshold=2,pValGreaterThres= 2e-26,pValLessThres=0,fracExp=0.3,
                          dmzGroup = 0.001,quantiUnit=c("ppb","ncps","cps")[1],...
                          ){
               
             sampleMetadata <- X@sampleMetadata
             peakList <- X@peakListAligned
-            eSet<- alignSamplesFunc(peakList,sampleMetadata,ppmGroup, fracGroup , group,
-                          dmzGroup,bgThreshold,pValThres,quantiUnit)
+            eSet<- alignSamplesFunc(peakList = peakList,sampleMetadata = sampleMetadata,
+                                    ppmGroup =ppmGroup, fracGroup = fracGroup , group = group,
+                                    bgThreshold =bgThreshold, pValGreaterThres = pValGreaterThres,
+                                    pValLessThres = pValLessThres,fracExp = fracExp, dmzGroup=dmzGroup,
+                                    quantiUnit = quantiUnit)
   
   return(eSet)
 })
@@ -280,12 +282,15 @@ setMethod(f="alignSamples",signature = "ptrSet",
 #' @export
 setMethod(f="alignSamples",signature = "data.frame",
           function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL,
-                   bgThreshold=2,pValThres= 2e-26,
-                   dmzGroup = 0.001,sampleMetadata
+                   bgThreshold=2,pValGreaterThres= 2e-26,pValLessThres=0,fracExp=0.3,
+                   dmzGroup = 0.001,quantiUnit=c("ppb","ncps","cps")[1],sampleMetadata
           ){
             
-            eSet<- alignSamplesFunc(X,sampleMetadata,ppmGroup, fracGroup , group,
-                                    dmzGroup,bgThreshold)
+            eSet<- alignSamplesFunc(peakList = X,sampleMetadata = sampleMetadata,
+                                    ppmGroup =ppmGroup, fracGroup = fracGroup , group = group,
+                                    bgThreshold =bgThreshold, pValGreaterThres = pValGreaterThres,
+                                    pValLessThres = pValLessThres,fracExp = fracExp, dmzGroup=dmzGroup,
+                                    quantiUnit = quantiUnit)
             
             return(eSet)
           })
@@ -293,7 +298,7 @@ setMethod(f="alignSamples",signature = "data.frame",
 
 alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100, 
                              fracGroup=0.8, group=NULL, dmzGroup=0.001,
-                             bgThreshold=2, pValThres= 2e-26,
+                             bgThreshold=2,pValGreaterThres= 2e-26,pValLessThres=0,fracExp=0.3,
                              quantiUnit=c("ppb","ncps","cps")[1]){
   
   testquantiUnit<-Reduce(c,lapply(peakList,function(x) all(is.na(x[,paste0("quanti_",quantiUnit)]))))
@@ -337,6 +342,7 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
   
   ## add column group with Samples group number
   mat<-NULL
+  peakList<-lapply(peakList,function(x) as.matrix(x))
   for(i in seq_along(peakList)){
     mat_temp <- cbind(peakList[[i]], group = i)
     mat <- rbind(mat,mat_temp)
@@ -423,16 +429,18 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
   
     if(bgThreshold!=0 & "fracExp" %in% colnames(peakList[[1]])){
       rap<-Xbg/X
-      delete <- which(apply(rap,1,function(x) all( 1/bgThreshold <=x & x<= bgThreshold , na.rm=TRUE) ))
-      X <- X[-delete,,drop=FALSE]
-      Xbg<-Xbg[-delete,,drop=FALSE]
+      kepp <- which(apply(rap,1,
+                            function(x) sum( 1/bgThreshold >x  & x > bgThreshold , na.rm=TRUE)/sum(!is.na(x)) 
+                            >=fracExp ))
+      X <- X[kepp,,drop=FALSE]
+      Xbg<-Xbg[kepp,,drop=FALSE]
       if( nrow(X)==0 ) {
         warning(paste("peakList is empty, there is no peak presents in more thant ", bgThreshold, "* background"))
         return(NULL)
       }
     }
     
-    if(pValThres !=1 & "pValGreater" %in%  colnames(peakList[[1]])){
+    if(pValGreaterThres !=1 & "pValGreater" %in%  colnames(peakList[[1]])){
       groupMatpVal <- do.call(rbind, lapply( groupList, 
                                          function(y){
                                            y<-data.table::as.data.table(y)
@@ -459,35 +467,36 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
         output
       })
       
+      nFile <- length(peakList)
       matPvalGreater <- t(matrix(matPvalGreater, nrow = nSample))
       matPvalGreater <- matPvalGreater[keepVar,,drop=FALSE]
-      delete1<- which(apply(matPvalGreater,1,function(x) all( x > pValThres,na.rm=T)))
+      Keep1<- which(apply(matPvalGreater,1,function(x) sum(x < pValGreaterThres,na.rm=T)/sum(!is.na(x)) >= fracExp))
       
-      # matPvalLess<-apply(groupMatpVal[,c("pValLess","Samples")], MARGIN=1, function(x){
-      #   output<-rep(NA,nSample)
-      #   ch.Area <- x[1]
-      #   ch.Area.split <- strsplit(ch.Area, split = "_")[[1]]
-      #   vec.Area <- as.numeric(ch.Area.split)
-      #   
-      #   ch.samples <- x[2]
-      #   vec.samples <- as.numeric(strsplit(ch.samples, split = "_")[[1]])
-      #   
-      #   output[vec.samples]<-vec.Area
-      #   output
-      # })
-      # 
-      # matPvalLess <- t(matrix(matPvalLess, nrow = nSample))
-      # matPvalLess <- matPvalLess[keepVar,,drop=FALSE]
-      # delete2<- which(apply(matPvalGreater,1,function(x) all( x > pValThres,na.rm=T)))
-      
-      # if(length(intersect(delete1,delete2))!=0) {
-      #   X<-X[-intersect(delete1,delete2),,drop=FALSE]
-      #   Xbg<-Xbg[-intersect(delete1,delete2),,drop=FALSE]
-      # }
-      if(length(delete1)!=0) {
-        X<-X[-(delete1),,drop=FALSE]
-        Xbg<-Xbg[-(delete1),,drop=FALSE]
+      matPvalLess<-apply(groupMatpVal[,c("pValLess","Samples")], MARGIN=1, function(x){
+        output<-rep(NA,nSample)
+        ch.Area <- x[1]
+        ch.Area.split <- strsplit(ch.Area, split = "_")[[1]]
+        vec.Area <- as.numeric(ch.Area.split)
+
+        ch.samples <- x[2]
+        vec.samples <- as.numeric(strsplit(ch.samples, split = "_")[[1]])
+
+        output[vec.samples]<-vec.Area
+        output
+      })
+
+      matPvalLess <- t(matrix(matPvalLess, nrow = nSample))
+      matPvalLess <- matPvalLess[keepVar,,drop=FALSE]
+      Keep2<- which(apply(matPvalLess,1,function(x) sum( x < pValLessThres,na.rm=T)/sum(!is.na(x)) >= fracExp))
+
+      if(length(union(Keep1,Keep2))!=0) {
+        X<-X[union(Keep1,Keep2),,drop=FALSE]
+        Xbg<-Xbg[union(Keep1,Keep2),,drop=FALSE]
+      } else {
+        warning(paste("peakList is empty"))
+        return(NULL)
       }
+      
     }
     
 }else Xbg<-data.frame(row.names = rownames(X) )

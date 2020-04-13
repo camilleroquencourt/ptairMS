@@ -41,7 +41,7 @@ readRaw <- function(filePath, calibTIS=TRUE,
   if(nbrWrite == 0) { stop("The file is empty (0 seconde of acquisition)")}
   
   # acquiqision time limit to 900 spectra, indeed the rawAn is more than 3.4 GB
-  NbrWriteMax <- ceiling(1200/nbrBuf)
+  NbrWriteMax <- ceiling(3000/nbrBuf)
   rhdf5::h5closeAll()
   
   #read information needed

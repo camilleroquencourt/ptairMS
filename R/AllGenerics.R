@@ -165,7 +165,7 @@ setGeneric("annotateVOC",
 #' @rdname alignSamples
 #' @export
 setGeneric("alignSamples",function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL,
-                                   bgThreshold=2,pValThres= 2e-26,
+                                   bgThreshold=2,pValGreaterThres= 2e-26,pValLessThres=0,fracExp=0.3,
                                    dmzGroup = 0.001,...){standardGeneric("alignSamples")})
 
 ##writte----
