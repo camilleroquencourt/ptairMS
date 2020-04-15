@@ -338,11 +338,10 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
     })
   }
   
- 
-  
   ## add column group with Samples group number
   mat<-NULL
   peakList<-lapply(peakList,function(x) as.matrix(x))
+  
   for(i in seq_along(peakList)){
     mat_temp <- cbind(peakList[[i]], group = i)
     mat <- rbind(mat,mat_temp)
@@ -387,6 +386,43 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
   rownames(X) <- round(groupMat[,`Mz`],4)
   colnames(X) <- names(peakList)
   
+  
+  filtered <- fliterEset(X,sampleMetadata,groupMat,groupList,peakList,group,fracGroup,bgThreshold,
+                       pValGreaterThres,pValLessThres,fracExp)
+  
+  if(is.null(filtered)) return(NULL)
+  
+  X <- filtered$X
+  Xbg <- filtered$Xbg
+    
+  if(quantiUnit=="ppb") {
+    Xbg<-Xbg[(round(as.numeric(rownames(X)))>=21),,drop=FALSE]
+    X<-X[round(as.numeric(rownames(X)))>=21,,drop=FALSE]
+    }
+  
+  # adding the ion_mass as the first column in the fData
+  Xbg <- cbind.data.frame(ion_mass = as.numeric(rownames(X)),
+                          as.data.frame(Xbg, stringsAsFactors = FALSE),
+                          stringsAsFactors = FALSE)
+  rownames(Xbg) <- rownames(X)
+  
+  
+  message(nrow(X), " peaks aligned")
+ 
+  featureData <- Biobase::AnnotatedDataFrame(as.data.frame(Xbg))
+  sampleMetadata<-as.data.frame(sampleMetadata[colnames(X),,drop=FALSE])
+  return(Biobase::ExpressionSet(assayData=X,
+                                phenoData = Biobase::AnnotatedDataFrame(sampleMetadata),
+                                featureData = featureData,annotation=quantiUnit)
+  )
+}
+
+
+fliterEset<-function(X,sampleMetadata,groupMat,groupList,peakList,group,fracGroup,bgThreshold,
+                     pValGreaterThres,pValLessThres,fracExp){
+  
+  nSample<- ncol(X)
+  
   #filter on samples frenquency
   if(!is.null(group)){
     groupFac <- as.factor(sampleMetadata[,group])
@@ -426,12 +462,12 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
     Xbg <- Xbg[keepVar,,drop=FALSE]
     rownames(Xbg) <- rownames(X)
     colnames(Xbg) <- paste("Background -",names(peakList))
-  
+    
     if(bgThreshold!=0 & "fracExp" %in% colnames(peakList[[1]])){
       rap<-Xbg/X
       kepp <- which(apply(rap,1,
-                            function(x) sum( 1/bgThreshold >x  & x > bgThreshold , na.rm=TRUE)/sum(!is.na(x)) 
-                            >=fracExp ))
+                          function(x) sum( 1/bgThreshold > x  | x > bgThreshold , na.rm=TRUE)/sum(!is.na(x)) 
+                          >=fracExp ))
       X <- X[kepp,,drop=FALSE]
       Xbg<-Xbg[kepp,,drop=FALSE]
       if( nrow(X)==0 ) {
@@ -442,15 +478,15 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
     
     if(pValGreaterThres !=1 & "pValGreater" %in%  colnames(peakList[[1]])){
       groupMatpVal <- do.call(rbind, lapply( groupList, 
-                                         function(y){
-                                           y<-data.table::as.data.table(y)
-                                           y <- y[,list(Mz= stats::median(Mz), 
-                                                        pValGreater= paste(pValGreater,collapse = "_"),
-                                                        pValLess= paste(pValLess,collapse = "_"),
-                                                        Samples=paste(group,collapse="_"),
-                                                        nSamples= round(length(group)/nSample,1))]
-                                           y
-                                         }
+                                             function(y){
+                                               y<-data.table::as.data.table(y)
+                                               y <- y[,list(Mz= stats::median(Mz), 
+                                                            pValGreater= paste(pValGreater,collapse = "_"),
+                                                            pValLess= paste(pValLess,collapse = "_"),
+                                                            Samples=paste(group,collapse="_"),
+                                                            nSamples= round(length(group)/nSample,1))]
+                                               y
+                                             }
       ) 
       )
       
@@ -477,18 +513,18 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
         ch.Area <- x[1]
         ch.Area.split <- strsplit(ch.Area, split = "_")[[1]]
         vec.Area <- as.numeric(ch.Area.split)
-
+        
         ch.samples <- x[2]
         vec.samples <- as.numeric(strsplit(ch.samples, split = "_")[[1]])
-
+        
         output[vec.samples]<-vec.Area
         output
       })
-
+      
       matPvalLess <- t(matrix(matPvalLess, nrow = nSample))
       matPvalLess <- matPvalLess[keepVar,,drop=FALSE]
       Keep2<- which(apply(matPvalLess,1,function(x) sum( x < pValLessThres,na.rm=T)/sum(!is.na(x)) >= fracExp))
-
+      
       if(length(union(Keep1,Keep2))!=0) {
         X<-X[union(Keep1,Keep2),,drop=FALSE]
         Xbg<-Xbg[union(Keep1,Keep2),,drop=FALSE]
@@ -499,26 +535,10 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
       
     }
     
-}else Xbg<-data.frame(row.names = rownames(X) )
-    
-  # adding the ion_mass as the first column in the fData
-  Xbg <- cbind.data.frame(ion_mass = as.numeric(rownames(X)),
-                          as.data.frame(Xbg, stringsAsFactors = FALSE),
-                          stringsAsFactors = FALSE)
-  rownames(Xbg) <- rownames(X)
+  }else Xbg<-data.frame
   
-  message(nrow(X), " peaks aligned")
- 
-  featureData <- Biobase::AnnotatedDataFrame(as.data.frame(Xbg))
-  sampleMetadata<-as.data.frame(sampleMetadata[colnames(X),,drop=FALSE])
-  return(Biobase::ExpressionSet(assayData=X,
-                                phenoData = Biobase::AnnotatedDataFrame(sampleMetadata),
-                                featureData = featureData,annotation=quantiUnit)
-  )
+  return(list(X=X,Xbg=Xbg))
 }
-
-
-
 
 
 #' Impute missing values on an expression set from an ptrSet

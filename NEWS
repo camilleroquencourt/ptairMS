@@ -1,3 +1,10 @@
+CHANGES IN VERSION 0.0.10
+------------------------------
+
+NEW FEATURE
+
+    o fracExp parameter in alignSamples, to keep features significatively diffrent from ambiant air for at least fracExp % of the samples
+
 CHANGES IN VERSION 0.0.8
 ------------------------------
 

@@ -35,7 +35,7 @@ test_alignSamples <- function(){
   directory <-  system.file("extdata/mycobacteria",  package = "ptairData")
   dirSet <- createPtrSet(directory, setName = "test", mzCalibRef =c(21.022,59.049))
   dirSet <- detectPeak(dirSet, mzNominal = c(21,59))
-  eset <- alignSamples(dirSet, bgThreshold = 0)
+  eset <- alignSamples(dirSet, bgThreshold = 0,quanti="ppb")
   
   # output is expression set
   testthat::expect_is(eset,'ExpressionSet')
