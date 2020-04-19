@@ -467,7 +467,7 @@ fliterEset<-function(X,sampleMetadata,groupMat,groupList,peakList,group,fracGrou
       rap<-Xbg/X
       kepp <- which(apply(rap,1,
                           function(x) sum( 1/bgThreshold > x  | x > bgThreshold , na.rm=TRUE)/sum(!is.na(x)) 
-                          >=fracExp ))
+                          >= fracExp ))
       X <- X[kepp,,drop=FALSE]
       Xbg<-Xbg[kepp,,drop=FALSE]
       if( nrow(X)==0 ) {
@@ -535,7 +535,7 @@ fliterEset<-function(X,sampleMetadata,groupMat,groupList,peakList,group,fracGrou
       
     }
     
-  }else Xbg<-data.frame
+  }else Xbg <- data.frame(row.names = rownames(X))
   
   return(list(X=X,Xbg=Xbg))
 }

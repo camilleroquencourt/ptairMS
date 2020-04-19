@@ -17,16 +17,14 @@ changeTimeLimits<-function(ptrSet){
     
     #title
     shiny::titlePanel("View and modify time limits"),
-    
-    shiny::fluidRow(shiny::p("Select a file (you can scroll with the up/down keys on the keyboard)")),
-    
+
     #choose file in the ptrSet
     shiny::fluidRow(
       shiny::selectInput("fileName","File name:",as.list(names(ptrSet@TIC)),selectize=FALSE)
     ),
     
     shiny::fluidRow(shiny::p("Select the periods (rows) that you want delete. It must stay at least one period.
-                      Press 'Reset time limits' to reestablish all time period in the current file.")),
+                      You can change parameters and Press 'Reset time limits' to re estimate time limits.")),
     
     # TIC plot and timeLImit table
     shiny::sidebarLayout(
@@ -41,18 +39,18 @@ changeTimeLimits<-function(ptrSet){
     # delete or reset expirations
     shiny::fluidRow(
       shiny::p(class='text-center', shiny::actionButton('delete', 'Delete selected rows'),
-               shiny::actionButton('reset', 'Reset time limits'))
+               shiny::actionButton('reset', 'Change time limits'))
     ),
     
     
     # change parameter of timeLimit
     shiny::fluidRow(
-      shiny::numericInput("fracMaxTIC", "FracMaxTIC", ptrSet@parameter$timeLimit$fracMaxTIC,0, 1, 0.05),
-               shiny::numericInput("fracMaxTICBg", "fracMaxTICBg",0.2,0, 1, 0.05),
-               shiny::numericInput("derivThresholdExp", "derivThresholdExp", 1, 0, 5, 0.05),
-               shiny::numericInput("derivThresholdBg", "derivThresholdBg",0.05,0, 2, 0.05),
-               shiny::numericInput("minPoints", "minPoints", 1, 1, 10, 1),
-               shiny::numericInput("degreeBaseline", "degreeBaseline", 1, 1, 30, 1)
+      shiny::column(width = 3,shiny::numericInput("fracMaxTIC", "FracMaxTIC", ptrSet@parameter$timeLimit$fracMaxTIC,0, 1, 0.05)),
+      shiny::column(width = 3,shiny::numericInput("fracMaxTICBg", "fracMaxTICBg",0.2,0, 1, 0.05)),
+      shiny::column(width = 3,shiny::numericInput("derivThresholdExp", "derivThresholdExp", 1, 0, 5, 0.05)),
+      shiny::column(width = 3,shiny::numericInput("derivThresholdBg", "derivThresholdBg",0.05,0, 2, 0.05)),
+      shiny::column(width = 3,shiny::numericInput("minPoints", "minPoints", 1, 1, 10, 1)),
+      shiny::column(width = 3,shiny::numericInput("degreeBaseline", "degreeBaseline", 1, 1, 30, 1))
     ),
     
     shiny::fluidRow(shiny::p("When you have done all file, save the changes and the new ptrSet will be return, 
@@ -124,11 +122,20 @@ changeTimeLimits<-function(ptrSet){
     
     # display the expirations in data table
     output$table <- DT::renderDataTable( {
-      DT::datatable(rv$data, #editable = TRUE,
+      DT::datatable(rv$data, editable = TRUE,
                     selection=list(target="row"),
                     rownames=as.character(seq(1,nrow(rv$data)))
       )
     })
+    
+    shiny::observeEvent(input$table_cell_edit,
+      {
+        rv$data[, input$table_cell_edit$col] <- input$table_cell_edit$value
+        ptrSet<-ptrSetNew()
+        ptrSet@timeLimit[[input$fileName]]$exp <- t(rv$data)
+        ptrSetNew(ptrSet)
+      }
+    )
     
     #plot the TIC with expirations limits
     output$TIC <- plotly::renderPlotly({
@@ -142,8 +149,9 @@ changeTimeLimits<-function(ptrSet){
       p <- ggplot2::qplot(x=time,y=TIC,
                           xlab="time",ylab="intensity",main=paste("TIC of",input$fileName))  +
         ggplot2::geom_point(mapping=ggplot2::aes(time ,y,color=point),
-                             data=data.frame(time= time[expPoint],y=TIC[expPoint],point="exp")) +
-        ggplot2::geom_point(mapping=ggplot2::aes(time ,y,color=point),
+                             data=data.frame(time= time[expPoint],y=TIC[expPoint],point="exp"))
+      if(!is.null(bgPoint)) 
+        p<-p + ggplot2::geom_point(mapping=ggplot2::aes(time ,y,color=point),
                              data=data.frame(time= time[bgPoint],y=TIC[bgPoint],point="Background"))
       if( length(s) ){
         s <- s[s<=ncol(indexTimeLimit)] #to avoid warnings
