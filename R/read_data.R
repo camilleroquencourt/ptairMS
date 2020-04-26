@@ -45,6 +45,8 @@ readRaw <- function(filePath, calibTIS=TRUE,
   rhdf5::h5closeAll()
   
   #read information needed
+  date_heure<-rhdf5::h5read(filePath, "/AcquisitionLog", bit64conversion='bit64')$Log$timestring[1]
+  
   timVn <- rhdf5::h5read(filePath, "/TimingData/BufTimes", bit64conversion='bit64',
                          index = list(NULL, seq_len(min(nbrWrite,NbrWriteMax))))
   rawAn <- rhdf5::h5read(filePath, "/FullSpectra/TofData",  
@@ -96,7 +98,7 @@ readRaw <- function(filePath, calibTIS=TRUE,
   raw <- methods::new(Class = "ptrRaw", name= basename(filePath),rawM= rawMn, mz=mzVn, time=timVn,calibCoef=calibCoef,
             calibMzToTof = calib_invFormula, calibToftoMz = calib_formula, calibError=0,
             calibMassRef= calibMassRef, calibSpectr= list(NULL),
-            ptrTransmisison = transmission, prtReaction= reaction)
+            ptrTransmisison = transmission, prtReaction= reaction,date = date_heure)
   
   if(calibTIS){
     raw <- calibration(raw, mzCalibRef , tol= tolCalibPpm)
@@ -213,8 +215,9 @@ createPtrSet<-function(dir, setName,
   ptrSet <- methods::new(Class = "ptrSet", parameter = parameter, sampleMetadata = sampleMetadata,
               mzCalibRef= check$mzCalibRefList, timeLimit = check$timeLimit, signalCalibRef = check$signalCalibRef, 
               errorCalibPpm= check$errorCalibPpm, coefCalib= check$coefCalibList, primaryIon=check$primaryIon,
-              resolution = check$resolution, TIC = check$TIC, breathTracer=check$breathTracer,peakListRaw = check$peakListRaw, 
-              peakListAligned = check$peakListAligned)
+              resolution = check$resolution, prtReaction= check$prtReaction,ptrTransmisison=check$ptrTransmisison,
+              TIC = check$TIC, breathTracer=check$breathTracer,peakListRaw = check$peakListRaw, 
+              peakListAligned = check$peakListAligned,date=check$date)
   
   #save in Rdata with the name choosen 
   if(!is.null(saveDir)){
@@ -287,7 +290,10 @@ updatePtrSet<-function(ptrset){
     ptrset@peakListAligned[deletedFiles] <-  NULL
     ptrset@parameter$listFile <-filesDirFullName
     ptrset@breathTracer[deletedFiles]<-NULL
-  
+    ptrset@ptrTransmisison[deletedFiles]<-NULL
+    ptrset@prtReaction[deletedFiles]<-NULL
+    ptrset@date[deletedFiles]<-NULL
+    
     message(paste(deletedFiles," deleted \n"))
   }
   
@@ -323,6 +329,9 @@ updatePtrSet<-function(ptrset){
     ptrset@timeLimit <-c(ptrset@timeLimit,check$timeLimit)[basename(filesDirFullName)]
     ptrset@primaryIon<-c( ptrset@primaryIon,check$primaryIon)[basename(filesDirFullName)]
     ptrset@breathTracer<-c(ptrset@breathTracer,check$breathTracer)[basename(filesDirFullName)]
+    ptrset@ptrTransmisison<-c(ptrset@ptrTransmisison,check$ptrTransmisison)[basename(filesDirFullName)]
+    ptrset@prtReaction <-c(ptrset@prtReaction,check$prtReaction)[basename(filesDirFullName)]
+    ptrset@date <-c(ptrset@date,check$date)[basename(filesDirFullName)]
   }
   
   saveDir<-parameter$saveDir
@@ -361,6 +370,9 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC, mzBreathTracer){
   peakListAligned<-list()
   coefCalibList<-list()
   primaryIon<-list()
+  transmisison<-list()
+  reaction<-list()
+  date<-list()
   fileName<-basename(files)
   failed<-c()
   
@@ -381,6 +393,9 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC, mzBreathTracer){
     errorCalibPpm[[ fileName[j] ]] <- raw@calibError
     coefCalibList[[ fileName[j] ]] <-raw@calibCoef
     resolution[[ fileName[j] ]] <- estimateResol(raw@calibMassRef,raw@calibSpectr)
+    reaction[[ fileName[j] ]] <- raw@prtReaction
+    transmisison[[ fileName[j]  ]]<- raw@ptrTransmisison
+    date[[ fileName[j]  ]] <- raw@date
     
     #primary ion quantification
     
@@ -430,9 +445,12 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC, mzBreathTracer){
               peakListRaw=peakListRaw ,
               peakListAligned=peakListAligned,
               coefCalibList=coefCalibList,
-              primaryIon=primaryIon, failed=failed))
+              primaryIon=primaryIon, 
+              prtReaction= reaction,
+              ptrTransmisison= transmisison,
+              date=date,
+              failed=failed))
 }
-
 
 #' Convert a h5 file to mzML
 #'

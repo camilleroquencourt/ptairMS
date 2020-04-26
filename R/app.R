@@ -122,7 +122,8 @@ changeTimeLimits<-function(ptrSet){
     
     # display the expirations in data table
     output$table <- DT::renderDataTable( {
-      DT::datatable(rv$data, editable = TRUE,
+      if(!is.null(rv$data)) 
+        DT::datatable(rv$data, editable = TRUE,
                     selection=list(target="row"),
                     rownames=as.character(seq(1,nrow(rv$data)))
       )
@@ -147,8 +148,9 @@ changeTimeLimits<-function(ptrSet){
       expPoint<-Reduce(c,apply(indexTimeLimit,2,function(x) seq(x[1],x[2])))
       bgPoint<-rv$bgPoints
       p <- ggplot2::qplot(x=time,y=TIC,
-                          xlab="time",ylab="intensity",main=paste("TIC of",input$fileName))  +
-        ggplot2::geom_point(mapping=ggplot2::aes(time ,y,color=point),
+                          xlab="time",ylab="intensity",main=paste("TIC of",input$fileName))
+      if(!is.null(expPoint))
+        p<-p+ggplot2::geom_point(mapping=ggplot2::aes(time ,y,color=point),
                              data=data.frame(time= time[expPoint],y=TIC[expPoint],point="exp"))
       if(!is.null(bgPoint)) 
         p<-p + ggplot2::geom_point(mapping=ggplot2::aes(time ,y,color=point),

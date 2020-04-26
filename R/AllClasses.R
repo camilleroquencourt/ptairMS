@@ -32,7 +32,8 @@ setClass(
     calibError="numeric",
     calibSpectr = "list",
     ptrTransmisison = "matrix",
-    prtReaction = "list"
+    prtReaction = "list",
+    date="character"
   )
 )
 
@@ -63,11 +64,14 @@ setClass(
   representation = representation(
     parameter = "list",
     sampleMetadata = "data.frame",
+    date="list",
     mzCalibRef= "list",
     signalCalibRef = "list",
     errorCalibPpm ="list",
     coefCalib="list",
     primaryIon="list",
+    ptrTransmisison = "list",
+    prtReaction = "list",
     resolution ="list",
     TIC = "list",
     breathTracer="list",

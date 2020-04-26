@@ -398,6 +398,32 @@ plotPeakShapeTof<-function(set){
   return(p)
 }
 
+plotPtrReaction<-function(pSet){
+  U<-Reduce(c,lapply(pSet@prtReaction,function(x){
+    y<-c(x$TwData[1,,])
+    mean(y[y!=0])
+  })) 
+  PD<-Reduce(c,lapply(pSet@prtReaction,function(x){
+    y<-c(x$TwData[2,,])
+    mean(y[y!=0])
+  })) 
+  TD<-Reduce(c,lapply(pSet@prtReaction,function(x){
+    y<-c(x$TwData[3,,])
+    mean(y[y!=0])
+  })) 
+  EN<-Reduce(c,lapply(pSet@prtReaction,function(x){
+    y<-c(x$TwData[4,,])
+    mean(y[y!=0])
+  })) 
+  date <- Reduce(c,pSet@date)
+  date<-sapply(date,function(x) chron::chron(dates. = strsplit(x," ")[[1]][1],
+                     times. = strsplit(x," ")[[1]][2],format = c("d/m/y","h:m:s")))
+  boxplot(split(U,chron::dates(date)),main="Udrift [V]")
+  boxplot(split(TD,chron::dates(date)),main="T-Drift [°C]")
+  boxplot(split(PD,chron::dates(date)),main="p-Drift [mbar]")
+  boxplot(split(EN,chron::dates(date)),main="E/N [Td]" )
+  boxplot(split(Reduce(c,pSet@primaryIon),chron::dates(date)),main="Primary ion cps")
+}
 
 ### plotFiles----
 #' Plot the calibration peaks
