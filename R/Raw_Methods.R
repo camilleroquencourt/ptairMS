@@ -930,8 +930,8 @@ methods::setMethod(f="detectPeak",
             
             if(primaryIon){
               p<-PeakList(raw.bg,mz=21,ppm=500)
-              primaryIon<- p$peak$quanti_cps
-            } else primaryIon <- NA
+              primaryIon<- list(primaryIon=p$peak$quanti_cps)
+            } else primaryIon <- list(primaryIon=NA)
         
             peakLists<-processFun(raw,massCalib,primaryIon,timeLimit, mzNominal,
                                                   ppm, resMinMeanMax,ppmGroupBkg, 
