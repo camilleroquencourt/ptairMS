@@ -685,7 +685,7 @@ impute <- function(eSet,ptrSet){
           mz.x <- mzAxis.m[ x[1] - th < mz & mz < x[1]+th ]
           sum(sech2(x[1],x[2],x[3],x[4],mz.x),na.rm =TRUE)}) 
         
-        list_peak<-cbind(Mz=mz,quanti=quanti.m)
+        list_peak<-cbind(Mz=mz,quanti=quanti.m/(primaryIon[[file]]$primaryIon))
         
         # convert to ppb or ncps
         #if there is reaction ans transmission information
@@ -694,7 +694,6 @@ impute <- function(eSet,ptrSet){
             Td <-c(reaction$TwData[3,,])
             pd <- c(reaction$TwData[2,,])
             quanti.m <- ppbConvert(peakList = list_peak,
-                                   primaryIon = primaryIon[[file]],
                                    transmission = transmission$Data,
                                    U = U[indexExp] , 
                                    Td = Td[indexExp], 
@@ -703,7 +702,7 @@ impute <- function(eSet,ptrSet){
           }
         if(Biobase::annotation(eSet)=="ncps"){
           #normalize by primary ions
-            quanti.m <- quanti.m/(primaryIon[[basename(file)]]*4.9*10^6)
+            quanti.m <- quanti.m/(primaryIon[[basename(file)]]$primaryIon)
           }
         
 
@@ -851,7 +850,7 @@ imputeMat <- function(X,ptrSet,quantiUnit){
         mz.x <- mzAxis.m[ x[1] - th < mz & mz < x[1]+th ]
         sum(sech2(x[1],x[2],x[3],x[4],mz.x),na.rm =TRUE)}) 
       
-      list_peak<-cbind(Mz=mz,quanti=quanti.m)
+      list_peak<-cbind(Mz=mz,quanti=quanti.m/(primaryIon[[file]]$primaryIon))
       
       # convert to ppb or ncps
       #if there is reaction ans transmission information
@@ -860,7 +859,6 @@ imputeMat <- function(X,ptrSet,quantiUnit){
         Td <-c(reaction$TwData[3,,])
         pd <- c(reaction$TwData[2,,])
         quanti.m <- ppbConvert(peakList = list_peak,
-                               primaryIon = primaryIon[[file]],
                                transmission = transmission$Data,
                                U = U[indexExp] , 
                                Td = Td[indexExp], 
@@ -869,7 +867,7 @@ imputeMat <- function(X,ptrSet,quantiUnit){
       }
       if(quantiUnit=="ncps"){
         #normalize by primary ions
-        quanti.m <- quanti.m/(primaryIon[[basename(file)]]*4.9*10^6)
+        quanti.m <- quanti.m/(primaryIon[[basename(file)]]$primaryIon)
       }
       
       
@@ -880,5 +878,9 @@ imputeMat <- function(X,ptrSet,quantiUnit){
     message(basename(file)," done")
   }#end for file
   return(X)
+}
+
+cibledFitt<-function(m){
+  
 }
 

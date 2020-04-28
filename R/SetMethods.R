@@ -422,7 +422,7 @@ plotPtrReaction<-function(pSet){
   boxplot(split(TD,chron::dates(date)),main="T-Drift [°C]")
   boxplot(split(PD,chron::dates(date)),main="p-Drift [mbar]")
   boxplot(split(EN,chron::dates(date)),main="E/N [Td]" )
-  boxplot(split(Reduce(c,pSet@primaryIon),chron::dates(date)),main="Primary ion cps")
+  #boxplot(split(Reduce(c,pSet@primaryIon),chron::dates(date)),main="Primary ion + Water cluster",ylab="cps")
 }
 
 ### plotFiles----

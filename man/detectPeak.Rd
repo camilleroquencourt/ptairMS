@@ -21,6 +21,7 @@ detectPeak(x, ...)
   fctFit = c("Sech2", "average")[1],
   thIntensityRate = 0.01,
   processFun = processFileSepExp,
+  primaryIon = T,
   ...
 )
 

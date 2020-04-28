@@ -721,24 +721,22 @@ processFileSepExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNo
   matAligned <- alignExpirations(matPeak.j, ppmGroup=ppmGroupBkg, fracGroup=fracGroup)
 
   #normalize by primary ions and ppb conversion
-  if(!is.na(primaryIon)){
+  if(!is.na(primaryIon$primaryIon)){
     
-    matAligned[,"quanti_ncps"] <-matAligned[,"quanti_cps"]/(primaryIon*488)
-   if(bg) matAligned[,"background_ncps"] <-matAligned[,"background_cps"]/(primaryIon*488)
+    matAligned[,"quanti_ncps"] <-matAligned[,"quanti_cps"]/(primaryIon$primaryIon*488)
+   if(bg) matAligned[,"background_ncps"] <-matAligned[,"background_cps"]/(primaryIon$primaryIon*488)
     
     indExp<-Reduce(c,apply(indLim,2,function(x) seq(x[1],x[2])))
     if( length(reaction)!=0 & nrow(transmission) > 1){
       matAligned[,"quanti_ppb"]<-ppbConvert(peakList = data.frame(Mz=matAligned$Mz,
-                                                                            quanti=matAligned$quanti_cps),
-                                                      primaryIon = primaryIon,
+                                                                            quanti=matAligned$quanti_ncps),
                                                       transmission =raw@ptrTransmisison,
                                                       U=c(raw@prtReaction$TwData[1,,])[indExp],
                                                       Td=c(raw@prtReaction$TwData[3,,])[indExp],
                                                       pd=c(raw@prtReaction$TwData[2,,])[indExp])
       
       if(bg) matAligned[,"background_ppb"]<-ppbConvert(peakList = data.frame(Mz=matAligned$Mz,
-                                                                                quanti=matAligned$background_cps),
-                                                          primaryIon = primaryIon,
+                                                                                quanti=matAligned$background_ncps),
                                                           transmission =raw@ptrTransmisison,
                                                           U=c(raw@prtReaction$TwData[1,,])[indBg],
                                                           Td=c(raw@prtReaction$TwData[3,,])[indBg],
@@ -810,24 +808,22 @@ processFileAvgExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNo
   matAligned <- alignExpirations(matPeak.j, ppmGroup=ppmGroupBkg, fracGroup=fracGroup)
   
   #normalize by primary ions and ppb conversion
-  if(!is.na(primaryIon)){
+  if(!is.na(primaryIon$primaryIon)){
     
-    matAligned[,"quanti_ncps"] <-matAligned[,"quanti_cps"]/(primaryIon*488)
-    if(bg) matAligned[,"background_ncps"] <-matAligned[,"background_cps"]/(primaryIon*488)
+    matAligned[,"quanti_ncps"] <-matAligned[,"quanti_cps"]/((primaryIon$primaryIon*488))
+    if(bg) matAligned[,"background_ncps"] <-matAligned[,"background_cps"]/((primaryIon$primaryIon*488))
     
     
     if( length(reaction)!=0 & nrow(transmission) > 1){
       matAligned[,"quanti_ppb"]<-ppbConvert(peakList = data.frame(Mz=matAligned$Mz,
-                                                                  quanti=matAligned$quanti_cps),
-                                            primaryIon = primaryIon,
+                                                                  quanti=matAligned$quanti_ncps),
                                             transmission =raw@ptrTransmisison,
                                             U=c(raw@prtReaction$TwData[1,,])[indLimAll],
                                             Td=c(raw@prtReaction$TwData[3,,])[indLimAll],
                                             pd=c(raw@prtReaction$TwData[2,,])[indLimAll])
       
       if(bg) matAligned[,"background_ppb"]<-ppbConvert(peakList = data.frame(Mz=matAligned$Mz,
-                                                                             quanti=matAligned$background_cps),
-                                                       primaryIon = primaryIon,
+                                                                             quanti=matAligned$background_ncps),
                                                        transmission =raw@ptrTransmisison,
                                                        U=c(raw@prtReaction$TwData[1,,])[indBg],
                                                        Td=c(raw@prtReaction$TwData[3,,])[indBg],
@@ -905,24 +901,22 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
   bg<-FALSE
   if(!is.null(indBg)) bg<-TRUE
   #normalize by primary ions and ppb conversion
-  if(!is.na(primaryIon)){
+  if(!is.na(primaryIon$primaryIon)){
     
-    matPeakAg[,"quanti_ncps"] <-matPeakAg[,"quanti_cps"]/(primaryIon*488)
-    if(bg) matPeakAg[,"background_ncps"] <- matPeakAg[,"background_cps"]/(primaryIon*488)
+    matPeakAg[,"quanti_ncps"] <-matPeakAg[,"quanti_cps"]/((primaryIon$primaryIon*488))
+    if(bg) matPeakAg[,"background_ncps"] <- matPeakAg[,"background_cps"]/((primaryIon$primaryIon*488))
     
     indExp<-Reduce(c,apply(indLim,2,function(x) seq(x[1],x[2])))
     if( length(raw@prtReaction)!=0 & nrow(raw@ptrTransmisison) > 1){
       matPeakAg[,"quanti_ppb"]<-ppbConvert(peakList = data.frame(Mz=matPeakAg$Mz,
-                                                                            quanti=matPeakAg$quanti_cps),
-                                                      primaryIon = primaryIon,
+                                                                            quanti=matPeakAg$quanti_ncps),
                                                       transmission =raw@ptrTransmisison,
                                                       U=c(raw@prtReaction$TwData[1,,])[indExp],
                                                       Td=c(raw@prtReaction$TwData[3,,])[indExp],
                                                       pd=c(raw@prtReaction$TwData[2,,])[indExp])
       
       if(bg) matPeakAg[,"background_ppb"]<-ppbConvert(peakList = data.frame(Mz=matPeakAg$Mz,
-                                                                                quanti=matPeakAg$background_cps),
-                                                          primaryIon = primaryIon,
+                                                                                quanti=matPeakAg$background_ncps),
                                                           transmission =raw@ptrTransmisison,
                                                           U=c(raw@prtReaction$TwData[1,,])[indBg],
                                                           Td=c(raw@prtReaction$TwData[3,,])[indBg],
@@ -1815,7 +1809,7 @@ TransmissionCurve <- function(x,y){
 #' @param pd drift pressure
 #' @param k reaction rate constant 
 #' @return a vector with ppb concentration
-ppbConvert <- function(peakList, primaryIon,transmission, U, Td, pd, k=2*10^-9 ){
+ppbConvert <- function(peakList,transmission, U, Td, pd, k=2*10^-9 ){
   
     Tr_primary<-transmission[2,1]
     x<-transmission[1,][transmission[1,]!=0]
@@ -1830,7 +1824,6 @@ ppbConvert <- function(peakList, primaryIon,transmission, U, Td, pd, k=2*10^-9 )
       22400*1013^2*
       (273.15+mean(Td))^2*Tr_primary/
       (k*9.2^2*
-         as.numeric(primaryIon)*488* 
          mean(pd)^2*
          6022*10^23*
          273.15^2 *

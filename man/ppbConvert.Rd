@@ -4,13 +4,11 @@
 \alias{ppbConvert}
 \title{PPb concentration}
 \usage{
-ppbConvert(peakList, primaryIon, transmission, U, Td, pd, k = 2 * 10^-9)
+ppbConvert(peakList, transmission, U, Td, pd, k = 2 * 10^-9)
 }
 \arguments{
 \item{peakList}{the peak list return by peakList, must contain the isotope 
 of primary ion 21.021}
-
-\item{primaryIon}{primary ion quantification in count per extraction}
 
 \item{transmission}{transmission information}
 
@@ -21,6 +19,8 @@ of primary ion 21.021}
 \item{pd}{drift pressure}
 
 \item{k}{reaction rate constant}
+
+\item{primaryIon}{primary ion quantification in count per extraction}
 }
 \value{
 a vector with ppb concentration

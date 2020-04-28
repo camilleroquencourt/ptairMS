@@ -420,17 +420,27 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC, mzBreathTracer){
     # check if mass 21 contains in mass axis
     if( ! 21 %in% unique(round(raw@mz)) ) {
       warning("mass 21 not in mass Axis,the ppb quantification can not be done.")
-      primaryIon[[ fileName[j] ]] <- NA
-    } else {
-      ## sur le background
-      if(! is.null(indLim$backGound)) indBg<- indLim$backGound else indBg<-seq_along(raw@time)
-      raw.bg<-raw
-      raw.bg@rawM<-raw.bg@rawM[,indBg]
-      raw.bg@time<-raw.bg@time[indBg]
-      p<-PeakList(raw.bg,mz=21,ppm = 500,thIntensityRate = 0.5)
-      primaryIon[[ fileName[j] ]]<- sum(p$peak$quanti_cps)
+      primaryIonV <- NA
+    } else{
+      # p<-detectPeak(raw,mz=c(21,38),timeLimit=patientCovid@timeLimit[[1]],ppm=500,ppmGroupBkg=100,
+      #               processFun= ptairMS:::processFileAvgExp,primaryIon=F)
+      #primaryIon[[ fileName[j] ]] <- p$aligned
+
+      p <- ptairMS::PeakList(raw,mz=c(21), ppm = 700,thIntensityRate = 0.5,minIntensity = 0,
+                             maxIter = 1,thNoiseRate = 0)
+      primaryIndex<-which(abs(p$peak-21.022)*10^6/21 < 200)
+      if(primaryIndex) primaryIonV <- p$peak$quanti_cps[primaryIndex]*488 else primaryIonV <- NA
+          }
+    if( ! 38 %in% unique(round(raw@mz)) ) {
+      message("mass 38 not in mass Axis,the ppb quantification can not be done.")
+      waterCluster <- NA
+    } else{
+      p <- ptairMS::PeakList(raw,mz=c(38), ppm = 700,thIntensityRate = 0.5,minIntensity = 0,
+                             maxIter = 1,thNoiseRate = 0)
+      clusterIndex<-which(abs(p$peak-38.03)*10^6/21 < 200)
+      if(clusterIndex) waterCluster<-p$peak$quanti_cps[clusterIndex]*2632 else waterCluster <- NA
     }
-    
+    primaryIon[[ fileName[j] ]] <- list(primaryIon=primaryIonV, waterCluster=waterCluster)
     
     message( paste(fileName[j]," check"))
   }  

@@ -916,7 +916,8 @@ methods::setMethod(f="detectPeak",
           function(x, 
                    mzNominal=NULL , timeLimit, ppm=130, resMinMeanMax=c(3000,5000,8000), 
                    ppmGroupBkg=50, fracGroup=0.8, minIntensity=10, 
-                   fctFit=c("Sech2","average")[1],thIntensityRate=0.01,processFun=processFileSepExp,...)
+                   fctFit=c("Sech2","average")[1],thIntensityRate=0.01,
+                   processFun=processFileSepExp,primaryIon=T,...)
           {
             raw<-x
             #get infomration
@@ -926,8 +927,11 @@ methods::setMethod(f="detectPeak",
             raw.bg<-raw
             raw.bg@rawM<-raw.bg@rawM[,indBg]
             raw.bg@time<-raw.bg@time[indBg]
-            p<-PeakList(raw.bg,mz=21,ppm=500)
-            primaryIon<- p$peak$quanti_cps
+            
+            if(primaryIon){
+              p<-PeakList(raw.bg,mz=21,ppm=500)
+              primaryIon<- p$peak$quanti_cps
+            } else primaryIon <- NA
         
             peakLists<-processFun(raw,massCalib,primaryIon,timeLimit, mzNominal,
                                                   ppm, resMinMeanMax,ppmGroupBkg, 
