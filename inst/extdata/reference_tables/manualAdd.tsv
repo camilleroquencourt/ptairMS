@@ -1,0 +1,12 @@
+ion_mass	ion_formula	formula	mass_monoiso	name_iupac	pubchem_cid	inchi	inchikey	ref_year	ref_pmid	disease_name	disease_meshid
+19.01784	[H20+H+]	H20	18.01	Water (primary Ion)							
+37.0284	[H402+H+]	(H20-H20)	36.02	Water cluster							
+330.848		C6H4I2	329.8405	1,3-Diiodobenzene							
+330.848		C6H4I2	329.8405	PerMassScale							
+203.946			202.9385	Iodobenzene							
+203.946			202.9385	PerMassScale							
+329.84			328.8325	PerMassScale							
+32.9971			31.9825	Oxygene							
+31.9896	[O2+]	O2	31.99	O2+							
+29.9976	[NO+]	NO	29.9976	NO+							
+29.01342	[N2+H+]	N2	28.00592	Diazote							

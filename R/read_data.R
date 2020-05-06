@@ -429,7 +429,7 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC, mzBreathTracer){
       p <- ptairMS::PeakList(raw,mz=c(21), ppm = 700,thIntensityRate = 0.5,minIntensity = 0,
                              maxIter = 1,thNoiseRate = 0)
       primaryIndex<-which(abs(p$peak-21.022)*10^6/21 < 200)
-      if(primaryIndex) primaryIonV <- p$peak$quanti_cps[primaryIndex]*488 else primaryIonV <- NA
+      if(primaryIndex) primaryIonV <- p$peak$quanti_cps[primaryIndex] else primaryIonV <- NA
           }
     if( ! 38 %in% unique(round(raw@mz)) ) {
       message("mass 38 not in mass Axis,the ppb quantification can not be done.")
@@ -438,7 +438,7 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC, mzBreathTracer){
       p <- ptairMS::PeakList(raw,mz=c(38), ppm = 700,thIntensityRate = 0.5,minIntensity = 0,
                              maxIter = 1,thNoiseRate = 0)
       clusterIndex<-which(abs(p$peak-38.03)*10^6/21 < 200)
-      if(clusterIndex) waterCluster<-p$peak$quanti_cps[clusterIndex]*2632 else waterCluster <- NA
+      if(length(clusterIndex)!=0) waterCluster<-p$peak$quanti_cps[clusterIndex] else waterCluster <- NA
     }
     primaryIon[[ fileName[j] ]] <- list(primaryIon=primaryIonV, waterCluster=waterCluster)
     

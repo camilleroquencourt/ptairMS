@@ -685,7 +685,7 @@ impute <- function(eSet,ptrSet){
           mz.x <- mzAxis.m[ x[1] - th < mz & mz < x[1]+th ]
           sum(sech2(x[1],x[2],x[3],x[4],mz.x),na.rm =TRUE)}) 
         
-        list_peak<-cbind(Mz=mz,quanti=quanti.m/(primaryIon[[file]]$primaryIon))
+        list_peak<-cbind(Mz=mz,quanti=quanti.m/(primaryIon[[file]]$primaryIon*488))
         
         # convert to ppb or ncps
         #if there is reaction ans transmission information
@@ -702,7 +702,7 @@ impute <- function(eSet,ptrSet){
           }
         if(Biobase::annotation(eSet)=="ncps"){
           #normalize by primary ions
-            quanti.m <- quanti.m/(primaryIon[[basename(file)]]$primaryIon)
+            quanti.m <- quanti.m/(primaryIon[[basename(file)]]$primaryIon*488)
           }
         
 
@@ -850,7 +850,7 @@ imputeMat <- function(X,ptrSet,quantiUnit){
         mz.x <- mzAxis.m[ x[1] - th < mz & mz < x[1]+th ]
         sum(sech2(x[1],x[2],x[3],x[4],mz.x),na.rm =TRUE)}) 
       
-      list_peak<-cbind(Mz=mz,quanti=quanti.m/(primaryIon[[file]]$primaryIon))
+      list_peak<-cbind(Mz=mz,quanti=quanti.m/(primaryIon[[file]]$primaryIon*488))
       
       # convert to ppb or ncps
       #if there is reaction ans transmission information
@@ -867,7 +867,7 @@ imputeMat <- function(X,ptrSet,quantiUnit){
       }
       if(quantiUnit=="ncps"){
         #normalize by primary ions
-        quanti.m <- quanti.m/(primaryIon[[basename(file)]]$primaryIon)
+        quanti.m <- quanti.m/(primaryIon[[basename(file)]]$primaryIon*488)
       }
       
       

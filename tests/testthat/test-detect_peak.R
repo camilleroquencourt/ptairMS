@@ -27,6 +27,8 @@ test_peakSet<-function(){
   peakLists <- detectPeak(dirSet, mzNominal  = c(21, 60))
   peakLists2 <- detectPeak(dirSet, mzNominal  = c(21, 60),processFun=ptairMS:::processFileTemporal)
 
+  testthat::expect_equal(peakLists@peakListAligned$Control1.h5$quanti_ncps,
+                         peakLists@peakListAligned$Control1.h5$quanti_cps/(peakLists@primaryIon$Control1.h5$primaryIon*488))
   # type
   testthat::expect_is(peakLists,'ptrSet')
   

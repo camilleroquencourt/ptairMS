@@ -118,7 +118,7 @@ setMethod("annotateVOC", "numeric",
           })
 
 .annotate <- function(ion_mass,
-                      ppm = 20,
+                      ppm = 30,
                       prefix = "vocDB_",
                       fields = c("ion_mass",
                                  "ion_formula",
@@ -202,6 +202,18 @@ setMethod("annotateVOC", "numeric",
                                sep = "\t",
                                stringsAsFactors = FALSE)
   
+  manualAdd <- utils::read.table(file = system.file("extdata/reference_tables/manualAdd.tsv",
+                                                    package = "ptairMS"),
+                                 check.names = FALSE,
+                                 comment.char = "",
+                                 header = TRUE,
+                                 quote = "\"",
+                                 sep = "\t",
+                                 stringsAsFactors = FALSE)
+  
+  vocdbDF<-rbind(vocdbDF,manualAdd)
+  
+  vocdbDF<-vocdbDF[order(vocdbDF$ion_mass),]
   vocdbDF[, "ion_mass"] <- floor(vocdbDF[, "ion_mass"] * 1e5) / 1e5
   
   vocdbDF
