@@ -229,6 +229,7 @@ aggregateTemporalFileprocessed<-function(time, indTimeLim, matPeak, funAggreg,bl
 }
 
 
+
 ### Alignsamples method -----
 
 #' Align mass tables of different samples 
@@ -539,6 +540,7 @@ fliterEset<-function(X,sampleMetadata,groupMat,groupList,peakList,group,fracGrou
   
   return(list(X=X,Xbg=Xbg))
 }
+
 
 
 #' Impute missing values on an expression set from an ptrSet
