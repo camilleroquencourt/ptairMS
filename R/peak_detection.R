@@ -1696,7 +1696,7 @@ LocalMaximaSG<-function(sp, minPeakHeight= -Inf, noiseacf=0.1, d=3){
 
 # Baseline Correction --------------------------------------------
 
-baselineEstimation<-function(sp,d=2){
+baselineEstimation<-function(sp,d=2,eps=1e-6){
   x<-seq(1,length(sp))
   reg0<-stats::lm(sp ~ poly(x,d))
   a0<-reg0$coefficients
@@ -1710,7 +1710,7 @@ baselineEstimation<-function(sp,d=2){
   reg2<-stats::lm(y~ stats::poly(x,d))
   a2<-reg2$coefficients
   c=1
-  while(sqrt(sum((a1-a2)^2))>5 & c <200){
+  while(sqrt(sum((a1-a2)^2))>(mean(sp)*eps) & c <200){
     a1<-a2
     yhat<-stats::predict(reg2)
     y<-(sp<yhat)*sp + yhat*(sp>=yhat)
