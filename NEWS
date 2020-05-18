@@ -3,6 +3,14 @@ CHANGES IN VERSION 0.0.14
 
 NEW FEATURE
 
+    o parallelize version of impute function.
+
+
+CHANGES IN VERSION 0.0.14
+------------------------------
+
+NEW FEATURE
+
     o check ptr reaction parameters (Udrift, pDrift, Tdrift et E/N), and water cluster intensity. 
 
 

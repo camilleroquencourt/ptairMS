@@ -4,12 +4,16 @@
 \alias{impute}
 \title{Impute missing values on an expression set from an ptrSet}
 \usage{
-impute(eSet, ptrSet)
+impute(eSet, ptrSet, parallelize = FALSE, nbCores = 2)
 }
 \arguments{
 \item{eSet}{an expression set retun by alignSamples function}
 
 \item{ptrSet}{processed by detectPeak function}
+
+\item{parallelize}{boolean. If \code{TRUE} loop aver files will be parallelized}
+
+\item{nbCores}{number of cluster to use for parrallel computation.}
 }
 \value{
 the same expression set as in input, with missing values imputing
@@ -22,7 +26,7 @@ peak shape function on the noise / residuals
 library(ptairData)
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 dirSet <- createPtrSet(directory,setName="test",mzCalibRef =c(21.022,59.049))
-dirSet <- detectPeak(dirSet,mzNominal=c(21,63))
+dirSet <- detectPeak(dirSet)
 getSampleMetadata(dirSet)
 eSet <- alignSamples(dirSet,fracGroup=0)
 Biobase::exprs(eSet)
