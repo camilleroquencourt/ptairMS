@@ -8,7 +8,8 @@ readRaw(
   filePath,
   calibTIS = TRUE,
   mzCalibRef = c(21.022, 29.013424, 41.03858, 60.0525, 203.943, 330.8495),
-  tolCalibPpm = 70
+  tolCalibPpm = 70,
+  maxTimePoint = 900
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ and 'unique' in a nominal mass interval}
 
 \item{tolCalibPpm}{calibration parameter. The maximum error tolerated in ppm. A warning appears for 
 error graeter than \code{tolCalibPpm}.}
+
+\item{maxTimePoint}{number maximal of time point to read}
 }
 \value{
 a ptrRaw object, including slot \itemize{

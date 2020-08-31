@@ -10,6 +10,7 @@
 #'  and 'unique' in a nominal mass interval
 #' @param tolCalibPpm calibration parameter. The maximum error tolerated in ppm. A warning appears for 
 #' error graeter than \code{tolCalibPpm}.
+#' @param maxTimePoint number maximal of time point to read
 #' @return a ptrRaw object, including slot \itemize{
 #' \item rawM the data raw matrix, in count of ions  
 #' \item mz the mz axis
@@ -23,7 +24,7 @@
 #' @export
 readRaw <- function(filePath, calibTIS=TRUE, 
                     mzCalibRef = c(21.022, 29.013424,41.03858, 60.0525,203.943, 330.8495),
-                    tolCalibPpm=70){
+                    tolCalibPpm=70,maxTimePoint=900){
 
   if(is.null(filePath) | filePath=="") stop("filePath is empty")
   if(is.na(filePath)) stop("filePath is empty")
@@ -41,7 +42,7 @@ readRaw <- function(filePath, calibTIS=TRUE,
   if(nbrWrite == 0) { stop("The file is empty (0 seconde of acquisition)")}
   
   # acquiqision time limit to 900 spectra, indeed the rawAn is more than 3.4 GB
-  NbrWriteMax <- ceiling(3000/nbrBuf)
+  NbrWriteMax <- ceiling(maxTimePoint/nbrBuf)
   rhdf5::h5closeAll()
   
   #read information needed

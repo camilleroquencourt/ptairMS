@@ -421,8 +421,8 @@ plotPtrReaction<-function(pSet){
   boxplot(split(U,chron::dates(date)),main="Udrift [V]")
   boxplot(split(TD,chron::dates(date)),main="T-Drift [°C]")
   boxplot(split(PD,chron::dates(date)),main="p-Drift [mbar]")
-  boxplot(split(EN,chron::dates(date)),main="E/N [Td]" )
-  #boxplot(split(Reduce(c,pSet@primaryIon),chron::dates(date)),main="Primary ion + Water cluster",ylab="cps")
+  #boxplot(split(EN,chron::dates(date)),main="E/N [Td]" )
+  boxplot(split(Reduce(c,lapply(pSet@primaryIon,function(x) x$primaryIon)),chron::dates(date)),main="Primary ion isotope",ylab="cps")
 }
 
 ### plotFiles----
@@ -1106,7 +1106,8 @@ methods::setMethod(f="plotFeatures",
               }#END loop file
               
               plotAll <-plotAll + ggplot2::ggtitle(paste("Features",round(mz,3),"of",set@parameter$name),
-                                                   subtitle = paste(annotateVOC(mz)[2:3],collapse = " ") )
+                                                   subtitle = paste(annotateVOC(mz)[2:3],collapse = " ") ) + 
+                ggplot2::labs(color = colorBy)
               
               if(!is.null(pdfFile)){
                 for (j in seq_along(listPlotFile)) print(listPlotFile[[j]])

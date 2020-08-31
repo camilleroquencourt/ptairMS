@@ -20,7 +20,7 @@ annotateVOC(
 \S4method{annotateVOC}{ExpressionSet}(
   x,
   ionMassColname = "ion_mass",
-  ppm = 20,
+  ppm = 50,
   prefix = "vocDB_",
   fields = c("ion_mass", "ion_formula", "formula", "mass_monoiso", "name_iupac",
     "pubchem_cid", "inchi", "inchikey", "ref_year", "ref_pmid", "disease_name",
@@ -30,7 +30,7 @@ annotateVOC(
 \S4method{annotateVOC}{data.frame}(
   x,
   ionMassColname = "ion_mass",
-  ppm = 20,
+  ppm = 50,
   prefix = "vocDB_",
   fields = c("ion_mass", "ion_formula", "formula", "mass_monoiso", "name_iupac",
     "pubchem_cid", "inchi", "inchikey", "ref_year", "ref_pmid", "disease_name",
@@ -40,7 +40,7 @@ annotateVOC(
 \S4method{annotateVOC}{numeric}(
   x,
   ionMassColname = "",
-  ppm = 20,
+  ppm = 50,
   prefix = "vocDB_",
   fields = c("ion_mass", "ion_formula", "formula", "mass_monoiso", "name_iupac",
     "pubchem_cid", "inchi", "inchikey", "ref_year", "ref_pmid", "disease_name",

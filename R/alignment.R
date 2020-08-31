@@ -190,7 +190,7 @@ aggregate <- function(subGroupPeak, n.exp) {
 }
 
 
-aggregateTemporalFileprocessed<-function(time, indTimeLim, matPeak, funAggreg,bl=TRUE,dbl=5){
+aggregateTemporalFile<-function(time, indTimeLim, matPeak, funAggreg,bl=TRUE,dbl=5){
   # agregation of expirations and bg
   indLim <- indTimeLim$exp
   indBg<-indTimeLim$backGround
@@ -405,11 +405,12 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
   Xbg <- cbind.data.frame(ion_mass = as.numeric(rownames(X)),
                           as.data.frame(Xbg, stringsAsFactors = FALSE),
                           stringsAsFactors = FALSE)
-  rownames(Xbg) <- rownames(X)
-  
-  
-  message(nrow(X), " peaks aligned")
  
+  order<-order(as.numeric(rownames(X)))
+  X<-X[order,]
+  Xbg<-Xbg[order,,drop=F]
+  rownames(Xbg) <- rownames(X)
+  message(nrow(X), " peaks aligned")
   featureData <- Biobase::AnnotatedDataFrame(as.data.frame(Xbg))
   sampleMetadata<-as.data.frame(sampleMetadata[colnames(X),,drop=FALSE])
   return(Biobase::ExpressionSet(assayData=X,

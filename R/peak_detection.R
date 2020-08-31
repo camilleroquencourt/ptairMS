@@ -24,9 +24,6 @@ utils::globalVariables("::<-")
 #' nominal mass present in the mass axis
 #' @param ppm the minimum distance in ppm betewwen two peaks
 #' @param resMinMaxMean vector with resolution min, resolution Mean, and resolution max of the PTR
-#' @param ppmGroupBkg the ppm width of a group made by the alignment between signal and background peaks
-#' @param fracGroup numeric, between 0 and 1. defining the minimum fraction of expiration (if there are) 
-#' which the peak have to be present to be considered as a peak group (feature)
 #' @param minIntensity the minimum intenisty for peak detection. The threshold for peak detection
 #' will be : max ( \code{minPeakDetect} , threshold noise ). The theshold noise correspond to
 #'  max(\code{thNoiseRate} * max( noise around the nominal mass), \code{thIntensityRate} * 
@@ -39,7 +36,7 @@ utils::globalVariables("::<-")
 #' \code{setName} paramter of \code{createPtrSet} function
 #' @param saveDir The directory where the ptrSet object will be saved in .RData. If NULL, nothing will be saved
 #' @param processFun the function used to process a file. Can not be changed for the moent 
-#' @param ... not used
+#' @param ... parameter of processFun
 #' @return a S4 object ptrSet, that contains ptrset and a list of data.frame (data.table), which contains : \cr
 #' mass of peak center, peak quantifictaion in ppb if it is possible, peak width, percentage of expiration where the peak 
 #' have been detected, and background quantification. If the peak has not been deteted in 
@@ -61,7 +58,9 @@ setMethod(f="detectPeak",
                    fctFit=c("Sech2","average")[1],
                    parallelize=FALSE,
                    nbCores=2,
-                   saving=TRUE,saveDir=x@parameter$saveDir,processFun=processFileSepExp,...)
+                   saving=TRUE,
+                   saveDir=x@parameter$saveDir,
+                   processFun=processFileSepExp,...)
           {
             ptrset<-x
             
@@ -120,7 +119,7 @@ setMethod(f="detectPeak",
                                    mzNominal = mzNominal,ppm = ppm,resMinMeanMax=resMinMeanMax,
                                    ppmGroupBkg =  ppmGroupBkg, fracGroup = fracGroup,
                                    minIntensity = minIntensity,fctFit = fctFit,
-                                   thIntensityRate=thIntensityRate))
+                                   thIntensityRate=thIntensityRate,...))
               if(!is.null(attr(test,'condition'))){
                 return(list(raw=0,aligned=0))
               } else return(test)
@@ -183,12 +182,12 @@ setMethod(f="detectPeak",
 #'@return list containing the matrix with all temporal profile (matPeak) 
 #'of VOC and a list of all raw EIC (EIClist)
 computeTemporalFile<-function(raw,peak,indTimeLim,timeCalib=20,
-                              deconvMethod=deconv2d2linearIndependant){
+                              deconvMethod=deconv2d2linearIndependant,...){
   
   
   if(!is.null(timeCalib)) listCalib <- multiCalib(raw,step = timeCalib) else listCalib<-NULL
   
-  
+  # compute EIC
   EICex <-  extractEIC(raw = raw,peak = peak)
   
   borne <- EICex$borne
@@ -196,8 +195,7 @@ computeTemporalFile<-function(raw,peak,indTimeLim,timeCalib=20,
   
   nbPeakOvelap <- sum(borne[,"overlap"])
   
-  # compute EIC
-  
+
   # without overlap
   borne<-cbind(borne,matrix(0,nrow = nrow(borne),ncol=length(raw@time))) #ajoter colonne de time
   colnames(borne)[5:ncol(borne)]<-raw@time
@@ -216,7 +214,7 @@ computeTemporalFile<-function(raw,peak,indTimeLim,timeCalib=20,
     BL[BL<0]<-0
     rawM<- rawM - BL
     
-    deconv2<-deconvMethod(rawM,raw@time,peak.detect,raw,listCalib)
+    deconv2<-deconvMethod(rawM,raw@time,peak.detect,raw,listCalib,...)
     
     for (i in seq_len(nrow(peak.detect))){
       XICdeconv[c,]<-deconv2$predPeak[,i]
@@ -652,6 +650,9 @@ deconv2d2NonlinearIndependant<-function(rawM,time,peak.detect,raw,listCalib){
 }
 
 
+#' @param fracGroup numeric, between 0 and 1. defining the minimum fraction of expiration (if there are) 
+#' which the peak have to be present to be considered as a peak group (feature)
+#' @param ppmGroupBkg the ppm width of a group made by the alignment between signal and background peaks
 processFileSepExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNominal, ppm, 
                              resMinMeanMax,ppmGroupBkg, fracGroup,minIntensity,fctFit,
                              thIntensityRate){
@@ -747,6 +748,9 @@ processFileSepExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNo
 }
 
 
+#' @param fracGroup numeric, between 0 and 1. defining the minimum fraction of expiration (if there are) 
+#' which the peak have to be present to be considered as a peak group (feature)
+#' @param ppmGroupBkg the ppm width of a group made by the alignment between signal and background peaks
 processFileAvgExp <-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzNominal, ppm, 
                              resMinMeanMax,ppmGroupBkg, fracGroup,minIntensity,
                              fctFit,thIntensityRate){
@@ -882,7 +886,7 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
   # compute temporal profile
   fileProccess<- computeTemporalFile(raw = raw,peak = list_peak,indTimeLim=indTimeLim,
                                      timeCalib,
-                                     deconvMethod=deconvMethod)
+                                     deconvMethod=deconvMethod,...)
   matPeak<-data.table::as.data.table(fileProccess$matPeak)
   
   #convert in cps
@@ -893,7 +897,7 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
                                                   sep = " - ")
   
   ## agregate 
-  matPeakAg<-aggregateTemporalFileprocessed(time = raw@time,indTimeLim = indTimeLim,
+  matPeakAg<-aggregateTemporalFile(time = raw@time,indTimeLim = indTimeLim,
                                             matPeak = matPeak,funAggreg = funAggreg)
    
   indLim <- indTimeLim$exp
