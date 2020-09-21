@@ -9,7 +9,8 @@ computeTemporalFile(
   peak,
   indTimeLim,
   timeCalib = 20,
-  deconvMethod = deconv2d2linearIndependant
+  deconvMethod = deconv2d2linearIndependant,
+  ...
 )
 }
 \arguments{

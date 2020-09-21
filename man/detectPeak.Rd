@@ -46,17 +46,12 @@ detectPeak(x, ...)
 \arguments{
 \item{x}{ptrSet object}
 
-\item{...}{not used}
+\item{...}{parameter of processFun}
 
 \item{mzNominal}{nominal mass who peak will be detected, by default all 
 nominal mass present in the mass axis}
 
 \item{ppm}{the minimum distance in ppm betewwen two peaks}
-
-\item{ppmGroupBkg}{the ppm width of a group made by the alignment between signal and background peaks}
-
-\item{fracGroup}{numeric, between 0 and 1. defining the minimum fraction of expiration (if there are) 
-which the peak have to be present to be considered as a peak group (feature)}
 
 \item{minIntensity}{the minimum intenisty for peak detection. The threshold for peak detection
 will be : max ( \code{minPeakDetect} , threshold noise ). The theshold noise correspond to

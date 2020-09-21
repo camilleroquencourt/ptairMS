@@ -339,6 +339,7 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
     })
   }
   
+  
   ## add column group with Samples group number
   mat<-NULL
   peakList<-lapply(peakList,function(x) as.matrix(x))
@@ -407,7 +408,7 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
                           stringsAsFactors = FALSE)
  
   order<-order(as.numeric(rownames(X)))
-  X<-X[order,]
+  X<-X[order,,drop=F]
   Xbg<-Xbg[order,,drop=F]
   rownames(Xbg) <- rownames(X)
   message(nrow(X), " peaks aligned")
