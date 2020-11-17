@@ -842,7 +842,7 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
                       ppmGroupBkg, fracGroup,
                       minIntensity, 
                       fctFit,thIntensityRate,timeCalib=20,sumExtraction=1,funAggreg=mean,
-                      deconvMethod=deconv2d2linearIndependant,...){
+                      deconvMethod=deconv2d2linearIndependant,bl=TRUE,...){
   
   if(is.character(fullNamefile)){
     cat(basename(fullNamefile),": ")
@@ -898,7 +898,7 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
   
   ## agregate 
   matPeakAg<-aggregateTemporalFile(time = raw@time,indTimeLim = indTimeLim,
-                                            matPeak = matPeak,funAggreg = funAggreg)
+                                            matPeak = matPeak,funAggreg = funAggreg,bl = bl)
    
   indLim <- indTimeLim$exp
   indBg<-indTimeLim$backGround

@@ -23,6 +23,7 @@ Imports:
     ggplot2,
     graphics,
     grDevices,
+    ggpubr,
     gridExtra,
     Hmisc,
     methods,

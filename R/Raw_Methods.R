@@ -702,7 +702,7 @@ methods::setMethod(f="timeLimits",
           signature = "ptrRaw",
           function(object,fracMaxTIC=0.5,fracMaxTICBg=0.5,derivThresholdExp=0.5,derivThresholdBg=0.01, 
                    traceMasses= NULL, 
-                   minPoints = 2,degreeBaseline=1, plotDel=FALSE){
+                   minPoints = 2,degreeBaseline=1,baseline=TRUE, plotDel=FALSE){
             
             rawM <-object@rawM
             mz <- object@mz
@@ -724,7 +724,7 @@ methods::setMethod(f="timeLimits",
             
             indLim<-timeLimitFun(TIC,fracMaxTIC,fracMaxTICBg,derivThresholdExp,derivThresholdBg, 
                                  traceMasses, 
-                                 minPoints,degreeBaseline, plotDel)
+                                 minPoints,degreeBaseline, baseline,plotDel)
             
             return(indLim)
           }
@@ -732,22 +732,25 @@ methods::setMethod(f="timeLimits",
 
 timeLimitFun<-function(TIC,fracMaxTIC=0.5, fracMaxTICBg=0.5,derivThresholdExp=0.5,derivThresholdBg=0.01, 
                        traceMasses= NULL, 
-                       minPoints = 3, degreeBaseline=1,plotDel=FALSE){
+                       minPoints = 3, degreeBaseline=1,baseline=TRUE,plotDel=FALSE){
   
   ## baseline corretion
-  bl <- try(baselineEstimation(TIC,d=degreeBaseline))
+  if(baseline) bl <- try(baselineEstimation(TIC,d=degreeBaseline)) else bl<-0
   if(is.null(attr(bl,"condition"))) TIC.blrm<-TIC - bl else TIC.blrm<-TIC
   threshold<-(max(TIC.blrm)-min(TIC.blrm))*fracMaxTIC
   thresholdBg<-(max(TIC.blrm)-min(TIC.blrm))*fracMaxTICBg
-  
+  if(!baseline) {
+    threshold<-threshold+min(TIC.blrm)
+    thresholdBg<-thresholdBg+min(TIC.blrm)
+    }
   ## delimitation
   ind.Exp <- which(TIC.blrm > (thresholdBg) )
   dTIC <- diff(TIC.blrm)/max(TIC.blrm)
   bool<-abs(dTIC)<derivThresholdBg
   indBg<-seq(2,length(TIC))[bool]
+  
   if(bool[1]) indBg<-c(1,indBg)
   if(length(which(indBg %in%ind.Exp)) >0) indBg<-indBg[ - which(indBg %in%ind.Exp)]
-  
   if(length(indBg)==0) {
     warning("no background detect")
     indBg<-NULL

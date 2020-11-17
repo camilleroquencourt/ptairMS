@@ -13,6 +13,10 @@ output:
     toc_float: true
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=FALSE)
+```
+
 
 # Introduction
 
@@ -20,7 +24,6 @@ The _**ptairMS**_ package provides a workflow to process PTR-TOF-MS raw data in 
 
 Proton Transfer Reaction - Mass Spectrometry (PTR-MS) has emerged with excellent sensitivity and specificity for VOC analysis in a wide range of applications, including environment, food quality, and biology [[@blake_proton-transfer_2009]](https://doi.org/10.1021/cr800364q). In the area of health and care, PTR-MS opens up unique opportunities for real-time analysis *at the patient's bedside*.
 
-The three described approaches for the preprocessing of PTR-TOF-MS data to date, i.e. PTR-MS Viewer (IONICON; commercial), PTR-TOF Data Analyzer [[@muller_new_2013]](https://doi.org/10.1016/j.chemolab.2013.06.011), and PTRwid [[@holzinger_ptrwid_2015]](https://doi.org/10.5194/amt-8-3903-2015), do not address the untargeted analysis of exhaled breath because i) they are either limited to targeted analysis or require very long computation time, ii) they have been developed for continuous environmental monitoring and do not take into account the time dimension, and iii) the algorithms cannot be accessed, nor modified, and such modules cannot be integrated into comprehensive bioinformatics workflows.
 
 # Volatolomics
 
@@ -54,7 +57,7 @@ Note: To limit the size of the data and speed up the analysis, the raw data are 
 
 # Hands on
 
-```{r setup, message = FALSE, warning = FALSE}
+```{r package, message = FALSE, warning = FALSE}
 library(ptairMS)
 library(ptairData)
 ```
@@ -77,11 +80,11 @@ To perform these steps and check the quality of the raw data, we first use the `
 
 * reads the raw data
 
-* calibrates the mass axis with the `mzCalibRef` parameter
+* calibrates the mass axis with the `mzCalibRef` parameter  (see the *Calibrating the mass axis* section)
 
-* determines the time limits of expirations or headspace duration on the **Total Ion Chromatogram (TIC)** with the `fracMaxTIC` parameter (see the *Determine the time limits for expirations or headspace duration* section)
+* determines the time limits of expirations or headspace duration on the **Extraced Ion Chromatogram (EIC)** at `mzBreathTracer` mass or on the **Total Ion Chromatogram (TIC)** if this parameter is `NULL`, with the `fracMaxTIC` parameter (see the *Determine the time limits for expirations or headspace duration* section)
 
-* builds a default `sampleMetadata` table with the file names (and subdirectories)
+* builds a default `sampleMetadata` table with the file names, date and possibly the subdirectories if it exists
 
 This function creates a unique `ptrSet` object for the whole study, which contains all necessary information about the files: calibration parameters, time limits, peak lists (as this step they are empty), and primary ion quantification.
 
@@ -89,9 +92,10 @@ Importantly, the `ptrSet` may be updated if new files are added or deleted from 
 
 To create a `ptrSet` object form the raw data directory:
 ```{r createPtrSet, message = FALSE}
-exhaledPtrset <- createPtrSet(dirRaw,
+exhaledPtrset <- createPtrSet(dir=dirRaw,
                      setName="exhaledPtrset",
                      mzCalibRef = c(21.022, 60.0525),
+                     mzBreathTracer = NULL,
                      fracMaxTIC = 0.7,
                      saveDir = NULL )
 ```
@@ -105,15 +109,29 @@ To get the list of the file names in your directory (at the last time the `ptrSe
 getFileNames(exhaledPtrset)
 ```
 
-We will now quickly explain each step of this function, and show how to choose and check the quality of the `mzCalibRef` and `fracMaxTIC` parameters.
+To check the quality and view useful information about your files, you can use the `plot` method on the `ptrSet`, that provides four plots:
 
-### Calibration of mass axis
+* `calibError`: the calibration error boxplot in ppm
+
+* $\frac{m}{\Delta m}$: an estimation of the resolution for the  `mzCalibRef` peaks
+
+* the average normalized shape of the `mzCalibRef` peaks
+
+* The reaction parameters and primary ion isotope intensity in cps in function of acquisition date
+
+```{r plot}
+plot(exhaledPtrset)
+```
+
+We will now quickly explain each step of this function, and show how to choose and check the quality of the `mzCalibRef`, `mzBreathTracer` and `fracMaxTIC`  parameters.
+
+### Calibrating the mass axis
 
 To convert Time Of Flight (TOF) axis to mass-to-charge ratio (mz), the following formula is used [[@muller_new_2013]](https://doi.org/10.1016/j.chemolab.2013.06.011):
 
 - $mz = \Big (\frac{TOF-b}{a} \Big)^2$
 
-To estimate the parameters `(a,b)`, reference peaks with known masses (and without overlapping peaks) are needed. For optimal results, the calibration peaks have to be well distributed over the entire m/z axis. The masses of the calibration peaks are set with the `mzCalibRef` parameter. For exhaled air, we propose by default 6 peaks (two of them are suggested by the IONICON manufacturer): 
+To estimate the parameters `(a,b)`, reference peaks with known masses (and without overlapping peaks) are needed. For optimal results, the calibration peaks have to be well distributed over the entire m/z axis. The masses of the calibration peaks are set with the `mzCalibRef` parameter, in an numeric vector. For exhaled air, we propose by default 6 peaks (two of them are suggested by the IONICON manufacturer): 
 
 ```{r calib table}
 calib_table<-read.csv(system.file("extdata", "reference_tables/calib_table.tsv", package = "ptairMS"),sep="\t")
@@ -122,27 +140,15 @@ knitr::kable(calib_table)
 
 Other reference masses (at least two) can be provided by the user. 
 
-To check the calibration accuracy, you can use the `plot` method of `ptrSet`, that provides three plots:
-
-* `calibError`: the calibration error boxplot in ppm
-
-* $\frac{m}{\Delta m}$: an estimation of the resolution for the  `mzCalibRef` peaks
-
-* the average normalized shape of the `mzCalibRef` peaks
-
-```{r plot}
-plot(exhaledPtrset)
-```
-
-If a mass contains one or several outlier values (i.e. an error > 20 ppm) for specific files, you can check those files with the function `plotCalib` that plots the **Total Ion Spectrum (TIS)** around all the `mzCalibRef` (with the exact masses as red vertical lines). 
+If a mass contains one or several outlier values on the summary plot (i.e. an error > 20 ppm) for specific files, you can check those files with the function `plotCalib` that plots the **Total Ion Spectrum (TIS)** around all the `mzCalibRef` (with the exact masses as red vertical lines). 
 
 ```{r calibration}
 plotCalib(exhaledPtrset,fileNames=getFileNames(exhaledPtrset)[5])
 ```
 
-Note: You can then choose to keep or delete these masses from `mzCalibRef`. To change the calibration masses, use the `calibration` function on the `ptrSet` object.
+You can then choose to keep or delete these masses from `mzCalibRef`. To change the calibration masses, use the `calibration` function on the `ptrSet` object.
 
-In our dataset example, since we have truncated the mass axis, only two masses from those listed above are present. To calibrate with at least three masses, we therefore add the peak 75.04406 ([C3H6O2+H]+, Hydroxyacetone). 
+In our dataset example, since we have truncated the mass axis, only two masses from those listed above are present. To calibrate with three masses, we therefore add the peak 75.04406 ([C3H6O2+H]+, Hydroxyacetone). 
 
 ```{r plotCalib}
 exhaledPtrset <- calibration(exhaledPtrset, mzCalibRef =  c(21.022, 60.0525,75.04406))
@@ -242,7 +248,7 @@ plotRaw(exhaledPtrset, mzRange = 59 , fileNames = getFileNames(exhaledPtrset)[1]
 
 - `plotFeatures`: for all selected files, the average spectrum for all time periods is plotted, with the background superimposed as a dashed line. As with the `plotTIC` function, you can choose the type of display (`plotly` or `ggplot`), and the possibility to color spectra individually by indicating a column name of the sample Metadata
 
-```{r plotFeatures}
+```{r plotFeatures, message=FALSE, warning=FALSE}
 plotFeatures(exhaledPtrset,mz=21.022)
 plotFeatures(exhaledPtrset,mz=59.049,type="ggplot",colorBy = "individual")
 ```

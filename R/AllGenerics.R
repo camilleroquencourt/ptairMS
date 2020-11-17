@@ -10,8 +10,7 @@ setGeneric("detectPeak",
 #' @rdname calibration
 #' @export
 setGeneric(name = "calibration", 
-           function(x,mzCalibRef = c(21.022, 29.013424,41.03858,59.049141,75.04406, 
-                                     203.943, 330.8495), tol=70) {
+           function(x,mzCalibRef = c(21.022, 29.013424,41.03858, 60.0525,203.943, 330.8495), tol=70) {
              standardGeneric("calibration")
              })
 
@@ -40,7 +39,7 @@ setGeneric("plotRaw",
 #' @export
 setGeneric("timeLimits",
            function(object,fracMaxTIC=0.5,fracMaxTICBg=0.5, derivThresholdExp=0.5,derivThresholdBg=0.01,
-                    traceMasses=NULL, minPoints=2 ,degreeBaseline=1, plotDel=FALSE ) {
+                    traceMasses=NULL, minPoints=2 ,degreeBaseline=1, baseline=TRUE,plotDel=FALSE ) {
              standardGeneric("timeLimits")
            })
 

@@ -15,6 +15,7 @@ timeLimits(
   traceMasses = NULL,
   minPoints = 2,
   degreeBaseline = 1,
+  baseline = TRUE,
   plotDel = FALSE
 )
 
@@ -27,6 +28,7 @@ timeLimits(
   traceMasses = NULL,
   minPoints = 2,
   degreeBaseline = 1,
+  baseline = TRUE,
   plotDel = FALSE
 )
 
@@ -38,6 +40,7 @@ timeLimits(
   derivThresholdBg = 0.01,
   minPoints = 2,
   degreeBaseline = 1,
+  baseline = TRUE,
   plotDel = FALSE
 )
 }

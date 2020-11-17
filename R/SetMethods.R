@@ -40,10 +40,13 @@ methods::setMethod(f = "plot",
               reso<- plotResolution(x)
               calib<-plotCalibError(x)
               peakShape<-plotPeakShape(x)
-              gridExtra::grid.arrange(calib,
-                                      peakShape,
-                                      reso$plot,
-                                      ncol=2)
+              reaction<- plotPtrReaction(x)
+            
+              left<-ggpubr::ggarrange(calib,
+                                      reso$plot,nrow=2,align = "v")
+              right<-ggpubr::ggarrange(peakShape,
+                               reaction,nrow=2)
+              return(ggpubr::ggarrange(left,right,ncol=2,align="h"))
             }
             #if(!is.null(saveFile)) dev.off()
           })
@@ -85,8 +88,8 @@ plotResolution<-function(set){
               ggplot2::geom_boxplot() +
               ggplot2::geom_text(data=resolMat[!is.na(out),],
                                  ggplot2::aes(x=Mz,y=resolution,label = name),vjust = -.5,size=3) +
-              ggplot2::ggtitle("resolution m/Delta(m)")+
-              ggplot2::ylab("m/delta(m)")
+              ggplot2::ggtitle(label = expression("Resolution m/" ~ Delta ~ "(m)"))+
+              ggplot2::ylab("m/delta(m)") + ggplot2::theme_classic()
             
             info<-gridExtra::tableGrob(
               data.frame(res=round(c(min=min(stats::na.omit(resolMat$resolution)),
@@ -151,7 +154,8 @@ plotCalibError<- function(set){
               ggplot2::geom_text(data=calibErrorMat[!is.na(out),],
                                  ggplot2::aes(x=Mz,y=error,
                                               label = name),vjust = -.5,size=3.5) +
-              ggplot2::ggtitle("Calibration error") + ggplot2::ylab("ppm")
+              ggplot2::ggtitle("Calibration error") + ggplot2::ylab("ppm") + 
+              ggplot2::theme_classic()
             
             return(p)
 }
@@ -162,7 +166,7 @@ is_outlier <- function(x) {
 }
 
 #plot the average peak shape of reference calibration masses for a ptrSet
-plotPeakShape<-function(set){
+plotPeakShape<-function(set,showAverage=FALSE){
           mzRef<-set@parameter$mzCalibRef
           n.files<-length(set@mzCalibRef)
           npoints<-50
@@ -222,7 +226,7 @@ plotPeakShape<-function(set){
           # aggreate
          
           #mean
-          peaks<-apply(peak_ref,1,function(x){
+          peaksMAT<-apply(peak_ref,1,function(x){
             if(all(is.na(x))) return(rep(NA,4*npoints))
             peak<-apply(x,2,function(x) mean(x,na.rm=TRUE))
             peak<-stats::spline(interval.ref,peak,n=4*npoints)
@@ -230,25 +234,45 @@ plotPeakShape<-function(set){
           }) 
        
           interval.ref2<-seq(-3,3,length=4*npoints)
-          peaks<-matrix(peaks,ncol=1)
+          peaks<-matrix(peaksMAT,ncol=1)
           
           peakData<-data.frame(signal=peaks,
-                                Mz=as.factor(rep(mzRef,each=4*npoints)),
+                                Mz=as.factor(rep(round(mzRef,3),each=4*npoints)),
                                   intervalRef=rep(interval.ref2,length(mzRef)))
           peakData<-peakData[!is.na(peakData$signal),]
           #plot
-          p<-ggplot2::ggplot(data=peakData) + 
-            ggplot2::geom_line(ggplot2::aes(x=intervalRef,y=signal,group=Mz,colour=Mz),size=1) +
-            ggplot2::ggtitle("Average normalized peak shape") +
+          
+          if(showAverage){
+            p<-ggplot2::ggplot() +
+              ggplot2::geom_line(data=peakData,
+                                 ggplot2::aes(x=intervalRef,y=signal,group=Mz,colour=Mz),size=1) +
+              ggplot2::geom_line(data=data.frame(x=interval.ref2,
+                                                 y=apply(peaksMAT,which.max(dim(peaksMAT)),mean)),
+                                 ggplot2::aes(x,y,colour="average"),size=1.2)+
+              ggplot2::ggtitle("Average normalized peak shape of calibration peaks") +
               ggplot2::xlab('Mz interval normalized')+
-              ggplot2::ylab("Intenisty normalized")
+              ggplot2::ylab("Intenisty normalized")+
+              scale_color_manual(values = c(scales::hue_pal()(length(mzRef))),"black")
+            
+          }else {
+            p<-ggplot2::ggplot() +
+              ggplot2::geom_line(data=peakData,
+                                 ggplot2::aes(x=intervalRef,y=signal,group=Mz,colour=Mz),size=1)+
+              ggplot2::ggtitle("Average normalized peak shape of calibration peaks") +
+              ggplot2::xlab('Mz interval normalized')+
+              ggplot2::ylab("Intenisty normalized")+
+              scale_color_manual(values = c(scales::hue_pal()(n.mass)))
+            
+          }
+         
           
           
           if(n.files>1){
             #confidence interval 
             peaksUp<-apply(peak_ref,1,function(x){
               if(all(is.na(x))) return(rep(NA,4*npoints))
-              peak<-apply(x,2,function(y) mean(y,na.rm=TRUE)+stats::qnorm(0.975)*stats::sd(y,na.rm=TRUE)/sqrt(length(y)))
+              peak<-apply(x,2,function(y) mean(y,na.rm=TRUE)+
+                            stats::qnorm(0.975)*stats::sd(y,na.rm=TRUE)/sqrt(length(y)))
               peak<-stats::spline(interval.ref,peak,n=4*npoints)
               return(peak$y)
             }) 
@@ -264,18 +288,18 @@ plotPeakShape<-function(set){
             peaksDown<-matrix(peaksDown,ncol=1)
             
             peakData<-data.frame(signal0=peaksDown,signal1=peaksUp,
-                                 Mz=as.factor(rep(mzRef,each=4*npoints)),
+                                 Mz=as.factor(rep(round(mzRef,3),each=4*npoints)),
                                  intervalRef=rep(interval.ref2,length(mzRef)))
             peakData<-peakData[!is.na(peakData$signal0),]
             p<-p +
               ggplot2::geom_line(data=peakData,ggplot2::aes(x=intervalRef,y=signal0,group=Mz,colour=Mz),size=0.6,
                                  linetype = "dashed")+
               ggplot2::geom_line(data=peakData,ggplot2::aes(x=intervalRef,y=signal1,group=Mz,colour=Mz),size=0.6,
-                                 linetype = "dashed")
+                                 linetype = "dashed") 
           }
           
             
-            return(p)
+            return(p + ggplot2::theme_classic())
             }
 
 plotPeakShapeTof<-function(set){
@@ -415,14 +439,40 @@ plotPtrReaction<-function(pSet){
     y<-c(x$TwData[4,,])
     mean(y[y!=0])
   })) 
+  primaryIon<-Reduce(c,lapply(pSet@primaryIon,function(x) x$primaryIon))
   date <- Reduce(c,pSet@date)
   date<-sapply(date,function(x) chron::chron(dates. = strsplit(x," ")[[1]][1],
                      times. = strsplit(x," ")[[1]][2],format = c("d/m/y","h:m:s")))
-  boxplot(split(U,chron::dates(date)),main="Udrift [V]")
-  boxplot(split(TD,chron::dates(date)),main="T-Drift [°C]")
-  boxplot(split(PD,chron::dates(date)),main="p-Drift [mbar]")
-  #boxplot(split(EN,chron::dates(date)),main="E/N [Td]" )
-  boxplot(split(Reduce(c,lapply(pSet@primaryIon,function(x) x$primaryIon)),chron::dates(date)),main="Primary ion isotope",ylab="cps")
+  
+  Udrift<-ggplot()+ggplot2::geom_point(mapping = aes(x=date,y=U),
+                        data=data.frame(date=as.Date(chron::as.dates(date)),U=U)) +
+    ggplot2::ggtitle("Drift voltage")+ ylab("V") +
+    ggplot2::theme_classic()+ ggplot2::theme(title = element_text(size=9))
+  Tdrift<-ggplot()+ggplot2::geom_point(mapping = aes(x=date,y=TD),
+                                         data=data.frame(date=as.Date(chron::as.dates(date)),TD=TD)) +
+    ggplot2::ggtitle("Drift temperature")+ ylab("°C") +
+    ggplot2::theme_classic() + ggplot2::theme(title = element_text(size=9))
+  Pdrift<-ggplot()+ggplot2::geom_point(mapping = aes(x=date,y=PD),
+                                         data=data.frame(date=as.Date(chron::as.dates(date)),PD=PD)) +
+    ggplot2::ggtitle("Drift pressure")+ ylab("mbar") +
+    ggplot2::theme_classic()+ ggplot2::theme(title = element_text(size=9))
+  primaryIonPlot<-ggplot()+ggplot2::geom_point(mapping = aes(x=date,y=cps),
+                                         data=data.frame(date=as.Date(chron::as.dates(date)),
+                                                         cps=primaryIon)) +
+    ggplot2::ggtitle("Primary ion isotope intensity")+ xlab("Date")+
+    ggplot2::theme_classic()+ ggplot2::theme(title = element_text(size=9))
+  
+  reaction<-ggpubr::ggarrange(Udrift + ggplot2::theme(axis.ticks.x = ggplot2::element_blank(),
+                                            axis.text.x = ggplot2::element_blank(),
+                                            axis.title.x = ggplot2::element_blank()),
+                    Tdrift+ ggplot2::theme(axis.ticks.x = ggplot2::element_blank(),
+                                           axis.text.x = ggplot2::element_blank(),
+                                           axis.title.x = ggplot2::element_blank()),
+                    Pdrift+ ggplot2::theme(axis.ticks.x = ggplot2::element_blank(),
+                                           axis.text.x = ggplot2::element_blank(),
+                                           axis.title.x = ggplot2::element_blank()),
+                    primaryIonPlot,ncol=1,heights = c(0.23,0.23,0.23,0.31),align = "v")
+  return(reaction)
 }
 
 ### plotFiles----
@@ -1281,7 +1331,7 @@ importSampleMetadata<-function(set,file){
 methods::setMethod(f="timeLimits",
           signature = "ptrSet",
           function(object,fracMaxTIC=0.5,fracMaxTICBg=0.5, derivThresholdExp=0.5,derivThresholdBg=0.01,
-                   minPoints = 2,degreeBaseline=1, plotDel=FALSE){
+                   minPoints = 2,degreeBaseline=1, baseline=TRUE ,plotDel=FALSE){
             
             fileNames<-basename(object@parameter$listFile)
             for (file in fileNames){
@@ -1290,6 +1340,7 @@ methods::setMethod(f="timeLimits",
                                    derivThresholdExp = derivThresholdExp,
                                    derivThresholdBg = derivThresholdBg ,
                                    degreeBaseline=degreeBaseline,
+                                   baseline=baseline,
                                    minPoints = minPoints, 
                                    plotDel = plotDel)
               object@timeLimit[[file]]<-indLim

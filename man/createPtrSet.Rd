@@ -7,7 +7,7 @@
 createPtrSet(
   dir,
   setName,
-  mzCalibRef = c(21.022, 29.013424, 41.03858, 59.049141, 75.04406, 203.943, 330.8495),
+  mzCalibRef = c(21.022, 29.013424, 41.03858, 60.0525, 203.943, 330.8495),
   fracMaxTIC = 0.5,
   mzBreathTracer = NULL,
   saveDir = NULL
@@ -25,6 +25,9 @@ nominal mass interval (without overlapping peaks) to performs calibration. See \
 amplitude with baseline removal. We will analyze only the part of the spectrum where 
 the TIC intensity is higher than `fracMaxTIC * max(TIC) `. If you want to analyze the entire spectrum, 
 set this parameter to 0.}
+
+\item{mzBreathTracer}{NULL or an integer. Correspond to a nominal masses of Extract Ion Chromatogram 
+(EIC) for which limits will be computed. If NULL, the limits are calculated on the Total Ion Chromatogram (TIC).}
 
 \item{saveDir}{The directory where the ptrSet object will be saved in .RData. If NULL, nothing will be saved.}
 }

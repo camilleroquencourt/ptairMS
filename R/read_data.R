@@ -130,6 +130,8 @@ readRaw <- function(filePath, calibTIS=TRUE,
 #' amplitude with baseline removal. We will analyze only the part of the spectrum where 
 #' the TIC intensity is higher than `fracMaxTIC * max(TIC) `. If you want to analyze the entire spectrum, 
 #' set this parameter to 0. 
+#' @param mzBreathTracer NULL or an integer. Correspond to a nominal masses of Extract Ion Chromatogram 
+#' (EIC) for which limits will be computed. If NULL, the limits are calculated on the Total Ion Chromatogram (TIC).
 #' @param saveDir The directory where the ptrSet object will be saved in .RData. If NULL, nothing will be saved.
 #' @return a ptrSet objet with slot :
 #' \itemize{
@@ -159,7 +161,7 @@ readRaw <- function(filePath, calibTIS=TRUE,
 #' ptrSet<-createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049),
 #' fracMaxTIC=0.9,saveDir= NULL)
 createPtrSet<-function(dir, setName,
-                       mzCalibRef= c(21.022, 29.013424, 41.03858, 59.049141,75.04406, 203.943, 330.8495),
+                       mzCalibRef= c(21.022, 29.013424,41.03858, 60.0525,203.943, 330.8495),
                        fracMaxTIC=0.5,mzBreathTracer=NULL,
                        saveDir=NULL){
   
@@ -211,7 +213,8 @@ createPtrSet<-function(dir, setName,
     sampleMetadata<-sampleMetadata[ - which(
      row.names(sampleMetadata) %in% check$failed ),,drop=FALSE]
   }
-  
+ 
+  sampleMetadata$date<- Reduce(c,check$date)
   # create ptrSet object
   ptrSet <- methods::new(Class = "ptrSet", parameter = parameter, sampleMetadata = sampleMetadata,
               mzCalibRef= check$mzCalibRefList, timeLimit = check$timeLimit, signalCalibRef = check$signalCalibRef, 
