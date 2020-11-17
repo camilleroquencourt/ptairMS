@@ -39,7 +39,7 @@ detectPeak(x, ...)
   nbCores = 2,
   saving = TRUE,
   saveDir = x@parameter$saveDir,
-  processFun = processFileSepExp,
+  processFun = processFileTemporal,
   ...
 )
 }
@@ -107,7 +107,7 @@ timeLimit<-timeLimits(raw,fracMaxTIC=0.7)
 peakList <- detectPeak(raw, timeLimit=timeLimit, mzNominal = c(21,59))
 peakList$aligned
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-dirSet <- createPtrSet(directory,setName="test")
-dirSet <- detectPeak(dirSet , mzNominal=59)
+dirSet <- createPtrSet(directory,setName="test",mzCalib=c(21.022,60.05))
+dirSet <- detectPeak(dirSet , mzNominal=c(59,60))
 getPeakList(dirSet)$aligned
 }

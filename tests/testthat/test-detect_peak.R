@@ -24,7 +24,7 @@ test_peakSet<-function(){
   dir <- system.file("extdata/mycobacteria",  package = "ptairData")
   dirSet <- createPtrSet(dir, setName = "test", mzCalibRef = c(21.022,59.049))
   ListFiles <- names(dirSet@TIC)
-  peakLists <- detectPeak(dirSet, mzNominal  = c(21, 60))
+  peakLists <- detectPeak(dirSet, mzNominal  = c(21, 60),processFun=ptairMS:::processFileSepExp)
   peakLists2 <- detectPeak(dirSet, mzNominal  = c(21, 60),processFun=ptairMS:::processFileTemporal)
 
   testthat::expect_equal(peakLists@peakListAligned$Control1.h5$quanti_ncps,

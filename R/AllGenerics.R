@@ -39,7 +39,7 @@ setGeneric("plotRaw",
 #' @export
 setGeneric("timeLimits",
            function(object,fracMaxTIC=0.5,fracMaxTICBg=0.5, derivThresholdExp=0.5,derivThresholdBg=0.01,
-                    traceMasses=NULL, minPoints=2 ,degreeBaseline=1, baseline=TRUE,plotDel=FALSE ) {
+                    mzBreathTracer=NULL, minPoints=2 ,degreeBaseline=1, baseline=TRUE,plotDel=FALSE ) {
              standardGeneric("timeLimits")
            })
 

@@ -12,7 +12,7 @@ timeLimits(
   fracMaxTICBg = 0.5,
   derivThresholdExp = 0.5,
   derivThresholdBg = 0.01,
-  traceMasses = NULL,
+  mzBreathTracer = NULL,
   minPoints = 2,
   degreeBaseline = 1,
   baseline = TRUE,
@@ -25,7 +25,7 @@ timeLimits(
   fracMaxTICBg = 0.5,
   derivThresholdExp = 0.5,
   derivThresholdBg = 0.01,
-  traceMasses = NULL,
+  mzBreathTracer = NULL,
   minPoints = 2,
   degreeBaseline = 1,
   baseline = TRUE,
@@ -56,7 +56,7 @@ removal. If you want a finer limitation, increase \code{fracMaxTIC}, indeed decr
 
 \item{derivThresholdBg}{the tresphold of the difference between two succesive points of the background}
 
-\item{traceMasses}{NULL or a integer. Correspond to a nominal masses of Extract Ion Chromatogram (EIC)
+\item{mzBreathTracer}{NULL or a integer. Correspond to a nominal masses of Extract Ion Chromatogram (EIC)
 whose limits you want to compute. If NULL, the limits are calculated on the Total Ion Chromatogram (TIC).}
 
 \item{minPoints}{minimum duration of an expiration (in index).}
@@ -83,5 +83,5 @@ filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptair
 raw <- readRaw(filePath)
 
 timLim <- timeLimits(raw, fracMaxTIC=0.9, plotDel=TRUE)
-timLim_acetone <- timeLimits(raw, fracMaxTIC=0.5, traceMasses = 59,plotDel=TRUE)
+timLim_acetone <- timeLimits(raw, fracMaxTIC=0.5, mzBreathTracer = 59,plotDel=TRUE)
 }

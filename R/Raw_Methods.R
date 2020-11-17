@@ -682,7 +682,7 @@ methods::setMethod(f="plotTIC",
 #' @param fracMaxTICBg same as fracMaxTIC but for backgroud dettcion (lower than fracMaxTIC*max(TIC))
 #' @param derivThresholdExp the tresphold of the difference between two succesive points of the expiration
 #' @param derivThresholdBg the tresphold of the difference between two succesive points of the background
-#' @param traceMasses NULL or a integer. Correspond to a nominal masses of Extract Ion Chromatogram (EIC)
+#' @param mzBreathTracer NULL or a integer. Correspond to a nominal masses of Extract Ion Chromatogram (EIC)
 #'  whose limits you want to compute. If NULL, the limits are calculated on the Total Ion Chromatogram (TIC).
 #' @param minPoints minimum duration of an expiration (in index).
 #' @param degreeBaseline the degree of polynomial baseline function
@@ -696,12 +696,12 @@ methods::setMethod(f="plotTIC",
 #' raw <- readRaw(filePath)
 #' 
 #' timLim <- timeLimits(raw, fracMaxTIC=0.9, plotDel=TRUE)
-#' timLim_acetone <- timeLimits(raw, fracMaxTIC=0.5, traceMasses = 59,plotDel=TRUE)
+#' timLim_acetone <- timeLimits(raw, fracMaxTIC=0.5, mzBreathTracer = 59,plotDel=TRUE)
 #'@export
 methods::setMethod(f="timeLimits",
           signature = "ptrRaw",
           function(object,fracMaxTIC=0.5,fracMaxTICBg=0.5,derivThresholdExp=0.5,derivThresholdBg=0.01, 
-                   traceMasses= NULL, 
+                   mzBreathTracer= NULL, 
                    minPoints = 2,degreeBaseline=1,baseline=TRUE, plotDel=FALSE){
             
             rawM <-object@rawM
@@ -713,9 +713,9 @@ methods::setMethod(f="timeLimits",
               return(list(exp=matrix(c(1,ncol(rawM)),ncol=1,nrow=2,dimnames = list(c("start","end"))),
                           backGround=NULL))
                      }
-            if(is.null(traceMasses)) { TIC <- colSums(rawM)
+            if(is.null(mzBreathTracer)) { TIC <- colSums(rawM)
             } else {
-              index<- lapply(traceMasses, function(x) {
+              index<- lapply(mzBreathTracer, function(x) {
                 th<-350*x/10^6
                 which( x - th < mz & mz < x + th)
               })
@@ -723,7 +723,7 @@ methods::setMethod(f="timeLimits",
             }
             
             indLim<-timeLimitFun(TIC,fracMaxTIC,fracMaxTICBg,derivThresholdExp,derivThresholdBg, 
-                                 traceMasses, 
+                                 mzBreathTracer, 
                                  minPoints,degreeBaseline, baseline,plotDel)
             
             return(indLim)
@@ -731,7 +731,7 @@ methods::setMethod(f="timeLimits",
           )
 
 timeLimitFun<-function(TIC,fracMaxTIC=0.5, fracMaxTICBg=0.5,derivThresholdExp=0.5,derivThresholdBg=0.01, 
-                       traceMasses= NULL, 
+                       mzBreathTracer= NULL, 
                        minPoints = 3, degreeBaseline=1,baseline=TRUE,plotDel=FALSE){
   
   ## baseline corretion
@@ -784,8 +784,8 @@ timeLimitFun<-function(TIC,fracMaxTIC=0.5, fracMaxTICBg=0.5,derivThresholdExp=0.
   
   inExp<-Reduce(c,apply(hat_lim,2,function(x) seq(x[1],x[2])))
   if(plotDel){
-    if(is.null(traceMasses)) subtitle<-"TIC" 
-    else subtitle <- paste("EIC mz:",paste(round(traceMasses,2),collapse = "-"))
+    if(is.null(mzBreathTracer)) subtitle<-"TIC" 
+    else subtitle <- paste("EIC mz:",paste(round(mzBreathTracer,2),collapse = "-"))
     plot(seq_along(TIC.blrm),TIC.blrm,type='l',xlab="Time (s)",ylab="intensity",cex.lab=1.5, main = paste("Time limit",subtitle), 
          ylim=c(min(TIC.blrm)-0.2*(max(TIC.blrm)-min(TIC.blrm)),max(TIC.blrm)),lwd=2)
     graphics::points(seq_along(TIC.blrm)[inExp],TIC.blrm[inExp],col="red",pch=19)

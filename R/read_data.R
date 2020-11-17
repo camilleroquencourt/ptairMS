@@ -418,7 +418,7 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC, mzBreathTracer){
       breathTracer[[fileName[j]]] <- colSums(raw@rawM[unlist(index),]) 
     }
     # timeLimit
-    indLim <- timeLimits(raw, fracMaxTIC = fracMaxTIC,traceMasses = mzBreathTracer)
+    indLim <- timeLimits(raw, fracMaxTIC = fracMaxTIC,mzBreathTracer = mzBreathTracer)
     timeLimit[[ fileName[j] ]] <- indLim
     
     # check if mass 21 contains in mass axis
@@ -436,7 +436,6 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC, mzBreathTracer){
       if(primaryIndex) primaryIonV <- p$peak$quanti_cps[primaryIndex] else primaryIonV <- NA
           }
     if( ! 38 %in% unique(round(raw@mz)) ) {
-      message("mass 38 not in mass Axis,the ppb quantification can not be done.")
       waterCluster <- NA
     } else{
       p <- ptairMS::PeakList(raw,mz=c(38), ppm = 700,thIntensityRate = 0.5,minIntensity = 0,

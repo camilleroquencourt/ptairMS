@@ -43,8 +43,8 @@ utils::globalVariables("::<-")
 #' the background, last column is NA.
 #' @examples 
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' dirSet <- createPtrSet(directory,setName="test")
-#' dirSet <- detectPeak(dirSet , mzNominal=59)
+#' dirSet <- createPtrSet(directory,setName="test",mzCalib=c(21.022,60.05))
+#' dirSet <- detectPeak(dirSet , mzNominal=c(59,60))
 #' getPeakList(dirSet)$aligned
 #' @rdname detectPeak
 #' @import doParallel foreach parallel
@@ -60,7 +60,7 @@ setMethod(f="detectPeak",
                    nbCores=2,
                    saving=TRUE,
                    saveDir=x@parameter$saveDir,
-                   processFun=processFileSepExp,...)
+                   processFun=processFileTemporal,...)
           {
             ptrset<-x
             
@@ -841,13 +841,13 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
                               resMinMeanMax,
                       ppmGroupBkg, fracGroup,
                       minIntensity, 
-                      fctFit,thIntensityRate,timeCalib=20,sumExtraction=1,funAggreg=mean,
+                      fctFit,thIntensityRate,timeCalib=30,sumExtraction=1,funAggreg=mean,
                       deconvMethod=deconv2d2linearIndependant,bl=TRUE,...){
   
   if(is.character(fullNamefile)){
     cat(basename(fullNamefile),": ")
     # read file
-    raw <- readRaw(fullNamefile,mzCalibRef =massCalib )
+    raw <- readRaw(fullNamefile,mzCalibRef =massCalib)
   } else raw <- fullNamefile
   
 

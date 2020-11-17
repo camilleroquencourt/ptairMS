@@ -10,11 +10,14 @@ vignette: >
   %\VignetteKeywords{MassSpectrometry, Signal processing, PTR-TOF-MS}
 output:
   BiocStyle::html_document:
+    toc: yes
+    toc_depth: 4
     toc_float: true
 ---
 
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(eval=FALSE)
+knitr::opts_chunk$set(eval=TRUE)
 ```
 
 
@@ -119,7 +122,7 @@ To check the quality and view useful information about your files, you can use t
 
 * The reaction parameters and primary ion isotope intensity in cps in function of acquisition date
 
-```{r plot}
+```{r plot,fig.width=10, fig.height=8}
 plot(exhaledPtrset)
 ```
 
@@ -160,19 +163,21 @@ plot(exhaledPtrset,type="calibError")
 
 ### Determine the time limits of expirations or headspace duration
 
-The expirations or headspace duration are determined on the **Total Ion Chromatogram (TIC)**. They correspond to the part of the TIC where intensity is higher than `fracMaxTIC * max(TIC)` after baseline removal.
+To determine the expirations or headspace duration we use the `timeLimits` function. We can apply this function on a `ptrSet`, or a `ptrRaw` object, obtain thanks to the `readRaw` function (see section Processing a single raw file).   
+
+The limits are determined on the **Total Ion Chromatogram (TIC)** if `mzBreathTracer` is `NULL`, or in the **Extracted Ion Chromatogram (EIC)** around `mzBreathTracer` mass. They correspond to the part of the TIC/EIC where intensity is higher than `fracMaxTIC * max(TIC)`, after baseline removal if `baseline` is `TRUE`.
 
 Note: To analyze the entire spectrum (e.g. in ambient air studies), set `fracMaxTIC = 0`.
 
-Example of expirations detection at `fracMaxTIC = 0.5`:
-
+Example of expiration detection at `fracMaxTIC = 0.5` on a single file:
 ```{r timeLimits1,echo=FALSE}
-samplePath <-list.files(dirRaw,recursive = TRUE,full.names = TRUE,pattern = ".h5$")[1]
+samplePath <-getFileNames(exhaledPtrset,fullNames = TRUE)[1]
 sampleRaw <- readRaw(samplePath, calibTIS = FALSE)
-expirationLimit <- timeLimits(sampleRaw,fracMaxTIC =  0.5,plotDel = TRUE)
+expirationLimit <- timeLimits(sampleRaw,fracMaxTIC =  0.5,plotDel = TRUE, mzBreathTracer = 60.05)
+expirationLimit <- timeLimits(sampleRaw,fracMaxTIC =  0.5,plotDel = TRUE,mzBreathTracer = NULL)
 ```
 
-Example of expirations detection at `fracMaxTIC = 0.9`:
+Example of expiration detection at `fracMaxTIC = 0.9`:
 ```{r timelimit2, echo=FALSE}
 expirationLimit <- timeLimits(sampleRaw,fracMaxTIC =  0.9,plotDel = TRUE)
 ```
@@ -196,7 +201,7 @@ plotTIC(object = exhaledPtrset, showLimits = TRUE, pdfFile="AllTIC.pdf")
 plotTIC(object = exhaledPtrset, showLimits = TRUE,fileNames=getFileNames(exhaledPtrset)[1],type = "ggplot")
 ```
 
-To change the `fracMaxTIC` parameter, use the `timeLimits` function:
+To change the `fracMaxTIC` parameter for all the files in the ptrSet, use the `timeLimits` function on the ptrSet:
 
 ```{r timelimitPtrSet}
 exhaledPtrset<-timeLimits(exhaledPtrset,fracMaxTIC = 0.8)
@@ -205,7 +210,7 @@ exhaledPtrset<-timeLimits(exhaledPtrset,fracMaxTIC = 0.8)
 
 ### Managing sample metadata
 
-The `createPtrSet` function automatically generates a default sampleMetadata `data.frame`. It contains the file names as row names, and a column named 'subfolder' when the files are organized into subfolders in the parent directory. To get this data frame, use the `getSampleMetadata` method. Remember that the row names of the `sampleMetadata` must always correspond to all the file names from the directory. 
+The `createPtrSet` function automatically generates a default sampleMetadata `data.frame`. It contains the file names as row names,a column named 'subfolder' when the files are organized into subfolders in the parent directory, and a column date with the date and hour of the acquisition. To get this data frame, use the `getSampleMetadata` method. Remember that the row names of the `sampleMetadata` must always correspond to all the file names from the directory. 
 
 ```{r getSampleMetadata}
 getSampleMetadata(exhaledPtrset)
@@ -234,7 +239,7 @@ exhaledPtrset <- importSampleMetadata(exhaledPtrset, file = file.path(DirBacteri
 
 ### Saving
 
-When calling the `createPtrSet` function, you may use the `saveDir` argument to save the `ptrSet` object in the directory of your choice, with `setName` as name (the `.RData` extension will automatically be added at the end of the file name). Subsequent import of the saved `ptrSet` object relies on the classical `load` function.
+When calling the `createPtrSet` function, you may use the `saveDir` argument to save the `ptrSet` object in the directory of your choice, with `setName` parameter as name (the `.RData` extension will automatically be added at the end of the file name). Subsequent import of the saved `ptrSet` object relies on the classical `load` function.
 
 ### Plot raw data
 
@@ -263,27 +268,27 @@ exhaledPtrset <- updatePtrSet(exhaledPtrset)
 
 ## `detectPeak`: Peak detection and quantification
 
-Now that we have checked that the calibration is efficient, and that the expiration or headspace time limits are correct, the peaks can be detected and quantified in each file with the `detectPeak` function, which works on the `ptrSet` object (and the corresponding raw files).
+Now since we have checked that the calibration is efficient, and that the expiration or headspace time limits are correct, the peaks can be detected and quantified in each file with the `detectPeak` function, which works on the `ptrSet` object (and the corresponding raw files).
 
-For each file in the data set, this function:
+For each file in the directory, this function:
 
-- calibrates each expiration and ambient air (i.e. the time windows without expiration) phases
+- make a calibration of the mass axis every 30 seconde 
 
-- detects peak in each expiration and ambient air (see annex 1 for the peak detection algorithm)
+- detects peak on the total ion spectrum with an un-targeted peak picking algorithm 
 
-- aligns features between the background and the different analytical time phases (i.e. headspace or expirations)
+- estimate the temporal evolution of each peak detected with a 2-dimensional model, wrote in the peakListRaw slot of the ptrSet object
 
-- keeps features present in at least `fracGroup` percent of expirations (for exhaled air samples only)
+- quantify each peak in both exhaled air and background, in cps, ncps (normalized by the primary ion, H3(O18)+ * 488) and ppb [[@hansel_proton_1995]] units, wrote in `peakListAligned` slot of the ptrSet object
 
-- if `normalize=TRUE`, normalizes with the primary ion (divides all feature values by the quantity of H3(O18)+ * 488), and converts in ppb if the PTR reaction information are available in the h5 file (voltage, temperature and pressure of the drift) 
+- make two unilateral t-test between intensity of background and expiration/headspace (if there is any), and write the p-value in the `peakListAligned` slot
 
-The `peakList` is then written in the `ptrSet` object as a list of `data.table`s containing for each file all the peaks detected, with quantification of analytical time periods (exhaled air or culture headspace) and background (ambient air).
+The two `peakList` are then written in the `ptrSet` object as a list of `data.table`s containing for each file all the peaks detected.
 
-```{r Detect peak}
-exhaledPtrset <- detectPeak(exhaledPtrset ,fracGroup=1)
+```{r Detect peak, cache=TRUE}
+exhaledPtrset <- detectPeak(exhaledPtrset)
 ```
 
-If you want to restrict the detection to specific nominal masses, indicate them with the `mzNominal` argument: for example `exhaledPtrset <- detectPeak(exhaledPtrset ,  mzNominal = c(21,59))`. 
+If you want to restrict the detection to specific nominal masses, indicate them with the `mzNominal` argument: for example `exhaledPtrset <- detectPeak(exhaledPtrset ,  mzNominal = c(5,60))`. 
 
 The peak detection step may take a few minutes if there are many files and a large m/z range. You may parallelize the algorithm by setting `parallelize = TRUE` and giving the number of available cores of your computer in `nbCores`. To find the number of CPU cores available in your computer, use `parallel::detectCores()`.
 
@@ -291,27 +296,31 @@ To see the resulting peak lists, use the `getPeakList` method. It returns a list
 
 - raw: contains the peak list obtained for each expiration and background, i.e. a `data.table` with the following columns:
 
-    * mz: the mass of the peak apex 
-    * quanti: the concentration in counts per extraction 
-    * delta_mz: the FWHM (Full Weight at Half Maximum) of the peak in Da
-    * resolution: $\frac{m}{\Delta m}$
-    * group: the label of the analytical time period:  0 for background, and 1, 2 ... for the expirations or headspace number
+    * Mz: the mass center of the peak  
+    * lower and upper: the boundaris of the peak 
+    * overlap: 0 or 1 if there is an overlapping peak
+    * quanti_cps - time: the quantification in cps at each time points
 
-- aligned: contains the peak list obtained after alignment between background and time periods (as a `data.table`):
+- aligned: contains the peak list obtained after baseline removal, average in expiration and background, and the p-value of the t-test:
 
-    * mz: the mass of the peak apex
-    * quanti: the mean of the quantification over all time periods
-    * delta_mz: the mean FWHM over all time periods
-    * fracExp: percentage of time periods that contains this peak
-    * background: the quantification in the ambient air
-
-Note: If the `fracMaxTIC` has been set to 0 in `createPtrSet`, the raw and aligned `data.table` are identical.
+    * Mz: the mass center of the peak
+    * quanti_unit: the mean of the quantification over the expiration/headspace time limits defined 
+    * background_unit: the mean of the quantification over the background time limits defined 
+    * pValLess/ pValGreater: the p-value of the unilateral t-test, who test that quantidication (in cps) of expiration points are less/greater than the intenisty of the background. 
 
 
 ```{r getPeakList}
 peakList<-getPeakList(exhaledPtrset)
-head(peakList$aligned$`individual4-1.h5`)
+head(peakList$aligned$`ind1-1.h5`)
 ```
+You can see the temporal evolution of each peak as follow: 
+
+```{r,see temporal evalotion}
+mz60<-as.numeric(peakList$raw$`ind1-1.h5`[which.min(abs(Mz-60.05)),-c(1,2,3,4)])
+plot(mz60)
+```
+
+A R Shinny application  for visualization of modeled peaks and temporal estimation is in progress. 
 
 ## Updating the `ptrSet` peak lists with `detectPeak`
 
@@ -331,14 +340,14 @@ The `alignSamples` returns an `ExpressionSet` object, with the table of peak int
 
 It is possible to apply two filters:
 
-- On the background: only variables with intensities greater than `bgThreshold * background` are kept 
+- On the background: only variables which that the pvalue of the t-test that intenisty are greater in expiration than background is greater than `pValGreaterThres` for `fracExp` % of the samples
 
-- On sample reproducibility: only variables which are detected in more than `fracGroup` percent of samples are kept.
+- On sample reproducibility: only variables which are detected in more than `fracGroup` percent of samples  ( or `group`) are kept.
 
-If you do not want to apply those filters, set `fracGroup` and `bgThreshold` to 0.
+If you do not want to apply those filters, set `fracGroup` to 0 and `pValGreaterThres` to 1.
 
 ```{r Align patient}
-exhaledEset <- alignSamples(exhaledPtrset, group="individual", fracGroup = 1, bgThreshold = 2 )
+exhaledEset <- alignSamples(exhaledPtrset, group="individual", fracGroup = 1, pValGreaterThres = 1e-10, fracExp=1/6)
 ```
 
 The three tables from the `ExpressionSet` can be accessed with the classical `exprs`, `pData`, and `fData` accessors:
@@ -358,7 +367,7 @@ ropls::view(exhaledEset, plotL = FALSE)
 
 To impute missing values, _**ptairMS**_ returns back to the raw data, and performs the quantification with the same method as `detectPeak` but this time without any limit of detection. 
 
-```{r impute, message=FALSE}
+```{r impute}
 exhaledEset <- ptairMS::impute(exhaledEset,  exhaledPtrset)
 ```
 
@@ -395,7 +404,7 @@ Biobase::exprs(exhaledEset) <- log2(Biobase::exprs(exhaledEset))
 Then, the data and metadata may be printed and plotted with the `view` method:
 
 ```{r view}
-ropls::view(exhaledEset)
+ropls::view(Biobase::exprs(exhaledEset),printL=FALSE)
 ```
 
 To avoid redundancy, the isotopes may be discarded:
@@ -410,14 +419,29 @@ exhaledEset <- exhaledEset[!(Biobase::fData(exhaledEset)[, "ion_mass"] %in% isot
 
 ```{r pca}
 exhaledPca<-ropls::opls(exhaledEset,crossvalI=5,info.txtC="none",fig.pdfC="none")
-ropls::plot(exhaledPca, parAsColFcVn=Biobase::pData(exhaledEset)[, "individual"])
+ropls::plot(exhaledPca, parAsColFcVn=Biobase::pData(exhaledEset)[, "individual"],typeVc="x-score")
 
+```
+
+Subsequent supervised analysis, e.g. **(Orthogonal) Partial Least Squares**, or feature selection may be performed with the [_**ropls**_](https://doi.org/10.18129/B9.bioc.ropls) and [_**biosigner**_](https://doi.org/10.18129/B9.bioc.biosigner) packages, respectively. 
+
+To get the most important variable that contribute to the dimension that discriminate the two individual (here the first dimension), we look at the loadings:
+
+```{r}
 load1<-ropls::getLoadingMN(exhaledPca)[,1]
 barplot(sort(abs(load1),decreasing = TRUE))
 knitr::kable(Biobase::fData(exhaledEset)[names(sort(abs(load1),decreasing = TRUE)),c("vocDB_ion_formula","vocDB_name_iupac")])
 ```
 
-Subsequent supervised analysis, e.g. **(Orthogonal) Partial Least Squares**, or feature selection may be performed with the [_**ropls**_](https://doi.org/10.18129/B9.bioc.ropls) and [_**biosigner**_](https://doi.org/10.18129/B9.bioc.biosigner) packages, respectively.
+We then could plot the raw data around this masses to check the robustness of these potential marker:
+
+```{r plotFeatures individual, warning=FALSE}
+plotFeatures(exhaledPtrset,mz = 53.0387,typePlot = "ggplot",colorBy = "individual")
+plotFeatures(exhaledPtrset,mz = 67.0539,typePlot = "ggplot",colorBy = "individual")
+plotFeatures(exhaledPtrset,mz = 135.1149,typePlot = "ggplot",colorBy = "individual")
+plotFeatures(exhaledPtrset,mz = 137.1315,typePlot = "ggplot",colorBy = "individual")
+```
+
 
 ## Processing a single raw file
 
@@ -442,7 +466,7 @@ This research was conducted by Camille Roquencourt, with the contributions from 
 
 # Annex
 
-## Peak detection and quantification methods
+## Peak detection algorithm
 
 For each nominal mass m/z:
 

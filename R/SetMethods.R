@@ -252,7 +252,7 @@ plotPeakShape<-function(set,showAverage=FALSE){
               ggplot2::ggtitle("Average normalized peak shape of calibration peaks") +
               ggplot2::xlab('Mz interval normalized')+
               ggplot2::ylab("Intenisty normalized")+
-              scale_color_manual(values = c(scales::hue_pal()(length(mzRef))),"black")
+              ggplot2::scale_color_manual(values = c(scales::hue_pal()(length(mzRef))),"black")
             
           }else {
             p<-ggplot2::ggplot() +
@@ -261,7 +261,7 @@ plotPeakShape<-function(set,showAverage=FALSE){
               ggplot2::ggtitle("Average normalized peak shape of calibration peaks") +
               ggplot2::xlab('Mz interval normalized')+
               ggplot2::ylab("Intenisty normalized")+
-              scale_color_manual(values = c(scales::hue_pal()(n.mass)))
+              ggplot2::scale_color_manual(values = c(scales::hue_pal()(n.mass)))
             
           }
          
@@ -444,23 +444,26 @@ plotPtrReaction<-function(pSet){
   date<-sapply(date,function(x) chron::chron(dates. = strsplit(x," ")[[1]][1],
                      times. = strsplit(x," ")[[1]][2],format = c("d/m/y","h:m:s")))
   
-  Udrift<-ggplot()+ggplot2::geom_point(mapping = aes(x=date,y=U),
+  Udrift<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=date,y=U),
                         data=data.frame(date=as.Date(chron::as.dates(date)),U=U)) +
-    ggplot2::ggtitle("Drift voltage")+ ylab("V") +
-    ggplot2::theme_classic()+ ggplot2::theme(title = element_text(size=9))
-  Tdrift<-ggplot()+ggplot2::geom_point(mapping = aes(x=date,y=TD),
+    ggplot2::ggtitle("Drift voltage")+  ggplot2::ylab("V") +
+    ggplot2::theme_classic()+ ggplot2::theme(title = ggplot2::element_text(size=9))
+  
+  Tdrift<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=date,y=TD),
                                          data=data.frame(date=as.Date(chron::as.dates(date)),TD=TD)) +
-    ggplot2::ggtitle("Drift temperature")+ ylab("°C") +
-    ggplot2::theme_classic() + ggplot2::theme(title = element_text(size=9))
-  Pdrift<-ggplot()+ggplot2::geom_point(mapping = aes(x=date,y=PD),
+    ggplot2::ggtitle("Drift temperature")+  ggplot2::ylab("°C") +
+    ggplot2::theme_classic() + ggplot2::theme(title = ggplot2::element_text(size=9))
+  
+  Pdrift<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=date,y=PD),
                                          data=data.frame(date=as.Date(chron::as.dates(date)),PD=PD)) +
-    ggplot2::ggtitle("Drift pressure")+ ylab("mbar") +
-    ggplot2::theme_classic()+ ggplot2::theme(title = element_text(size=9))
-  primaryIonPlot<-ggplot()+ggplot2::geom_point(mapping = aes(x=date,y=cps),
+    ggplot2::ggtitle("Drift pressure")+  ggplot2::ylab("mbar") +
+    ggplot2::theme_classic()+ ggplot2::theme(title = ggplot2::element_text(size=9))
+  
+  primaryIonPlot<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=date,y=cps),
                                          data=data.frame(date=as.Date(chron::as.dates(date)),
                                                          cps=primaryIon)) +
-    ggplot2::ggtitle("Primary ion isotope intensity")+ xlab("Date")+
-    ggplot2::theme_classic()+ ggplot2::theme(title = element_text(size=9))
+    ggplot2::ggtitle("Primary ion isotope intensity")+  ggplot2::xlab("Date")+
+    ggplot2::theme_classic()+ ggplot2::theme(title = ggplot2::element_text(size=9))
   
   reaction<-ggpubr::ggarrange(Udrift + ggplot2::theme(axis.ticks.x = ggplot2::element_blank(),
                                             axis.text.x = ggplot2::element_blank(),
@@ -1155,9 +1158,10 @@ methods::setMethod(f="plotFeatures",
                 
               }#END loop file
               
-              plotAll <-plotAll + ggplot2::ggtitle(paste("Features",round(mz,3),"of",set@parameter$name),
-                                                   subtitle = paste(annotateVOC(mz)[2:3],collapse = " ") ) + 
-                ggplot2::labs(color = colorBy)
+              plotAll <-plotAll + 
+                ggplot2::ggtitle(paste("Features",round(mz,3),"of",set@parameter$name),
+                                 subtitle = paste(annotateVOC(mz)[2:3],collapse = " ") ) + 
+                ggplot2::labs(color = colorBy) + ggplot2::theme_classic()
               
               if(!is.null(pdfFile)){
                 for (j in seq_along(listPlotFile)) print(listPlotFile[[j]])

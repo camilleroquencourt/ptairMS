@@ -35,7 +35,7 @@ test_alignSamples <- function(){
   directory <-  system.file("extdata/mycobacteria",  package = "ptairData")
   dirSet <- createPtrSet(directory, setName = "test", mzCalibRef =c(21.022,59.049))
   dirSet <- detectPeak(dirSet, mzNominal = c(21,59))
-  eset <- alignSamples(dirSet, bgThreshold = 0,quanti="ppb")
+  eset <- alignSamples(dirSet,quanti="ppb",pValGreaterThres = 1)
   
   # output is expression set
   testthat::expect_is(eset,'ExpressionSet')
@@ -45,7 +45,7 @@ test_alignSamples <- function(){
   testthat::expect_equal(ncol(Biobase::exprs(eset)),6)
   
   #test filer
-  eset <- alignSamples(dirSet,bgThreshold = 2,quanti="ppb")
+  eset <- alignSamples(dirSet,pValGreaterThres = 0.05,quanti="ppb",fracExp = 1)
   testthat::expect_equal(ncol(Biobase::fData(eset)),7)
   testthat::expect_equal(nrow(Biobase::exprs(eset)),1)
 }
@@ -54,9 +54,9 @@ test_impute<-function(){
   library(ptairData)
   directory <-  system.file("extdata/mycobacteria",  package = "ptairData")
   dirSet <- createPtrSet(directory, setName = "test", mzCalibRef =c(21.022,59.049))
-  dirSet <- detectPeak(dirSet, mzNominal = c(21,57))
-  eset <- alignSamples(dirSet, bgThreshold = 4)
-  testthat::expect_equal(sum(is.na(Biobase::exprs(eset))),1)
+  dirSet <- detectPeak(dirSet,mz=c(21,63))
+  eset <- alignSamples(dirSet, pValGreaterThres = 0.005,fracGroup = 0.3)
+  testthat::expect_equal(sum(is.na(Biobase::exprs(eset))),2)
   eset<-impute(eset,dirSet)
   testthat::expect_equal(sum(is.na(Biobase::exprs(eset))),0)
 }
