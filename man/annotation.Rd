@@ -76,8 +76,8 @@ library(ptairData)
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 bacteria.ptrset <- createPtrSet(directory, setName = "bacteria",
 mzCalibRef = c(21.022,59.049))
-bacteria.ptrset <- detectPeak(bacteria.ptrset)
-bacteria.eset <- alignSamples(bacteria.ptrset)
+bacteria.ptrset <- detectPeak(bacteria.ptrset,mzNominal =c(59,79))
+bacteria.eset <-alignSamples(bacteria.ptrset,pValGreaterThres=0.05)
 # Expression Set
 bacteria.eset <- annotateVOC(bacteria.eset)
 head(Biobase::fData(bacteria.eset)[, c("vocDB_ion_mass", "vocDB_ion_formula")])

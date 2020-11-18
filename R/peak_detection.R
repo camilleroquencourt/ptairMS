@@ -421,7 +421,7 @@ deconv2dLinearCoupled<-function(rawM,t,peak.detect,raw,listCalib,K=length(knots)
                                 smoothParam=100,d=3,
                                 knots=unique(c(t[1], 
                                                stats::quantile(t,probs = seq(0,1,length=(round(length(t)/2)))),
-                                               tail(t,1)))
+                                               utils::tail(t,1)))
                                  ){
   
   #mass shifed correction
@@ -437,7 +437,7 @@ deconv2dLinearCoupled<-function(rawM,t,peak.detect,raw,listCalib,K=length(knots)
   #time function 
   tic<- function(t,K,tRef,smp,d,knots){
     smooth<-mgcv::smooth.construct(mgcv::s(t,k=K,bs="ps",sp=smp,m=c(d-1,2)),data=list(t=tRef),
-                                   knots=list(t=c(seq(-d,-1),knots,seq(tail(knots,1)+1,tail(knots,1)+d))))
+                                   knots=list(t=c(seq(-d,-1),knots,seq(utils::tail(knots,1)+1,utils::tail(knots,1)+d))))
     return(list(TIC=mgcv::Predict.matrix(smooth,data.frame(t=t)),S=smooth$S,knots=smooth$knots))
   }
   
@@ -1737,9 +1737,9 @@ baselineEstimation2D<-function(rawM,dt=1,dm=1){
   Y<-c(rawM)
   
   #firstr reg
-  LM0<-lm(Y~X)
+  LM0<-stats::lm(Y~X)
   a1<-LM0$coefficients
-  Z<-predict(LM0)
+  Z<-stats::predict(LM0)
   Y<-(Y < Z | Z < min(Y))*Y + Z*(Y>=Z & Z >= min(Y))
   
   #second reg
@@ -1756,7 +1756,7 @@ baselineEstimation2D<-function(rawM,dt=1,dm=1){
     a2<-reg2$coefficients
     c=c+1
   }
-  BL<-matrix(predict(reg2),ncol=ncol(rawM),nrow=nrow(rawM))
+  BL<-matrix(stats::predict(reg2),ncol=ncol(rawM),nrow=nrow(rawM))
   return(BL)
 }
 

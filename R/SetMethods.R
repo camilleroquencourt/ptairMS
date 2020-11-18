@@ -252,7 +252,7 @@ plotPeakShape<-function(set,showAverage=FALSE){
               ggplot2::ggtitle("Average normalized peak shape of calibration peaks") +
               ggplot2::xlab('Mz interval normalized')+
               ggplot2::ylab("Intenisty normalized")+
-              ggplot2::scale_color_manual(values = c(scales::hue_pal()(length(mzRef))),"black")
+              ggplot2::scale_color_manual(values = c(scales::hue_pal()(length(levels(peakData$Mz))),"black"))
             
           }else {
             p<-ggplot2::ggplot() +
@@ -261,7 +261,7 @@ plotPeakShape<-function(set,showAverage=FALSE){
               ggplot2::ggtitle("Average normalized peak shape of calibration peaks") +
               ggplot2::xlab('Mz interval normalized')+
               ggplot2::ylab("Intenisty normalized")+
-              ggplot2::scale_color_manual(values = c(scales::hue_pal()(n.mass)))
+              ggplot2::scale_color_manual(values = c(scales::hue_pal()(length(levels(peakData$Mz)))))
             
           }
          
