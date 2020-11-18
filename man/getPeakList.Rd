@@ -22,7 +22,7 @@ get the peak list of a ptrSet object
 library(ptairData)
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 dirSet <- createPtrSet(directory,setName="test",mzCalibRef=c(21.022,59.049))
-dirSet <- detectPeak(dirSet , mzNominal=59)
+dirSet <- detectPeak(dirSet , mzNominal=c(59,60))
 getPeakList(dirSet)$aligned
 getPeakList(dirSet)$raw
 }
