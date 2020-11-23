@@ -1131,11 +1131,11 @@ methods::setMethod(f="plotFeatures",
                 if(colorBy=="rownames"){
                   colour<-basename(file)
                 } else{
-                    colour<- as.factor(SMD[basename(file),colorBy])
+                    colour<- SMD[basename(file),colorBy]
                   }
                   
                 data=data.frame( mz = mzNew[indexSub], cps = spectrum[indexSub], 
-                                 Legend = colour)
+                                 Legend = rep(colour,length(indexSub)))
                 plotAll <- plotAll +
                   ggplot2::geom_point(ggplot2::aes(x=mz,y=cps,color=Legend),data=data) +
                   ggplot2::stat_function(mapping=ggplot2::aes(x=mz,color=Legend),data=data, 
@@ -1147,7 +1147,7 @@ methods::setMethod(f="plotFeatures",
                   splineInterpol<- stats::splinefun(mzNew,background)
                 
                   #plot background
-                  data= data.frame(mz = mzNew[indexSub], Legend = colour)
+                  data= data.frame(mz = mzNew[indexSub], Legend = rep(colour,length(indexSub)))
                   plotAll<-plotAll + 
                     ggplot2::stat_function(mapping=ggplot2::aes(x=mz,color=Legend),data=data, 
                                          fun=splineInterpol ,n = 1000,linetype="dashed",size=1)
@@ -1218,6 +1218,8 @@ resetSampleMetadata<-function(ptrset){
     sampleMetadata <- data.frame(subfolder=group, row.names = fileName,
                                  stringsAsFactors=FALSE)
   }
+  
+  sampleMetadata$date<- Reduce(c,ptrset@date)
   return(sampleMetadata)
 }
 

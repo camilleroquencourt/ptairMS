@@ -413,8 +413,9 @@ findIsotope<-function(eSet,ppm=100){
   for (i in seq_along(mz)){
     iso <- isotopeMzMatching(mz[i], mz[(i+1):length(mz)],ppm)
     if(length(iso)){
-      if(validateGroup(c(mz[i],iso),X)){
-        fDATA[i,"isotope"]<- paste(iso,collapse = "/")
+      testIso<-validateGroup(c(mz[i],iso),X)
+      if(any(testIso)){
+        fDATA[i,"isotope"]<- paste(iso[testIso],collapse = "/")
       }
     }
   }
@@ -425,14 +426,25 @@ findIsotope<-function(eSet,ppm=100){
 
 #find all possible isotope match in m/z dimension 
 isotopeMzMatching<-function(m,mzSub,ppm,max=1){
-  diffN <- 1.003355
-  diffO<-c(1.0042,2.0042) #C13, O17, O18
-  iso<-list("C13"=NULL,"O17"=NULL,"O18"=NULL)
-  for(j in seq(max)){
-    Iso<-lapply(c(diffN,diffO),function(diff) mzSub[which(abs(mzSub-(m+j*diff))*10^6/m < 100)])
-    iso<-mapply(c, iso, Iso, SIMPLIFY=FALSE)
-  }
-  iso<-unique(Reduce(c,iso))
+  isotopes <- utils::read.table(system.file("extdata/reference_tables/atomic_isotopes.tsv",
+                                            package = "ptairMS"),
+                                header = TRUE,
+                                quote = "\"",
+                                sep = "\t",
+                                stringsAsFactors = FALSE)
+  
+  diff<-lapply(split(isotopes, isotopes$element),function(x) {
+    if(nrow(x)>1) x$mass[-1]-x$mass[1] else return(NULL) })
+  diff<-Reduce(c,diff)
+  Iso <- Reduce(c,lapply(diff,function(d) mzSub[which(abs(mzSub-(m+d))*10^6/m < 50)] ))
+  # diffN <- 1.003355
+  # diffO<-c(1.0042,2.0042) #C13, O17, O18
+  # iso<-list("C13"=NULL,"O17"=NULL,"O18"=NULL)
+  # for(j in seq(max)){
+  #   Iso<-lapply(c(diffN,diffO),function(diff) mzSub[which(abs(mzSub-(m+j*diff))*10^6/m < 100)])
+  #   iso<-mapply(c, iso, Iso, SIMPLIFY=FALSE)
+  # }
+  iso<-unique(Iso)
   return(iso)
 }
 
@@ -440,18 +452,37 @@ isotopeMzMatching<-function(m,mzSub,ppm,max=1){
 validateGroup<-function(groupIso,X){
   
   #correlation inter sample
-  testCorPval<-vapply(as.character(groupIso)[-1], function(y) stats::cor.test(X[as.character(groupIso)[1],],
-                                                                       X[y,],alternative = c("greater"))$p.value,1.1)
+  testCorPval<-vapply(as.character(groupIso)[-1], function(y) stats::cor.test(X[as.character(groupIso)[1],],                                                                    X[y,],alternative = c("greater"))$p.value,1.1)
   testCor<- testCorPval < 0.01
   
   #ratio
   ratio<-X[as.character(groupIso)[-1],]/
     matrix(
-      rep(X[as.character(groupIso)[1],,drop=FALSE],2),
+      rep(X[as.character(groupIso)[1],,drop=FALSE],length(as.character(groupIso)[-1])),
       nrow=length(as.character(groupIso)[-1]),byrow=TRUE)
   
-  testRatio<- apply(ratio,1,function(x) stats::median(x,na.rm = TRUE)) < 0.5
-  
-  return(all(c(testCor,testRatio)))
+  anno<-annotateVOC(groupIso[1])
+  isotopes <- utils::read.table(system.file("extdata/reference_tables/atomic_isotopes.tsv",
+                                           package = "ptairMS"),
+                               header = TRUE,
+                               quote = "\"",
+                               sep = "\t",
+                               stringsAsFactors = FALSE)
+  if(anno[,"vocDB_ion_formula"] != ""){
+    formula<-anno[,"vocDB_ion_formula"]
+    isoDistrib<-enviPat::isopattern(isotopes,chemforms = formula,threshold = 1,verbose = FALSE)[[1]]
+    testRatio<- sapply(seq_len(nrow(ratio)),function(x){
+      index<-which(abs(isoDistrib[,"m/z"]-groupIso[x+1])*10^6/round(groupIso[x+1]) < 100)
+      if(length(index)!=0){
+        testRatio<- stats::median(ratio[x,],na.rm = TRUE)*100 <= max(isoDistrib[index,"abundance"]*1.02,50)
+    }else {
+      testRatio<- stats::median(ratio[x,],na.rm = TRUE) < 0.5
+    }
+      }) 
+  }else {
+    testRatio<- apply(ratio,1,function(x) stats::median(x,na.rm = TRUE)) < 0.5
+  }
+
+  return(apply(cbind(testCor,testRatio),1,all))
 }
 
