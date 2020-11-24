@@ -1,4 +1,12 @@
-CHANGES IN VERSION 0.0.14
+CHANGES IN VERSION 1.0.2
+------------------------------
+
+NEW FEATURE
+
+    o for quantification: the baseline is computed only from background, and quatification without this correction in write in quanti_cps, and with this correction in absolute value in diffAbs_cps. We can choose in alignSamples function wich quanti use with bgCorrected TURE or FALSE 
+
+
+CHANGES IN VERSION 1.0.1
 ------------------------------
 
 NEW FEATURE

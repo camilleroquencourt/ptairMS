@@ -231,6 +231,7 @@ computeTemporalFile<-function(raw,peak,indTimeLim,timeCalib=20,
 #'@param peak a data.frame with a column named "Mz". The Mz of the VOC detected
 #'@param peakQuantil the quantile of the peak shape to determine the borne of the EIC
 #'@return list containing all EIC and the mz borne for all peak
+
 extractEIC<-function(raw,peak,peakQuantil=0.01){
   #borne integration
   borne<-apply(peak,1,function(x) sechInv(x["Mz"],
@@ -842,7 +843,7 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
                       ppmGroupBkg, fracGroup,
                       minIntensity, 
                       fctFit,thIntensityRate,timeCalib=30,sumExtraction=1,funAggreg=mean,
-                      deconvMethod=deconv2d2linearIndependant,bl=TRUE,...){
+                      deconvMethod=deconv2d2linearIndependant,...){
   
   if(is.character(fullNamefile)){
     cat(basename(fullNamefile),": ")
@@ -898,7 +899,7 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
   
   ## agregate 
   matPeakAg<-aggregateTemporalFile(time = raw@time,indTimeLim = indTimeLim,
-                                            matPeak = matPeak,funAggreg = funAggreg,bl = bl)
+                                            matPeak = matPeak,funAggreg = funAggreg)
    
   indLim <- indTimeLim$exp
   indBg<-indTimeLim$backGround
@@ -908,7 +909,11 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
   if(!is.na(primaryIon$primaryIon)){
     
     matPeakAg[,"quanti_ncps"] <-matPeakAg[,"quanti_cps"]/((primaryIon$primaryIon*488))
-    if(bg) matPeakAg[,"background_ncps"] <- matPeakAg[,"background_cps"]/((primaryIon$primaryIon*488))
+    
+    if(bg) {
+      matPeakAg[,"background_ncps"] <- matPeakAg[,"background_cps"]/((primaryIon$primaryIon*488))
+      matPeakAg[,"diffAbs_ncps"] <- matPeakAg[,"diffAbs_cps"]/((primaryIon$primaryIon*488))
+      }
     
     indExp<-Reduce(c,apply(indLim,2,function(x) seq(x[1],x[2])))
     if( length(raw@prtReaction)!=0 & nrow(raw@ptrTransmisison) > 1){
@@ -919,16 +924,30 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
                                                       Td=c(raw@prtReaction$TwData[3,,])[indExp],
                                                       pd=c(raw@prtReaction$TwData[2,,])[indExp])
       
-      if(bg) matPeakAg[,"background_ppb"]<-ppbConvert(peakList = data.frame(Mz=matPeakAg$Mz,
+      if(bg) {
+        matPeakAg[,"background_ppb"]<-ppbConvert(peakList = data.frame(Mz=matPeakAg$Mz,
                                                                                 quanti=matPeakAg$background_ncps),
                                                           transmission =raw@ptrTransmisison,
                                                           U=c(raw@prtReaction$TwData[1,,])[indBg],
                                                           Td=c(raw@prtReaction$TwData[3,,])[indBg],
                                                           pd=c(raw@prtReaction$TwData[2,,])[indBg])
+        matPeakAg[,"diffAbs_ppb"]<-ppbConvert(peakList = data.frame(Mz=matPeakAg$Mz,
+                                                                       quanti=matPeakAg$diffAbs_ncps),
+                                                 transmission =raw@ptrTransmisison,
+                                                 U=c(raw@prtReaction$TwData[1,,])[indBg],
+                                                 Td=c(raw@prtReaction$TwData[3,,])[indBg],
+                                                 pd=c(raw@prtReaction$TwData[2,,])[indBg])
+      }
     }
   }
 
   cat(paste(nrow(matPeakAg),"peaks detected \n"))
+  
+  #ordered column
+  matPeakAg<-matPeakAg[,c("Mz","quanti_cps","background_cps","diffAbs_cps",
+                          "quanti_ncps","background_ncps","diffAbs_ncps",
+                          "quanti_ppb","background_ppb","diffAbs_ppb",
+                          "pValGreater","pValLess")]
   return(list(raw=matPeak,aligned=matPeakAg))
 }
 

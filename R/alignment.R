@@ -190,7 +190,7 @@ aggregate <- function(subGroupPeak, n.exp) {
 }
 
 
-aggregateTemporalFile<-function(time, indTimeLim, matPeak, funAggreg,bl=TRUE,dbl=5){
+aggregateTemporalFile<-function(time, indTimeLim, matPeak, funAggreg,dbl=4){
   # agregation of expirations and bg
   indLim <- indTimeLim$exp
   indBg<-indTimeLim$backGround
@@ -201,8 +201,12 @@ aggregateTemporalFile<-function(time, indTimeLim, matPeak, funAggreg,bl=TRUE,dbl
     XIC<-as.matrix(matPeak[,5:ncol(matPeak),drop=FALSE])
     
     ##baseline Corrected
-    if(bl) XIC <- t(apply(XIC,1,function(x) x-baselineEstimation(x,d = dbl)))
-    
+    XICbl<-t(apply(XIC,1,function(x){
+      lm<-stats::lm(cps ~ stats::poly(point,d=dbl), data=data.frame(cps=x[indBg],point=indBg))
+      bl<- stats::predict(lm,newdata = data.frame(point=seq_along(time)))
+      x<-x-bl
+    })) 
+
     # test significativité
     # comparaison de moyenne normal 
     indExp<-Reduce(c,apply(indLim,2,function(x) seq(x[1],x[2])))
@@ -217,12 +221,16 @@ aggregateTemporalFile<-function(time, indTimeLim, matPeak, funAggreg,bl=TRUE,dbl
     exp <-time[indExp]
     colnames(XIC) <- as.character(time)
     quantiExp <- apply(XIC,1,function(x) funAggreg(x[colnames(XIC) %in% exp]))
-    quantiBg <-apply(XIC,1,function(x) mean(x[colnames(XIC) %in% bgIn]))
-    matPeakAg <-cbind(matPeak[,1],quanti_cps=quantiExp,background_cps=quantiBg,
+    quantiBg <-apply(XIC,1,function(x) funAggreg(x[colnames(XIC) %in% bgIn]))
+    
+    colnames(XICbl) <- as.character(time)
+    quantiExpBl <- apply(XICbl,1,function(x) abs(funAggreg(x[colnames(XIC) %in% exp])))
+    
+    matPeakAg <-cbind(matPeak[,1],quanti_cps=quantiExp,background_cps=quantiBg,diffAbs_cps=quantiExpBl,
                       pValLess,pValGreater)
   } else {
     quantiExp<- apply(XIC,1,function(x) mean(x))
-    matPeakAg<-cbind(matPeak[,1],quanti_cps=quantiExp,background_cps=NA)
+    matPeakAg<-cbind(matPeak[,1],quanti_cps=quantiExp,background_cps=NA,diffAbs_cps=NA)
   }
   
   return(matPeakAg)
@@ -243,7 +251,14 @@ aggregateTemporalFile<-function(time, indTimeLim, matPeak, funAggreg,bl=TRUE,dbl
 #' in \code{fracGroup} percent in each group will be deleted. 
 #' @param bgThreshold if the background quantity is analyzed, only variables where
 #' quantity > bgThreshold x background or quantity < bgThreshold x background for all
-#' samples are keeped. 
+#' samples are keeped.
+#' @param pValGreaterThres threshold of the he p-value of the unilateral t-test, who test that 
+#' quantidication (in cps) of expiration points are greater than the intenisty of the background. 
+#' @param pValLessThres threshold of the he p-value of the unilateral t-test, who test that 
+#' quantidication (in cps) of expiration points are greater than the intenisty of the background.
+#' @param fracExp percentage of sample which must have their pvalue less than \code{pValGreaterThres} 
+#' and \code{pValLessThres}
+#' @param bgCorrected logical. If the value must be corrected to the background baseline or not. 
 #' @param dmzGroup difference of mz of a group for little mz
 #' @param quantiUnit ppb, ncps or cps
 #' @param ... not used
@@ -253,7 +268,6 @@ aggregateTemporalFile<-function(time, indTimeLim, matPeak, funAggreg,bl=TRUE,dbl
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 #' dirSet <- createPtrSet(directory,setName="test",mzCalibRef =c(21.022,59.049))
 #' dirSet <- detectPeak(dirSet,mzNominal=c(21,59))
-#' getSampleMetadata(dirSet)
 #' eset <- alignSamples(dirSet,pValGreaterThres=0.05)
 #' Biobase::exprs(eset)
 #' Biobase::fData(eset)
@@ -264,7 +278,7 @@ aggregateTemporalFile<-function(time, indTimeLim, matPeak, funAggreg,bl=TRUE,dbl
 setMethod(f="alignSamples",signature = "ptrSet",
             function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL, 
                      bgThreshold=2,pValGreaterThres= 2e-26,pValLessThres=0,fracExp=0.3,
-                         dmzGroup = 0.001,quantiUnit=c("ppb","ncps","cps")[1],...
+                         dmzGroup = 0.001,quantiUnit=c("ppb","ncps","cps")[1],bgCorrected=TRUE,...
                          ){
               
             sampleMetadata <- X@sampleMetadata
@@ -273,7 +287,7 @@ setMethod(f="alignSamples",signature = "ptrSet",
                                     ppmGroup =ppmGroup, fracGroup = fracGroup , group = group,
                                     bgThreshold =bgThreshold, pValGreaterThres = pValGreaterThres,
                                     pValLessThres = pValLessThres,fracExp = fracExp, dmzGroup=dmzGroup,
-                                    quantiUnit = quantiUnit)
+                                    quantiUnit = quantiUnit,bgCorrected=bgCorrected)
   
   return(eSet)
 })
@@ -284,14 +298,14 @@ setMethod(f="alignSamples",signature = "ptrSet",
 setMethod(f="alignSamples",signature = "data.frame",
           function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL,
                    bgThreshold=2,pValGreaterThres= 2e-26,pValLessThres=0,fracExp=0.3,
-                   dmzGroup = 0.001,quantiUnit=c("ppb","ncps","cps")[1],sampleMetadata
+                   dmzGroup = 0.001,quantiUnit=c("ppb","ncps","cps")[1], bgCorrected=TRUE,sampleMetadata
           ){
             
             eSet<- alignSamplesFunc(peakList = X,sampleMetadata = sampleMetadata,
                                     ppmGroup =ppmGroup, fracGroup = fracGroup , group = group,
                                     bgThreshold =bgThreshold, pValGreaterThres = pValGreaterThres,
                                     pValLessThres = pValLessThres,fracExp = fracExp, dmzGroup=dmzGroup,
-                                    quantiUnit = quantiUnit)
+                                    quantiUnit = quantiUnit,bgCorrected=bgCorrected)
             
             return(eSet)
           })
@@ -300,9 +314,10 @@ setMethod(f="alignSamples",signature = "data.frame",
 alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100, 
                              fracGroup=0.8, group=NULL, dmzGroup=0.001,
                              bgThreshold=2,pValGreaterThres= 2e-26,pValLessThres=0,fracExp=0.3,
-                             quantiUnit=c("ppb","ncps","cps")[1]){
+                             quantiUnit=c("ppb","ncps","cps")[1],bgCorrected=TRUE){
   
   testquantiUnit<-Reduce(c,lapply(peakList,function(x) all(is.na(x[,paste0("quanti_",quantiUnit)]))))
+  
   
   if(any(testquantiUnit)){
     if(quantiUnit == "ppb"){
@@ -319,13 +334,21 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
   
   if(any(grepl("background",Reduce(c,lapply(peakList,colnames))))){
     peakList<-lapply(peakList,function(x) {
+     
+      diff<- which(grepl("diffAbs",colnames(x)))
       quanti<- which(grepl("quanti",colnames(x)))
       bg <- which(grepl("background",colnames(x)))
-      other<- seq_len(ncol(x))[-c(quanti,bg)]
-      quanti<-quanti[which(grepl(quantiUnit,colnames(x)[quanti]))]
+      other<- seq_len(ncol(x))[-c(quanti,bg,diff)]
+      
+      if(bgCorrected){
+        quanti<-diff[which(grepl(quantiUnit,colnames(x)[quanti]))]
+      }else quanti<-quanti[which(grepl(quantiUnit,colnames(x)[quanti]))]
+      
       bg <- bg[which(grepl(quantiUnit,colnames(x)[bg]))]
+      
       .SD<-data.table::.SD
       x<-x[,.SD,.SD=colnames(x)[c(other,quanti,bg)]]
+      colnames(x)[4]<-paste("quanti",quantiUnit,sep="_")
       x
     })
   } else {

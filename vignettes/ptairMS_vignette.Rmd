@@ -1,10 +1,11 @@
 ---
 title: "_**ptairMS**_: Processing and analysis of PTR-TOF-MS data"
 author: "Camille Roquencourt, Paul Zheng, Pierrick Roger and Etienne Thevenot"
+date: "`r doc_date()`"
 package: "`r pkg_ver('ptairMS')`"
 bibliography: "ptairMS.bib"
 vignette: >
-  %\VignetteIndexEntry{ptairMS: Processing and analysis of PTR-TOF-MS data}
+  %\VignetteIndexEntry{Vignette Title}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
   %\VignetteKeywords{MassSpectrometry, Signal processing, PTR-TOF-MS}
@@ -12,12 +13,12 @@ output:
   BiocStyle::html_document:
     toc: yes
     toc_depth: 4
-    toc_float: true
+    toc_float:
+      collapsed: false
 ---
 
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(eval=TRUE)
+```{r set, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8) 
 ```
 
 
@@ -122,7 +123,7 @@ To check the quality and view useful information about your files, you can use t
 
 * The reaction parameters and primary ion isotope intensity in cps in function of acquisition date
 
-```{r plot,fig.width=10, fig.height=8}
+```{r plot}
 plot(exhaledPtrset)
 ```
 
@@ -306,6 +307,7 @@ To see the resulting peak lists, use the `getPeakList` method. It returns a list
     * Mz: the mass center of the peak
     * quanti_unit: the mean of the quantification over the expiration/headspace time limits defined 
     * background_unit: the mean of the quantification over the background time limits defined 
+    * diffAbs_unit: the mean of the quantification over the expiration/headspace time limits defined after subtracting the baseline estimated from the background points defined 
     * pValLess/ pValGreater: the p-value of the unilateral t-test, who test that quantidication (in cps) of expiration points are less/greater than the intenisty of the background. 
 
 

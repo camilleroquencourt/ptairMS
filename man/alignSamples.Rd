@@ -30,6 +30,7 @@ alignSamples(
   fracExp = 0.3,
   dmzGroup = 0.001,
   quantiUnit = c("ppb", "ncps", "cps")[1],
+  bgCorrected = TRUE,
   ...
 )
 
@@ -44,6 +45,7 @@ alignSamples(
   fracExp = 0.3,
   dmzGroup = 0.001,
   quantiUnit = c("ppb", "ncps", "cps")[1],
+  bgCorrected = TRUE,
   sampleMetadata
 )
 }
@@ -63,11 +65,22 @@ in \code{fracGroup} percent in each group will be deleted.}
 quantity > bgThreshold x background or quantity < bgThreshold x background for all
 samples are keeped.}
 
+\item{pValGreaterThres}{threshold of the he p-value of the unilateral t-test, who test that 
+quantidication (in cps) of expiration points are greater than the intenisty of the background.}
+
+\item{pValLessThres}{threshold of the he p-value of the unilateral t-test, who test that 
+quantidication (in cps) of expiration points are greater than the intenisty of the background.}
+
+\item{fracExp}{percentage of sample which must have their pvalue less than \code{pValGreaterThres} 
+and \code{pValLessThres}}
+
 \item{dmzGroup}{difference of mz of a group for little mz}
 
 \item{...}{not used}
 
 \item{quantiUnit}{ppb, ncps or cps}
+
+\item{bgCorrected}{logical. If the value must be corrected to the background baseline or not.}
 
 \item{sampleMetadata}{if X is a ptrSet, not used, else a data.frame containing sample Metadata}
 }
@@ -82,7 +95,6 @@ library(ptairData)
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 dirSet <- createPtrSet(directory,setName="test",mzCalibRef =c(21.022,59.049))
 dirSet <- detectPeak(dirSet,mzNominal=c(21,59))
-getSampleMetadata(dirSet)
 eset <- alignSamples(dirSet,pValGreaterThres=0.05)
 Biobase::exprs(eset)
 Biobase::fData(eset)

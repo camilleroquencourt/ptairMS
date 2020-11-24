@@ -1336,7 +1336,7 @@ importSampleMetadata<-function(set,file){
 #' @export
 methods::setMethod(f="timeLimits",
           signature = "ptrSet",
-          function(object,fracMaxTIC=0.5,fracMaxTICBg=0.5, derivThresholdExp=0.5,derivThresholdBg=0.01,
+          function(object,fracMaxTIC=0.5,fracMaxTICBg=0.2, derivThresholdExp=1,derivThresholdBg=0.05,
                    minPoints = 2,degreeBaseline=1, baseline=TRUE ,plotDel=FALSE){
             
             fileNames<-basename(object@parameter$listFile)
