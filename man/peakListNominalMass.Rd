@@ -12,8 +12,9 @@ peakListNominalMass(
   calibCoef,
   resMinMeanMax = c(300, 5000, 8000),
   minPeakDetect = 10,
-  fitFunc = "Sech2",
+  fitFunc = "sech2",
   maxIter = 2,
+  R2min = 0.995,
   autocorNoiseMax = 0.3,
   plotFinal = FALSE,
   plotAll = FALSE,
@@ -22,7 +23,8 @@ peakListNominalMass(
   countFacFWHM = 10,
   daSeparation = 0.001,
   d = 3,
-  windowSize = 0.4
+  windowSize = 0.4,
+  l.shape = NULL
 )
 }
 \arguments{
@@ -66,6 +68,8 @@ centered in the mass peak center.}
 
 \item{windowSize}{peaks will be detected only around  m - windowSize ; m + windowSize, for all 
 m in \code{mzNominal}}
+
+\item{l.shape}{peak shape averae}
 
 \item{resMinMaxMean}{vector with resolution min, resolution Mean, and resolution max of the PTR}
 }

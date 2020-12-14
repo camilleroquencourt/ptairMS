@@ -187,7 +187,7 @@ plotPeakShape<-function(set,showAverage=FALSE){
               t_centre<-vapply(massRef,function(x) {
                 spectrum<-interval[[as.character(x)]]$signal
                 mz<-interval[[as.character(x)]]$mz
-                delta<-5000 * log(sqrt(2)+1)*2/x 
+                delta<-x/5000 
                 init<-list(m=x,d1=delta,d2=delta,h=max(spectrum))
                 fit<-suppressWarnings(minpack.lm::nls.lm(par=init, 
                                                           fn =function(par,x,y) y- sech2(

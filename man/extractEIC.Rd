@@ -4,7 +4,7 @@
 \alias{extractEIC}
 \title{extract all raw EIC from a pre-definied peak List}
 \usage{
-extractEIC(raw, peak, peakQuantil = 0.01)
+extractEIC(raw, peak, peakQuantil = 0.01, fctFit = "sech2")
 }
 \arguments{
 \item{raw}{ptrRaw object}
@@ -12,6 +12,8 @@ extractEIC(raw, peak, peakQuantil = 0.01)
 \item{peak}{a data.frame with a column named "Mz". The Mz of the VOC detected}
 
 \item{peakQuantil}{the quantile of the peak shape to determine the borne of the EIC}
+
+\item{fctFit}{function used to fit peak}
 }
 \value{
 list containing all EIC and the mz borne for all peak

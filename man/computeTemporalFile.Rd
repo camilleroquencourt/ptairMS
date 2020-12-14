@@ -10,6 +10,7 @@ computeTemporalFile(
   indTimeLim,
   timeCalib = 20,
   deconvMethod = deconv2d2linearIndependant,
+  fctFit = "sech2",
   ...
 )
 }

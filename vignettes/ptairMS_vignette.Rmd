@@ -21,7 +21,6 @@ output:
 knitr::opts_chunk$set(fig.width=12, fig.height=8) 
 ```
 
-
 # Introduction
 
 The _**ptairMS**_ package provides a workflow to process PTR-TOF-MS raw data in the open Hierarchical Data Format 5 ([HDF5](https://www.hdfgroup.org); .h5 extension), and generate the peak table as an `ExpressionSet` object for subsequent data analysis with the many methods and packages available in [_**R**_](https://www.r-project.org/) (see for instance [[@stanstrup_metarbolomics_2019]](https://doi.org/10.3390/metabo9100200)). Applications include the analysis of exhaled breath, cell culture headspace or ambient air. The package offers several features to check the raw data and tune the few processing parameters. It also enables to include new samples in a study without re-processing all the previous data, providing a convenient management for cohort studies (e.g. duration of the inclusion process, longitudinal studies, etc.).

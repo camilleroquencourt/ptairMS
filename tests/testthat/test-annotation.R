@@ -34,7 +34,7 @@ test_isotope<-function(){
   bacteria.ptrset <- detectPeak(bacteria.ptrset,mz=c(59,60))
   bacteria.eset <- alignSamples(bacteria.ptrset,fracGroup=1,pValGreaterThres = 1)
   bacteria.eset <-findIsotope(bacteria.eset)
-  testthat::expect_equal( Biobase::fData(bacteria.eset)[1,"isotope"],row.names(Biobase::fData(bacteria.eset))[2])
+  testthat::expect_equal( Biobase::fData(bacteria.eset)[1,"isotope"],row.names(Biobase::fData(bacteria.eset))[3])
 }
 
 

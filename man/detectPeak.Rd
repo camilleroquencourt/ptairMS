@@ -18,7 +18,7 @@ detectPeak(x, ...)
   ppmGroupBkg = 50,
   fracGroup = 0.8,
   minIntensity = 10,
-  fctFit = c("Sech2", "average")[1],
+  fctFit = c("sech2", "average")[1],
   thIntensityRate = 0.01,
   processFun = processFileSepExp,
   primaryIon = T,
@@ -34,7 +34,7 @@ detectPeak(x, ...)
   fracGroup = 0.8,
   minIntensity = 10,
   thIntensityRate = 0.01,
-  fctFit = c("Sech2", "average")[1],
+  fctFit = c("sech2", "average", "asymGauss")[1],
   parallelize = FALSE,
   nbCores = 2,
   saving = TRUE,
@@ -108,6 +108,6 @@ peakList <- detectPeak(raw, timeLimit=timeLimit, mzNominal = c(21,59))
 peakList$aligned
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 dirSet <- createPtrSet(directory,setName="test",mzCalib=c(21.022,60.05))
-dirSet <- detectPeak(dirSet , mzNominal=c(59,60))
+dirSet <- detectPeak(dirSet , mzNominal=c(59,60),fctFit="asymGauss")
 getPeakList(dirSet)$aligned
 }

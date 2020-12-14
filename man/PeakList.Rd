@@ -11,8 +11,9 @@ PeakList(
   ppm = 130,
   resMinMeanMax = c(3000, 5000, 8000),
   minIntensity = 5,
-  fctFit = c("Sech2", "average")[1],
+  fctFit = c("sech2", "average")[1],
   maxIter = 2,
+  R2min,
   autocorNoiseMax = 0.3,
   plotFinal = FALSE,
   plotAll = FALSE,
@@ -30,8 +31,9 @@ PeakList(
   ppm = 130,
   resMinMeanMax = c(300, 5000, 8000),
   minIntensity = 5,
-  fctFit = c("Sech2", "average")[1],
+  fctFit = c("sech2", "average")[1],
   maxIter = 2,
+  R2min = 0.995,
   autocorNoiseMax = 0.3,
   plotFinal = FALSE,
   plotAll = FALSE,
@@ -59,6 +61,8 @@ will be : max ( \code{minPeakDetect} , thresholdNoise ). The thresholdNoise corr
 \item{fctFit}{the function for the quantification of Peak, should be average or Sech2}
 
 \item{maxIter}{maximum ittertion of residual analysis}
+
+\item{R2min}{R2 minimum to stop the itterative residual analysis}
 
 \item{autocorNoiseMax}{the autocorelation threshold for Optimal windows Savitzky Golay 
 filter in \code{OptimalWindowSG} ptairMS function. See \code{?OptimalWindowSG}}

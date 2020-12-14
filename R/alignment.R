@@ -568,6 +568,7 @@ fliterEset<-function(X,sampleMetadata,groupMat,groupList,peakList,group,fracGrou
 
 imputeFunc<-function(file,missingValues,eSet,ptrSet){
   
+  fctFit<-ptrSet@parameter$detectPeakParam$fctFit
   primaryIon<-ptrSet@primaryIon
   filesFullName<-ptrSet@parameter$listFile
   j<-which(file==colnames(Biobase::exprs(eSet)))
@@ -633,7 +634,7 @@ imputeFunc<-function(file,missingValues,eSet,ptrSet){
       # cumFitPeak
       
       fitPeaks <- apply(peakAlsoDetected,1,
-                        function(x) sech2(x["Mz"],x["parameter.1"],
+                        function(x) eval(parse(text=fctFit))(x["Mz"],x["parameter.1"],
                                           x["parameter.2"],x["parameter.3"],x = mzAxis.m)
       )
       if(nrow(peakAlsoDetected)>1) cumFitPeak <- rowSums(fitPeaks) else cumFitPeak <- c(fitPeaks)
@@ -674,7 +675,7 @@ imputeFunc<-function(file,missingValues,eSet,ptrSet){
                                   rep(0, n.peak)),ncol = 4)))
     
     
-    fit <- fit_sech2(initMz, spectrum, mzAxis.m, lower.cons, upper.cons)
+    fit <- fitPeak(initMz, spectrum, mzAxis.m, lower.cons, upper.cons,fctFit)
     
     fit.peak <- fit$fit.peak
     par_estimated<-fit$par_estimated
@@ -682,7 +683,7 @@ imputeFunc<-function(file,missingValues,eSet,ptrSet){
     quanti.m <- apply(par_estimated,2, function(x){
       th<-10*0.5*(log(sqrt(2)+1)/x[2]+log(sqrt(2)+1)/x[3])
       mz.x <- mzAxis.m[ x[1] - th < mz & mz < x[1]+th ]
-      sum(sech2(x[1],x[2],x[3],x[4],mz.x),na.rm =TRUE)}) 
+      sum(eval(parse(text=fctFit))(x[1],x[2],x[3],x[4],mz.x),na.rm =TRUE)}) 
     
     list_peak<-cbind(Mz=mz,quanti=quanti.m/(primaryIon[[file]]$primaryIon*488))
     
@@ -787,6 +788,9 @@ imputeMat <- function(X,ptrSet,quantiUnit){
   #get peak list 
   peakList <- getPeakList(ptrSet)$aligned
   
+  #peak func(ion)
+  fctFit<-ptrSet@parameter$detectPeakParam$fctFit
+  
   #get index of missing values
   missingValues <-which(is.na(X),arr.ind=TRUE)
   indexFilesMissingValues <- unique(missingValues[,"col"])
@@ -859,7 +863,7 @@ imputeMat <- function(X,ptrSet,quantiUnit){
         # cumFitPeak
         
         fitPeaks <- apply(peakAlsoDetected,1,
-                          function(x) sech2(x["Mz"],x["parameter.1"],
+                          function(x) eval(parse(text=fctFit))(x["Mz"],x["parameter.1"],
                                             x["parameter.2"],x["parameter.3"],x = mzAxis.m)
         )
         if(nrow(peakAlsoDetected)>1) cumFitPeak <- rowSums(fitPeaks) else cumFitPeak <- c(fitPeaks)
@@ -899,7 +903,7 @@ imputeMat <- function(X,ptrSet,quantiUnit){
                                     rep(0, n.peak)),ncol = 4)))
       
       
-      fit <- fit_sech2(initMz, spectrum, mzAxis.m, lower.cons, upper.cons)
+      fit <- fitPeak(initMz, spectrum, mzAxis.m, lower.cons, upper.cons,fctFit)
       
       fit.peak <- fit$fit.peak
       par_estimated<-fit$par_estimated
@@ -907,7 +911,7 @@ imputeMat <- function(X,ptrSet,quantiUnit){
       quanti.m <- apply(par_estimated,2, function(x){
         th<-10*0.5*(log(sqrt(2)+1)/x[2]+log(sqrt(2)+1)/x[3])
         mz.x <- mzAxis.m[ x[1] - th < mz & mz < x[1]+th ]
-        sum(sech2(x[1],x[2],x[3],x[4],mz.x),na.rm =TRUE)}) 
+        sum(eval(parse(text=fctFit))(x[1],x[2],x[3],x[4],mz.x),na.rm =TRUE)}) 
       
       list_peak<-cbind(Mz=mz,quanti=quanti.m/(primaryIon[[file]]$primaryIon*488))
       

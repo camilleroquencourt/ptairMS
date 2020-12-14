@@ -51,7 +51,7 @@ setGeneric("PeakList",
            function(raw,
                     mzNominal = unique(round(raw@mz)), 
                     ppm = 130, resMinMeanMax=c(3000,5000,8000),
-                    minIntensity=5, fctFit=c("Sech2","average")[1], maxIter=2, autocorNoiseMax = 0.3,
+                    minIntensity=5, fctFit=c("sech2","average")[1], maxIter=2, R2min,autocorNoiseMax = 0.3,
                     plotFinal=FALSE, plotAll=FALSE, thNoiseRate=1.1, thIntensityRate = 0.01,
                     countFacFWHM=10, daSeparation=0.005, d=3, windowSize=0.4){
              standardGeneric("PeakList")})
@@ -82,7 +82,7 @@ setGeneric("plotTIC",
 #' library(ptairData)
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
 #' ptrSet <- createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049))
-#' plotF <- plotFeatures(ptrSet,mz=59.049)
+#' plotF <- plotFeatures(ptrSet,mz=59.049,type="ggplot)
 #' print(plotF)
 #' @rdname plotFeatures
 #' @export

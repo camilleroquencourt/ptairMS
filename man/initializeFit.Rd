@@ -10,6 +10,7 @@ initializeFit(
   sp.i,
   mz.i,
   calibCoef,
+  resmean,
   minpeakheight,
   noiseacf,
   ppmPeakMinSep,
@@ -29,6 +30,8 @@ initializeFit(
 \item{mz.i}{the mass vector around a nominal mass}
 
 \item{calibCoef}{calibration coeficient}
+
+\item{resmean}{resolution m/delta(m) mean}
 
 \item{minpeakheight}{the minimum peak intensity}
 

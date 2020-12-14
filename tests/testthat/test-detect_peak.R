@@ -35,7 +35,7 @@ test_peakSet<-function(){
   # One matrix for each file
   testthat::expect_true( length(peakLists@peakListAligned) == length(ListFiles) )
   testthat::expect_true(all(sapply(peakLists@peakListAligned,function(x) nrow(x)==2)))
-  testthat::expect_true(all(sapply(peakLists@peakListRaw,function(x) ncol(x)==9)))
+  testthat::expect_true(all(sapply(peakLists@peakListRaw,function(x) ncol(x)==10)))
   
   }
 

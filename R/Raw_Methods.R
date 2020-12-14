@@ -844,6 +844,7 @@ bakgroundDetect<-function(TIC,derivThreshold=0.01,  minPoints = 4, plotDel=FALSE
 #'  \code{[m-windowSize-0.2,m-windowSize]U[m+windowSize,m+WindowSize+0.2]}.
 #' @param fctFit the function for the quantification of Peak, should be average or Sech2
 #' @param maxIter maximum ittertion of residual analysis
+#' @param R2min R2 minimum to stop the itterative residual analysis
 #' @param autocorNoiseMax the autocorelation threshold for Optimal windows Savitzky Golay 
 #' filter in \code{OptimalWindowSG} ptairMS function. See \code{?OptimalWindowSG}
 #' @param plotFinal boolean. If TRUE, plot the spectrum for all nominal masses, with the final fitted peaks
@@ -876,7 +877,7 @@ methods::setMethod(f="PeakList",
           signature = "ptrRaw",
           function(raw,
                    mzNominal = unique(round(raw@mz)), ppm = 130, resMinMeanMax=c(300,5000,8000),
-                   minIntensity=5, fctFit=c("Sech2","average")[1], maxIter=2, autocorNoiseMax = 0.3,
+                   minIntensity=5, fctFit=c("sech2","average")[1], maxIter=2,R2min=0.995, autocorNoiseMax = 0.3,
                    plotFinal=FALSE, plotAll=FALSE, thNoiseRate=1.1, thIntensityRate = 0.01,
                    countFacFWHM=10, daSeparation=0.005, d=3, windowSize=0.4) {
   
@@ -887,12 +888,12 @@ methods::setMethod(f="PeakList",
   calibCoef<-raw@calibCoef
   
   
-  if(fctFit=="average") l.shape<-determinePeakShape(sp,mz,massRef = mzCalibRef)
+  if(fctFit=="average") l.shape<-determinePeakShape(sp,mz,massRef = mzCalibRef) else l.shape=NULL
   
   prePeaklist <- lapply(mzNominal, function(m) peakListNominalMass(m,mz,sp,ppm, calibCoef,resMinMeanMax,
-                                                                    minIntensity, fctFit, maxIter, autocorNoiseMax ,
+                                                                    minIntensity, fctFit, maxIter,R2min, autocorNoiseMax ,
                                                                     plotFinal, plotAll, thNoiseRate, thIntensityRate ,
-                                                                    countFacFWHM, daSeparation, d, windowSize) )
+                                                                    countFacFWHM, daSeparation, d, windowSize,l.shape) )
   
   peaklist<-do.call(rbind,lapply(prePeaklist, function(x) x[[1]]))
   warning <-do.call(rbind,lapply(prePeaklist, function(x) x[[2]]))
@@ -919,7 +920,7 @@ methods::setMethod(f="detectPeak",
           function(x, 
                    mzNominal=NULL , timeLimit, ppm=130, resMinMeanMax=c(3000,5000,8000), 
                    ppmGroupBkg=50, fracGroup=0.8, minIntensity=10, 
-                   fctFit=c("Sech2","average")[1],thIntensityRate=0.01,
+                   fctFit=c("sech2","average")[1],thIntensityRate=0.01,
                    processFun=processFileSepExp,primaryIon=T,...)
           {
             raw<-x

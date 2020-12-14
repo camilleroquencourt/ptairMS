@@ -4,12 +4,14 @@
 \alias{multiCalib}
 \title{Performs a calibration every x time step}
 \usage{
-multiCalib(raw, step)
+multiCalib(raw, step, fctFit)
 }
 \arguments{
 \item{raw}{a ptrRaw object already calibrate}
 
 \item{step}{number of time step}
+
+\item{fctFit}{function to fit peak}
 }
 \value{
 a list that each element contains: index time, coef calibration, and the function to convert mz to tof

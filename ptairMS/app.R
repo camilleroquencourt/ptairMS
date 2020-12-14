@@ -617,7 +617,7 @@ server <- function(input, output) {
   
    shiny::observeEvent(input$detectPeak, {
      ptrSet<-rv$ptrset
-     ptrSet<-detectPeak(ptrSet,mz=c(21,29,45,59,69))
+     ptrSet<-detectPeak(ptrSet)
      output$peakTable<-renderPrint(ptrSet@peakListAligned)
      rv$ptrset<-ptrSet
    })

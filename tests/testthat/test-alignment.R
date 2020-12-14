@@ -41,13 +41,13 @@ test_alignSamples <- function(){
   testthat::expect_is(eset,'ExpressionSet')
   
   #deux pics aligné
-  testthat::expect_equal(nrow(Biobase::exprs(eset)),2)
+  testthat::expect_equal(nrow(Biobase::exprs(eset)),3)
   testthat::expect_equal(ncol(Biobase::exprs(eset)),6)
   
   #test filer
   eset <- alignSamples(dirSet,pValGreaterThres = 0.05,quanti="ppb",fracExp = 1)
   testthat::expect_equal(ncol(Biobase::fData(eset)),7)
-  testthat::expect_equal(nrow(Biobase::exprs(eset)),1)
+  testthat::expect_equal(nrow(Biobase::exprs(eset)),2)
 }
 
 test_impute<-function(){
@@ -56,7 +56,7 @@ test_impute<-function(){
   dirSet <- createPtrSet(directory, setName = "test", mzCalibRef =c(21.022,59.049))
   dirSet <- detectPeak(dirSet,mz=c(21,63))
   eset <- alignSamples(dirSet, pValGreaterThres = 0.005,fracGroup = 0.3)
-  testthat::expect_equal(sum(is.na(Biobase::exprs(eset))),2)
+  testthat::expect_equal(sum(is.na(Biobase::exprs(eset))),4)
   eset<-impute(eset,dirSet)
   testthat::expect_equal(sum(is.na(Biobase::exprs(eset))),0)
 }
