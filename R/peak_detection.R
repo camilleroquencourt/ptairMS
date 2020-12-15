@@ -534,9 +534,16 @@ deconv2d2linearIndependant<-function(rawM,time,peak.detect,raw,listCalib,fctFit)
     lr<-peak.detect$parameter.2
     param<-cbind(mz,lf,lr)
     
-    model<- apply(param,1,
-                  function(x) 1/(cosh((log(sqrt(2)+1)/x["lf"])*(mzAxis-x["mz"]))^2*(mzAxis<=x["mz"])+
-                                   cosh((log(sqrt(2)+1)/x["lr"])*(mzAxis-x["mz"]))^2*(mzAxis>x["mz"])))
+    if(fctFit=="sech2"){
+      model<- apply(param,1,
+                    function(x) 1/(cosh((log(sqrt(2)+1)/x["lf"])*(mzAxis-x["mz"]))^2*(mzAxis<=x["mz"])+
+                                     cosh((log(sqrt(2)+1)/x["lr"])*(mzAxis-x["mz"]))^2*(mzAxis>x["mz"])))
+    }else {
+      model<- apply(param,1,
+                    function(x) (exp(-(mzAxis-x["mz"])^2/(2*x["lf"]^2))*(mzAxis<=x["mz"])+
+                                   exp(-(mzAxis-x["mz"])^2/(2*x["lr"]^2))*(mzAxis>x["mz"])))
+    }
+   
     
     fit<-stats::lm(spectrum.m ~ model-1)
     
@@ -907,7 +914,7 @@ processFileTemporal<-function(fullNamefile, massCalib,primaryIon,indTimeLim, mzN
   # compute temporal profile
   fileProccess<- computeTemporalFile(raw = raw,peak = list_peak,indTimeLim=indTimeLim,
                                      timeCalib,
-                                     deconvMethod=deconvMethod,fctFit=fctFit,...)
+                                     deconvMethod=deconvMethod,fctFit=fctFit)
   matPeak<-data.table::as.data.table(fileProccess$matPeak)
   
   #convert in cps
