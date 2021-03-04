@@ -80,11 +80,9 @@ Displays the image of the matrix of intensities, the TIC and the TIS,
 for the selected m/z and time ranges
 }
 \examples{
-library(ptairData)
-directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-ptrSet <- createPtrSet(dir= directory, setName="testDir",
-mzCalibRef= c(21.022, 59.049141))
-ptairMS::plotRaw(ptrSet,mzRange=59)
+library(ptairMS)
+data(mycobacteriaSet)
+ptairMS::plotRaw(mycobacteriaSet,mzRange=59,fileNames="Control1.h5")
 
 patientRaw <- ptairMS::readRaw(system.file("extdata/exhaledAir/ind1/ind1-1.h5",  
 package = "ptairData"),  mzCalibRef=c(21.022,59.049,75.05))

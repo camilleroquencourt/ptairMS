@@ -394,13 +394,11 @@ formula2mass <- function(formula.vc,
 #' @param ppm presision for the mass matching
 #' @return an expresion with the column isotope added in teh features data
 #' @examples
-#' library(ptairData)
-#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' bacteria.ptrset <- createPtrSet(directory, setName = "bacteria",
-#' mzCalibRef = c(21.022,59.049))
-#' bacteria.ptrset <- detectPeak(bacteria.ptrset,mzNom=c(59,60))
-#' bacteria.eset <- alignSamples(bacteria.ptrset,fracGroup=0.9,pValGreaterThres=0.05)
-#' bacteria.eset<- impute(bacteria.eset,bacteria.ptrset)
+#' library(ptairMS)
+#' data(mycobacteriaSet)
+#' mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(59,60))
+#' bacteria.eset <- alignSamples(mycobacteriaSet,fracGroup=0.9,pValGreaterThres=0.05)
+#' bacteria.eset<- impute(bacteria.eset,mycobacteriaSet)
 #' bacteria.eset <-findIsotope(bacteria.eset)
 #' Biobase::fData(bacteria.eset)[,"isotope",drop=FALSE]
 #' @export

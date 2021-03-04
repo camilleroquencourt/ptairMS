@@ -72,12 +72,10 @@ Putatively annotate VOC mz by using the reference compilation from the literatur
 and detect isotope thanks to the \code{findIsotope} function.
 }
 \examples{
-library(ptairData)
-directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-bacteria.ptrset <- createPtrSet(directory, setName = "bacteria",
-mzCalibRef = c(21.022,59.049))
-bacteria.ptrset <- detectPeak(bacteria.ptrset,mzNominal =c(59,79))
-bacteria.eset <-alignSamples(bacteria.ptrset,pValGreaterThres=0.05)
+library(ptairMS)
+data(mycobacteriaSet)
+mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal =c(59,79))
+bacteria.eset <-alignSamples(mycobacteriaSet,pValGreaterThres=0.05)
 # Expression Set
 bacteria.eset <- annotateVOC(bacteria.eset)
 head(Biobase::fData(bacteria.eset)[, c("vocDB_ion_mass", "vocDB_ion_formula")])

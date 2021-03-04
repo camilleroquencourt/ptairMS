@@ -50,3 +50,9 @@ a plotly or ggplot2 object
 \description{
 Plot the raw data spectrum for several files in a ptrSet object around the \code{mz} masses.
 }
+\examples{
+library(ptairMS)
+data(mycobacteriaSet)
+plotFeatures(mycobacteriaSet,mz=59.049,type="ggplot")
+print(plotF)
+}

@@ -16,8 +16,7 @@ the directory in absolute path as character
 get the files diretory of a ptrSet
 }
 \examples{
-library(ptairData)
-directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-ptrSet<-createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049))
-getDirectory(ptrSet)
+library(ptairMS)
+data(mycobacteriaSet)
+getDirectory(mycobacteriaSet)
 }

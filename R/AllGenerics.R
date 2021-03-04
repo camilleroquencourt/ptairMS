@@ -104,10 +104,9 @@ setGeneric("plotTIC",
 #' @param colorBy character. A column name of sample metadata by which the line are colored. 
 #' @return a plotly or ggplot2 object 
 #' @examples 
-#' library(ptairData)
-#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' ptrSet <- createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049))
-#' plotF <- plotFeatures(ptrSet,mz=59.049,type="ggplot)
+#' library(ptairMS)
+#' data(mycobacteriaSet)
+#' plotFeatures(mycobacteriaSet,mz=59.049,type="ggplot")
 #' print(plotF)
 #' @rdname plotFeatures
 #' @export
@@ -148,12 +147,10 @@ setGeneric("getFileNames", function(object,fullNames=FALSE){
 #' @return Returns the data.frame with additional columns containing the vocDB informations
 #' for the matched ion_mass values as well as the detected isotopes
 #' @examples
-#' library(ptairData)
-#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' bacteria.ptrset <- createPtrSet(directory, setName = "bacteria",
-#' mzCalibRef = c(21.022,59.049))
-#' bacteria.ptrset <- detectPeak(bacteria.ptrset,mzNominal =c(59,79))
-#' bacteria.eset <-alignSamples(bacteria.ptrset,pValGreaterThres=0.05)
+#' library(ptairMS)
+#' data(mycobacteriaSet)
+#' mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal =c(59,79))
+#' bacteria.eset <-alignSamples(mycobacteriaSet,pValGreaterThres=0.05)
 #' # Expression Set
 #' bacteria.eset <- annotateVOC(bacteria.eset)
 #' head(Biobase::fData(bacteria.eset)[, c("vocDB_ion_mass", "vocDB_ion_formula")])

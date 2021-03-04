@@ -19,10 +19,8 @@ object with the same parameter used for the function \code{createPtrSet} who has
 \code{updatePtrSet} also delete from the ptrSet deleted files in the directory.
 }
 \examples{
-library(ptairData)
-directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
-mzCalibRef= c(21.022, 59.049141))
+library(ptairMS)
+data(mycobacteriaSet)
 ##add or delete files in the directory 
-mycobacteria<- updatePtrSet(mycobacteria)
+# mycobacteriaSet<- updatePtrSet(mycobacteriaSet)
 }

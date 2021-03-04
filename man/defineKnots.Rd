@@ -59,14 +59,12 @@ All file must be informed. The knots location must be contained in the time axis
 }
 }
 \examples{
-library(ptairData)
-directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-mycobacteria <- createPtrSet(dir= directory, 
-setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+library(ptairMS)
+data(mycobacteriaSet)
 
 #### placed knots every 2 times points
-mycobacteria <- defineKnots(mycobacteria,knotsPeriod=2,method="uniform")
+mycobacteria <- defineKnots(mycobacteriaSet,knotsPeriod=2,method="uniform")
 
 #### placed knots every 3 times points in the expiration (default)
-mycobacteria <- defineKnots(mycobacteria,knotsPeriod=3,method="expiration")
+mycobacteria <- defineKnots(mycobacteriaSet,knotsPeriod=3,method="expiration")
 }

@@ -68,9 +68,7 @@ filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptair
 raw <- readRaw(filePath)
 p <- plotTIC(raw)
 p
-library(ptairData)
-directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
-mzCalibRef= c(21.022,59.049141))
-plotTIC(mycobacteria,type="ggplot")
+library(ptairMS)
+data(mycobacteriaSet)
+plotTIC(mycobacteriaSet,type="ggplot")
 }

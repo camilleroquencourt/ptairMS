@@ -123,11 +123,8 @@ knots<-defineKnots(object = raw,timeLimit=timeLimit)
 peakList <- detectPeak(raw, timeLimit=timeLimit, mzNominal = c(21,59),
 smoothPenalty=0,knots=knots)
 Biobase::fData(peakList)
-library(ptairData)
-directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-dirSet <- createPtrSet(directory,setName="test",
-mzCalib=c(21.022,60.05))
-dirSet <- rmPeakList(dirSet)
-dirSet <- detectPeak(dirSet , mzNominal=c(59,60))
-getPeakList(dirSet)
+library(ptairMS)
+data(mycobacteriaSet)
+mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(59,60))
+getPeakList(mycobacteriaSet)
 }

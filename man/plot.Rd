@@ -23,12 +23,10 @@ plot
 ptrSet object
 }
 \examples{
-library(ptairData)
-directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
-mzCalibRef= c(21.022, 59.049141))
-plot(mycobacteria)
-plot(mycobacteria,typePlot="calibError")
-plot(mycobacteria,typePlot="resolution")
-plot(mycobacteria,typePlot="peakShape")
+library(ptairMS)
+data(mycobacteriaSet)
+plot(mycobacteriaSet)
+plot(mycobacteriaSet,typePlot="calibError")
+plot(mycobacteriaSet,typePlot="resolution")
+plot(mycobacteriaSet,typePlot="peakShape")
 }

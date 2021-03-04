@@ -262,7 +262,7 @@ For each file in the directory, this function:
 
 The `peakList` is then written in the `ptrSet` object as a list of `expressionSet` containing for each file all the peaks detected.
 
-```{r Detect_peak, cache=TRUE}
+```{r Detect_peak}
 exhaledPtrset <- detectPeak(exhaledPtrset)
 ```
 

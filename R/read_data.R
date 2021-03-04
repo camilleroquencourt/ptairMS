@@ -264,12 +264,10 @@ createPtrSet<-function(dir, setName,
 #' @return teh same ptrset object than ininput, but completed with new files and without deleted files in the directory
 #' @export
 #' @examples
-#' library(ptairData)
-#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
-#' mzCalibRef= c(21.022, 59.049141))
+#' library(ptairMS)
+#' data(mycobacteriaSet)
 #' ##add or delete files in the directory 
-#' mycobacteria<- updatePtrSet(mycobacteria)
+#' # mycobacteriaSet<- updatePtrSet(mycobacteriaSet)
 updatePtrSet<-function(ptrset){
 
   if(! methods::is(ptrset,"ptrSet")) stop("ptrset must be a ptrSet object. Use createPtrSet function")
@@ -279,7 +277,14 @@ updatePtrSet<-function(ptrset){
   sampleMetadata <- ptrset@sampleMetadata
   
   # files in the diretcory 
-  filesDirFullName <- list.files(parameter$dir, recursive = TRUE, pattern="\\.h5$",full.names = TRUE)
+  if(class(parameter$dir) == "expression"){
+    parameter$dir<-eval(parameter$dir)
+    filesDirFullName <- eval(parse(text='list.files(parameter$dir, recursive = TRUE, pattern=".h5$",full.names = TRUE)'))
+    filesDirFullNameParam<-parse(text='list.files(parameter$dir, recursive = TRUE, pattern=".h5$",full.names = TRUE)')
+    }else {
+      filesDirFullName <- list.files(parameter$dir, recursive = TRUE, pattern="\\.h5$",full.names = TRUE)
+      filesDirFullNameParam<-filesDirFullName
+      }
   
   # files already processed
   filesProcessed <- rownames(sampleMetadata)
@@ -314,7 +319,7 @@ updatePtrSet<-function(ptrset){
     ptrset@timeLimit[deletedFiles] <-  NULL
     ptrset@peakListRaw[deletedFiles] <-  NULL
     ptrset@peakListAligned[deletedFiles] <-  NULL
-    ptrset@parameter$listFile <-filesDirFullName
+    ptrset@parameter$listFile <-filesDirFullNameParam
     ptrset@breathTracer[deletedFiles]<-NULL
     ptrset@ptrTransmisison[deletedFiles]<-NULL
     ptrset@prtReaction[deletedFiles]<-NULL

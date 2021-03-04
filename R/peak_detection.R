@@ -38,13 +38,10 @@ utils::globalVariables("::<-")
 #' @param ... parameter of processFun
 #' @return a S4 object ptrSet, that contains the input ptrset completed with the peakLists. 
 #' @examples 
-#' library(ptairData)
-#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' dirSet <- createPtrSet(directory,setName="test",
-#' mzCalib=c(21.022,60.05))
-#' dirSet <- rmPeakList(dirSet)
-#' dirSet <- detectPeak(dirSet , mzNominal=c(59,60))
-#' getPeakList(dirSet)
+#' library(ptairMS)
+#' data(mycobacteriaSet)
+#' mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(59,60))
+#' getPeakList(mycobacteriaSet)
 #' @rdname detectPeak
 #' @import doParallel foreach parallel
 #' @export
@@ -72,6 +69,7 @@ setMethod(f="detectPeak",
             indTimeLim<-ptrset@timeLimit
             parameter <- ptrset@parameter
             dir <- parameter$dir
+            if(class(dir)=="expression") dir<-eval(dir)
             peakList <-ptrset@peakList
             peakShape<-ptrset@peakShape
             paramOld <- parameter$detectPeakParam
@@ -88,6 +86,8 @@ setMethod(f="detectPeak",
               
             #files already check by checkSet 
             files <- parameter$listFile 
+            if(class(files) == "expression") files<- eval(files) 
+            
             fileName <- basename(files)
            
             paramNew <- list(mzNominal=mzNominalParam,ppm=ppm, thIntensityRate=thIntensityRate,

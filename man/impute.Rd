@@ -23,13 +23,12 @@ Imputing missing values by returning back to the raw data and fitting the
 peak shape function on the noise / residuals
 }
 \examples{
-library(ptairData)
-directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-dirSet <- createPtrSet(directory,setName="test",mzCalibRef =c(21.022,59.049))
-dirSet <- detectPeak(dirSet,mzNominal=c(21,63))
-getSampleMetadata(dirSet)
-eSet <- alignSamples(dirSet,pValGreaterThres=0.05,fracGroup=0)
+library(ptairMS)
+data(mycobacteriaSet)
+mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(21,63))
+getSampleMetadata(mycobacteriaSet)
+eSet <- alignSamples(mycobacteriaSet,pValGreaterThres=0.05,fracGroup=0)
 Biobase::exprs(eSet)
-eSet <- impute(eSet,dirSet)
+eSet <- impute(eSet,mycobacteriaSet)
 Biobase::exprs(eSet)
 }

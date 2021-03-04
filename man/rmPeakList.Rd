@@ -18,9 +18,7 @@ peak function. First delete the peakLIst with \code{rmPeakList}, and apply \code
 with the new parameters.
 }
 \examples{
-library(ptairData)
-directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
-mzCalibRef= c(21.022, 59.049141))
-mycobacteria<-rmPeakList(mycobacteria)
+library(ptairMS)
+data(mycobacteriaSet)
+mycobacteriaSet<-rmPeakList(mycobacteriaSet)
 }

@@ -29,12 +29,10 @@ exported file).
 }
 \examples{
 \dontrun{
-library(ptairData)
-directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-bacteria.ptrset <- ptairMS::createPtrSet(directory, setName = "bacteria",
-mzCalibRef = c(21.022,59.049))
-bacteria.ptrset <- ptairMS::detectPeak(bacteria.ptrset)
-eset <- ptairMS::alignSamples(bacteria.ptrset)
+library(ptairMS)
+data(mycobacteriaSet)
+mycobacteriaSet <- ptairMS::detectPeak(mycobacteriaSet)
+eset <- ptairMS::alignSamples(mycobacteriaSet)
 writeEset(eset, dirName = file.path(getwd(), "processed_dataset"))
 }
 }

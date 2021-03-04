@@ -52,4 +52,4 @@ VignetteBuilder: knitr
 LinkingTo:
     Rcpp
 NeedsCompilation: yes
-biocViews: MassSpectrometry, Preprocessing, Metabolomics, PeakDetection, Alignment
+biocViews: Software, MassSpectrometry, Preprocessing, Metabolomics, PeakDetection, Alignment

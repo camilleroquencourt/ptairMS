@@ -16,9 +16,7 @@ a data.frame
 reset the default sampleMetadata
 }
 \examples{
-library(ptairData)
-directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
-mzCalibRef= c(21.022, 59.049141))
-SMD<- resetSampleMetadata(mycobacteria)
+library(ptairMS)
+data(mycobacteriaSet)
+SMD<- resetSampleMetadata(mycobacteriaSet)
 }
