@@ -1319,7 +1319,7 @@ setSampleMetadata<- function(set, sampleMetadata){
 #' @examples 
 #' library(ptairMS)
 #' data(mycobacteriaSet)
-#' saveFile<-file.path(directory,"sampleMetadata.tsv")
+#' saveFile<-file.path(getwd(),"sampleMetadata.tsv")
 #' #exportSampleMetada(mycobacteriaSet,saveFile)
 exportSampleMetada<-function(set, saveFile){
   
@@ -1344,7 +1344,7 @@ exportSampleMetada<-function(set, saveFile){
 #' @examples 
 #' library(ptairMS)
 #' data(mycobacteriaSet)
-#' saveFile<-file.path(directory,"sampleMetadata.tsv")
+#' saveFile<-file.path(getwd(),"sampleMetadata.tsv")
 #' #exportSampleMetada(mycobacteriaSet,saveFile)
 #' #mycobacteria<-importSampleMetadata(mycobacteriaSet,saveFile)
 importSampleMetadata<-function(set,file){

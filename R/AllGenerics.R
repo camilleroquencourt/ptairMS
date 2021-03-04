@@ -106,7 +106,7 @@ setGeneric("plotTIC",
 #' @examples 
 #' library(ptairMS)
 #' data(mycobacteriaSet)
-#' plotFeatures(mycobacteriaSet,mz=59.049,type="ggplot")
+#' plotF<-plotFeatures(mycobacteriaSet,mz=59.049,type="ggplot")
 #' print(plotF)
 #' @rdname plotFeatures
 #' @export
