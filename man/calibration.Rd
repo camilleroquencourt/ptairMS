@@ -9,18 +9,21 @@
 calibration(
   x,
   mzCalibRef = c(21.022, 29.013424, 41.03858, 60.0525, 203.943, 330.8495),
+  calibrationPeriod = 60,
   tol = 70
 )
 
 \S4method{calibration}{ptrRaw}(
   x,
   mzCalibRef = c(21.022, 29.013424, 41.03858, 59.049141, 75.04406, 203.943, 330.8495),
+  calibrationPeriod = 60,
   tol = 70
 )
 
 \S4method{calibration}{ptrSet}(
   x,
   mzCalibRef = c(21.022, 29.013424, 41.03858, 75.04406, 203.943, 330.8495),
+  calibrationPeriod = 60,
   tol = 70
 )
 }
@@ -29,6 +32,9 @@ calibration(
 
 \item{mzCalibRef}{Vector of accurate mass values of intensive peaks and 'unique' in a 
 nominal mass interval (without overlapping)}
+
+\item{calibrationPeriod}{in second, coreficient calibration are estimated for each sum spectrum of 
+\code{calibrationPeriod} seconds}
 
 \item{tol}{the maximum error tolerated in ppm. If more than \code{tol} warnings.}
 }
@@ -52,6 +58,6 @@ covers a maximum of the mass range.
 \examples{
 library(ptairData)
 filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
-raw <- readRaw(filePath, calibTIS = FALSE)
+raw <- readRaw(filePath, calib = FALSE)
 rawCalibrated <- calibration(raw)
 }

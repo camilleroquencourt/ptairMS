@@ -16,19 +16,21 @@ timeLimits(
   minPoints = 2,
   degreeBaseline = 1,
   baseline = TRUE,
+  redefineKnots = TRUE,
   plotDel = FALSE
 )
 
 \S4method{timeLimits}{ptrRaw}(
   object,
-  fracMaxTIC = 0.5,
-  fracMaxTICBg = 0.5,
+  fracMaxTIC = 0.6,
+  fracMaxTICBg = 0.2,
   derivThresholdExp = 0.5,
-  derivThresholdBg = 0.01,
+  derivThresholdBg = 0.05,
   mzBreathTracer = NULL,
   minPoints = 2,
   degreeBaseline = 1,
   baseline = TRUE,
+  redefineKnots = TRUE,
   plotDel = FALSE
 )
 
@@ -41,6 +43,7 @@ timeLimits(
   minPoints = 2,
   degreeBaseline = 1,
   baseline = TRUE,
+  redefineKnots = TRUE,
   plotDel = FALSE
 )
 }
@@ -62,6 +65,10 @@ whose limits you want to compute. If NULL, the limits are calculated on the Tota
 \item{minPoints}{minimum duration of an expiration (in index).}
 
 \item{degreeBaseline}{the degree of polynomial baseline function}
+
+\item{baseline}{logical, should the trace be baseline corrected?}
+
+\item{redefineKnots}{logical, should teh knot location must be redefined with the new times limits ?}
 
 \item{plotDel}{boolean. If TRUE, the Chormatogram is ploted with limits and threshold.}
 }

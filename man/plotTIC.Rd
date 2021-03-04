@@ -53,6 +53,8 @@ basename or fullname.}
 
 \item{colorBy}{character. A name of the ptrSet's sampleMetaData column, to display with
 the same color files of same attributes.}
+
+\item{normalizePrimariIon}{should the TIC be normalized by the primary ion}
 }
 \value{
 a plotly of ggplot2 object.
@@ -66,9 +68,9 @@ filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptair
 raw <- readRaw(filePath)
 p <- plotTIC(raw)
 p
-
 library(ptairData)
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022,59.049141))
+mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
+mzCalibRef= c(21.022,59.049141))
 plotTIC(mycobacteria,type="ggplot")
 }

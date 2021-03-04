@@ -6,20 +6,20 @@ test_calib<-function(){
 
   library(ptairData)
   filePath <-  system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
-  file <- readRaw(filePath,calibTIS = FALSE)
+  file <- readRaw(filePath,calib = FALSE)
 
   # Warning because mzRef Calib by default or out of the mass axis of example file
-  fileCalibrate <- calibration(file,mzCalibRef = c(21.022,59.049))
+  fileCalibrate <- calibration(file,mzCalibRef = c(21.022,59.049),calibrationPeriod=60)
 
   # check class
   testthat::expect_is(fileCalibrate, 'ptrRaw')
   
   #check format 
-  testthat::expect_equal(dim(fileCalibrate@calibCoef), c(2,1))
-  testthat::expect_equal(rownames(fileCalibrate@calibCoef), c("a","b"))
+  testthat::expect_equal(dim(fileCalibrate@calibCoef[[1]]), c(2,1))
+  testthat::expect_equal(rownames(fileCalibrate@calibCoef[[1]]), c("a","b"))
   
   #check values
-  testthat::expect_equal(c(round(fileCalibrate@calibCoef)), c(8839,-219))
+  testthat::expect_equal(c(round(fileCalibrate@calibCoef[[1]])), c(8839,-219))
   testthat::expect_true(all(fileCalibrate@calibError<20))
   
 }

@@ -15,17 +15,25 @@ with the \code{createPtrSet} function.
 
 \item{\code{sampleMetadata}}{data frame of sample metadata, with file names in row names}
 
+\item{\code{date}}{acquisition date for each file}
+
 \item{\code{mzCalibRef}}{the masses uses for calibration for each file}
 
 \item{\code{signalCalibRef}}{the spectrum of mass calibration for each file}
 
 \item{\code{errorCalibPpm}}{the calibration error for each file}
 
-\item{\code{coefCalib}}{the coefficients of mass axis calibration for each file}
+\item{\code{coefCalib}}{the coefficients of mass axis calibration of each calibration periods for each file}
 
-\item{\code{primaryIon}}{the quantity in count per acquisition time of the isotope of primary ion (H30_18, mz 21.022) for each file}
+\item{\code{indexTimeCalib}}{index time of each calibration periods for each file}
+
+\item{\code{primaryIon}}{the quantity in count per acquisition time of the isotope of primary ion for each file}
 
 \item{\code{resolution}}{estimation of the resolution for each file based on the calibration reference masses}
+
+\item{\code{prtReaction}}{drift information (temperature, pressure and voltage)}
+
+\item{\code{ptrTransmisison}}{transmision curve for each file}
 
 \item{\code{TIC}}{the TIC for each file}
 
@@ -33,8 +41,13 @@ with the \code{createPtrSet} function.
 
 \item{\code{timeLimit}}{the index of time limit for each file}
 
-\item{\code{peakListRaw}}{the peak list before a potential aggregation  of expirations}
+\item{\code{knots}}{numeric vector correspond to the knot that will be use for the two dimensional 
+regression for each file}
 
-\item{\code{peakListAligned}}{the peakList with expirations aggregation  for each file}
+\item{\code{fctFit}}{the peak function use for peak deconvolution for each file}
+
+\item{\code{peakShape}}{average normalized peak shape of the calibration peak}
+
+\item{\code{peakList}}{individual peak list in expression set (Biobase)}
 }}
 

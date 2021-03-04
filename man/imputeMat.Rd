@@ -7,9 +7,11 @@
 imputeMat(X, ptrSet, quantiUnit)
 }
 \arguments{
+\item{X}{the peak table matrix with missing values}
+
 \item{ptrSet}{processed by detectPeak function}
 
-\item{eSet}{an expression set retun by alignSamples function}
+\item{quantiUnit}{the unit of the quantities in the matrix \code{X} (ppb, cps or ncps)}
 }
 \value{
 the same expression set as in input, with missing values imputing

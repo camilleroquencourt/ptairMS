@@ -22,7 +22,9 @@ A ptrRaw object contains PTR-TOF-MS raw data from one h5 file. It is created wit
 
 \item{\code{calibToftoMz}}{function to convert tof to mz}
 
-\item{\code{calibCoef}}{calibration coefficients (a,b) such that: mz= ((tof-b)/a)^2}
+\item{\code{calibCoef}}{calibration coefficients (a,b) such that: mz= ((tof-b)/a)^2 for each calibration periods}
+
+\item{\code{indexTimeCalib}}{index time of each calibration periods}
 
 \item{\code{calibMassRef}}{the reference masses used for the calibration}
 
@@ -30,8 +32,12 @@ A ptrRaw object contains PTR-TOF-MS raw data from one h5 file. It is created wit
 
 \item{\code{calibSpectr}}{the spectrum of calibration reference masses}
 
+\item{\code{peakShape}}{average normalized peak shape of the calibration peak}
+
 \item{\code{ptrTransmisison}}{matrix with transmission values}
 
 \item{\code{prtReaction}}{a list containing PTR reaction information: drift temperature, pressure and voltage}
+
+\item{\code{date}}{acquisition date and hour}
 }}
 

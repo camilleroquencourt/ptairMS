@@ -14,7 +14,8 @@ utils::globalVariables(c("error","name","out","intervalRef","signal","signal0","
 #' @examples 
 #' library(ptairData)
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
+#' mzCalibRef= c(21.022, 59.049141))
 #' plot(mycobacteria)
 #' plot(mycobacteria,typePlot="calibError")
 #' plot(mycobacteria,typePlot="resolution")
@@ -37,16 +38,17 @@ methods::setMethod(f = "plot",
             }else if (typePlot == "peakShape"){
               return(plotPeakShape(x))
             } else {
-              reso<- plotResolution(x)
-              calib<-plotCalibError(x)
-              peakShape<-plotPeakShape(x)
-              reaction<- plotPtrReaction(x)
+              reso<- try(plotResolution(x))
+              calib<- try(plotCalibError(x))
+              peakShape<-try(plotPeakShape(x))
+              reaction<- try(plotPtrReaction(x))
             
               left<-ggpubr::ggarrange(calib,
-                                      reso$plot,nrow=2,align = "v")
+                                      reso$plot,
+                                      reso$table,nrow=3,heights=c(0.5,0.4,0.1))
               right<-ggpubr::ggarrange(peakShape,
                                reaction,nrow=2)
-              return(ggpubr::ggarrange(left,right,ncol=2,align="h"))
+              return(ggpubr::ggarrange(left,right,ncol=2,align="hv"))
             }
             #if(!is.null(saveFile)) dev.off()
           })
@@ -84,18 +86,16 @@ plotResolution<-function(set){
             resolMat<-resolMat[,list(resolution,name,out=ifelse(is_outlier(resolution), resolution, as.numeric(NA))),by=Mz]
 
             # boxplot with outlier labels 
-            g<-ggplot2::ggplot(subset(resolMat, !is.na(resolution)), ggplot2::aes(y=resolution, x=Mz)) + 
+            g <- ggplot2::ggplot(subset(resolMat, !is.na(resolution)), ggplot2::aes(y=resolution, x=Mz)) + 
               ggplot2::geom_boxplot() +
               ggplot2::geom_text(data=resolMat[!is.na(out),],
                                  ggplot2::aes(x=Mz,y=resolution,label = name),vjust = -.5,size=3) +
               ggplot2::ggtitle(label = expression("Resolution m/" ~ Delta ~ "(m)"))+
               ggplot2::ylab("m/delta(m)") + ggplot2::theme_classic()
-            
-            info<-gridExtra::tableGrob(
-              data.frame(res=round(c(min=min(stats::na.omit(resolMat$resolution)),
-                                              mean=mean(stats::na.omit(resolMat$resolution)),
-                                              max=max(stats::na.omit(resolMat$resolution))
-                                            ))),
+            resolutionEstimated<-Reduce(c,set@resolution)
+            info <-gridExtra::tableGrob(t(data.frame(resolution=c(min=floor(min(resolutionEstimated)/1000)*1000,
+                                              mean=round(mean(resolutionEstimated)/1000)*1000,
+                                              max=ceiling(max(resolutionEstimated)/1000)*1000))),
               theme = gridExtra::ttheme_minimal(base_size = 12))
             
             return(list(plot=g,table=info))
@@ -165,7 +165,11 @@ is_outlier <- function(x) {
   return(x < stats::quantile(x, 0.25,na.rm=TRUE) - 1.5 *  stats::IQR(x,na.rm=TRUE) | x > stats::quantile(x, 0.75,na.rm = TRUE) + 1.5 * stats::IQR(x,na.rm=TRUE))
 }
 
-#plot the average peak shape of reference calibration masses for a ptrSet
+#' plot the average peak shape of reference calibration masses for a ptrSet
+#' @param set ptrSet object
+#' @param showAverage boolean 
+#' @return ggplot object
+#' @importFrom scales hue_pal 
 plotPeakShape<-function(set,showAverage=FALSE){
           mzRef<-set@parameter$mzCalibRef
           n.files<-length(set@mzCalibRef)
@@ -178,22 +182,20 @@ plotPeakShape<-function(set,showAverage=FALSE){
          
           for (n.file in seq_len(n.files) ){
               massRef <- set@mzCalibRef[[n.file]]
-              interval <- set@signalCalibRef[[n.file]]
+              #interval<- alignCalibrationPeak( set@signalCalibRef[[n.file]],massRef,length(set@TIC[[n.files]]))
+              interval<- set@signalCalibRef[[n.file]]
               names(interval)<-massRef
               n.mass<-length(interval)
               delta<- vapply(interval, 
                              function(x) width(tof = x$mz,peak = x$signal)$delta,
                              FUN.VALUE = 1.1)
               t_centre<-vapply(massRef,function(x) {
-                spectrum<-interval[[as.character(x)]]$signal
+                sp<-interval[[as.character(x)]]$signal
                 mz<-interval[[as.character(x)]]$mz
-                delta<-x/5000 
-                init<-list(m=x,d1=delta,d2=delta,h=max(spectrum))
-                fit<-suppressWarnings(minpack.lm::nls.lm(par=init, 
-                                                          fn =function(par,x,y) y- sech2(
-                                                              par$m,par$d1,par$d2,par$h,x),
-                                                          x= mz , y = spectrum))
-                center<-fit$par$m
+                localMax<-LocalMaximaSG(sp = sp,minPeakHeight = max(sp)*0.2)
+                interpol<- stats::spline( mz[(localMax-4):(localMax+4)], sp[(localMax-4):(localMax+4)], n=1000 )
+                sg<-signal::sgolayfilt(interpol$y,n=501,p=3) #n/2
+                center<-interpol$x[which.max(sg)]
                 return(center)
                 },FUN.VALUE = 1.1)
               
@@ -304,43 +306,48 @@ plotPeakShape<-function(set,showAverage=FALSE){
 
 plotPeakShapeTof<-function(set){
   mzRef<-set@parameter$mzCalibRef
+  
   n.files<-length(set@mzCalibRef)
   npoints<-50
   
   interval.ref <- seq(-3,3,length=npoints)# +- 3 * peak width(=1) 
   
   #loop over file
+  
   peak_ref<-array(NA,dim = c(length(mzRef),n.files,npoints))
   
   for (n.file in seq_len(n.files) ){
     massRef <- set@mzCalibRef[[n.file]]
-    interval <- set@signalCalibRef[[n.file]]
+    interval<- alignCalibrationPeak( set@signalCalibRef[[n.file]],massRef,length(set@TIC[[n.files]]))
     names(interval)<-massRef
     n.mass<-length(interval)
     coefs <-set@coefCalib[[n.file]]
-    delta <- vapply(interval, 
-                   function(x) width(tof = sqrt(x$mz)*coefs["a",]+coefs["b",],peak = x$signal)$delta,
+    # delta <- vapply(interval, 
+    #                function(x) width(tof = sqrt(x$mz)*coefs["a",]+coefs["b",],peak = x$signal)$delta,
+    #                FUN.VALUE = 1.1)
+    delta <- vapply(interval,
+                   function(x) width(tof = x$mz,peak = x$signal)$delta,
                    FUN.VALUE = 1.1)
     
+    
     t_centre<-vapply(massRef,function(x) {
-      spectrum<-interval[[as.character(x)]]$signal
+      sp<-interval[[as.character(x)]]$signal
       mz<-interval[[as.character(x)]]$mz
-      delta<- 5000 * log(sqrt(2)+1)*2/x 
-      init<-list(m=x,d1=delta,d2=delta,h=max(spectrum))
-      fit<-suppressWarnings(minpack.lm::nls.lm(par=init, 
-                                               fn =function(par,x,y) y- sech2(
-                                                 par$m,par$d1,par$d2,par$h,x),
-                                               x= mz , y = spectrum))
-      center<-fit$par$m
-      return(center)
+      localMax<-LocalMaximaSG(sp = sp,minPeakHeight = max(sp)*0.2)
+      interpol<- stats::spline( mz[(localMax-4):(localMax+4)], sp[(localMax-4):(localMax+4)], n=1000 )
+      sg<-signal::sgolayfilt(interpol$y,n=501,p=3)
+      tofMax<-interpol$x[which.max(sg)]
+      return(tofMax)
+      
     },FUN.VALUE = 1.1)
     
-    t_centre<-sqrt(t_centre)*coefs["a",]+coefs["b",]
+    #t_centre<-sqrt(t_centre)*coefs["a",]+coefs["b",]
     
     #normalization of intreval
     interval.n<-list()
     for (j in seq_len(n.mass)){
-      interval.n[[j]]<-(sqrt(interval[[j]]$mz)*coefs["a",]+coefs["b",]-t_centre[j])/delta[j]
+      #interval.n[[j]]<-(sqrt(interval[[j]]$mz)*coefs["a",]+coefs["b",]-t_centre[j])/delta[j]
+      interval.n[[j]]<-(interval[[j]]$mz-t_centre[j])/delta[j]
     }
     names(interval.n)<-massRef
     
@@ -380,6 +387,7 @@ plotPeakShapeTof<-function(set){
                        Mz=as.factor(rep(mzRef,each=4*npoints)),
                        intervalRef=rep(interval.ref2,length(mzRef)))
   peakData<-peakData[!is.na(peakData$signal),]
+  
   #plot
   p<-ggplot2::ggplot(data=peakData) + 
     ggplot2::geom_line(ggplot2::aes(x=intervalRef,y=signal,group=Mz,colour=Mz),size=1) +
@@ -451,7 +459,7 @@ plotPtrReaction<-function(pSet){
   
   Tdrift<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=date,y=TD),
                                          data=data.frame(date=as.Date(chron::as.dates(date)),TD=TD)) +
-    ggplot2::ggtitle("Drift temperature")+  ggplot2::ylab("°C") +
+    ggplot2::ggtitle("Drift temperature")+  ggplot2::ylab("degree") +
     ggplot2::theme_classic() + ggplot2::theme(title = ggplot2::element_text(size=9))
   
   Pdrift<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=date,y=PD),
@@ -475,7 +483,8 @@ plotPtrReaction<-function(pSet){
                                            axis.text.x = ggplot2::element_blank(),
                                            axis.title.x = ggplot2::element_blank()),
                     primaryIonPlot,ncol=1,heights = c(0.23,0.23,0.23,0.31),align = "v")
-  return(reaction)
+  
+  return(primaryIonPlot)
 }
 
 ### plotFiles----
@@ -493,7 +502,8 @@ plotPtrReaction<-function(pSet){
 #' @examples 
 #' library(ptairData)
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
+#' mzCalibRef= c(21.022, 59.049141))
 #' plotCalib(mycobacteria,fileNames=getFileNames(mycobacteria)[1])
 #'
 #' ##ptrRaw 
@@ -519,7 +529,11 @@ methods::setMethod(f="plotCalib",
            
             # get information for plot 
             massCalib<-set@mzCalibRef[fileNames]
-            spectrCalib<- set@signalCalibRef[fileNames]
+            # spectrCalib<-lapply(fileNames,function(x) alignCalibrationPeak(set@signalCalibRef[[x]],
+            #                                                                set@mzCalibRef[[x]],
+            #                                                                length(set@TIC[[x]])))
+            # names(spectrCalib)<-fileNames
+            spectrCalib<-set@signalCalibRef
             errorList<- set@errorCalibPpm[fileNames]
             
             # get the extension of the file
@@ -580,6 +594,7 @@ methods::setMethod(f="plotCalib",
 #' basename or fullname.
 #' @param colorBy character. A name of the ptrSet's sampleMetaData column, to display with
 #' the same color files of same attributes. 
+#' @param normalizePrimariIon should the TIC be normalized by the primary ion
 #' @param ... not used
 #' @rdname plotTIC
 #' @importFrom grDevices dev.off pdf
@@ -587,7 +602,8 @@ methods::setMethod(f="plotCalib",
 #' @examples 
 #' library(ptairData)
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022,59.049141))
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
+#' mzCalibRef= c(21.022,59.049141))
 #' plotTIC(mycobacteria,type="ggplot")
 methods::setMethod(f="plotTIC",
           signature = "ptrSet",
@@ -691,7 +707,7 @@ methods::setMethod(f="plotTIC",
                 } 
 
                 #set title and legend
-                p<-p + ggplot2::ggtitle(paste("TIC of",set@parameter$name)) 
+                p<-p + ggplot2::ggtitle(paste("TIC of",set@parameter$name)) + ggplot2::theme_classic()
                   
               switch (type,
                ggplot = return(p),
@@ -732,8 +748,8 @@ methods::setMethod(f="plotTIC",
 #' mzCalibRef= c(21.022, 59.049141))
 #' ptairMS::plotRaw(ptrSet,mzRange=59)
 #'
-#' patientRaw <- ptairMS::readRaw(system.file("extdata/exhaledAir/ind1/ind1-1.h5",  package = "ptairData"),
-#' mzCalibRef=c(21.022,59.049141,75.04406))
+#' patientRaw <- ptairMS::readRaw(system.file("extdata/exhaledAir/ind1/ind1-1.h5",  
+#' package = "ptairData"),  mzCalibRef=c(21.022,59.049,75.05))
 #' ptairMS::plotRaw(patientRaw, mzRange = 59)
 #' ptairMS::plotRaw(patientRaw, mzRange = 59, type = "plotly")
 #'
@@ -813,7 +829,7 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
     FirstcalibCoef <- rhdf5::h5read(file,"FullSpectra/MassCalibration",index=list(NULL,1))
     tof <- sqrt(mz)*FirstcalibCoef[1,1] + FirstcalibCoef[2,1]
     #tof<- seq(0,length(mz))
-    coefCalib<-set@coefCalib[[basename(file)]]
+    coefCalib<-set@coefCalib[[basename(file)]][[1]]
     mzVn <- ((tof-coefCalib['b',])/coefCalib['a',])^2
     mzVn<-mzVn[index]
     
@@ -977,7 +993,7 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
                  
                )
                `%>%`<-plotly::`%>%`
-               p<- p %>% layout(title=basename(file))
+               p<- p %>% plotly::layout(title=basename(file))
                
                return(p)
                
@@ -1081,7 +1097,7 @@ methods::setMethod(f="plotFeatures",
                 FirstcalibCoef <- rhdf5::h5read(file,"FullSpectra/MassCalibration",index=list(NULL,1))
                 tof <- sqrt(mzAxis.j)*FirstcalibCoef[1,1] + FirstcalibCoef[2,1]
                 
-                coefCalib<-set@coefCalib[[basename(file)]]
+                coefCalib<-set@coefCalib[[basename(file)]][[1]]
                 mzNew <- ((tof-coefCalib['b',])/coefCalib['a',])^2
                 
                 # get smaller windows
@@ -1184,7 +1200,8 @@ methods::setMethod(f="plotFeatures",
 #' @examples 
 #' library(ptairData)
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
+#' mzCalibRef= c(21.022, 59.049141))
 #' SMD<- resetSampleMetadata(mycobacteria)
 resetSampleMetadata<-function(ptrset){
   
@@ -1230,7 +1247,8 @@ resetSampleMetadata<-function(ptrset){
 #' @examples 
 #' library(ptairData)
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
+#' mzCalibRef= c(21.022, 59.049141))
 #' SMD<-getSampleMetadata(mycobacteria)
 getSampleMetadata<- function(set){
   
@@ -1248,7 +1266,8 @@ getSampleMetadata<- function(set){
 #' @examples 
 #' library(ptairData)
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
+#' mzCalibRef= c(21.022, 59.049141))
 #' SMD<-getSampleMetadata(mycobacteria)
 #' colnames(SMD)[1]<-"species"
 #' mycobacteria<-setSampleMetadata(mycobacteria,SMD)
@@ -1284,7 +1303,8 @@ setSampleMetadata<- function(set, sampleMetadata){
 #' @examples 
 #' library(ptairData)
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
+#' mzCalibRef= c(21.022, 59.049141))
 #' saveFile<-file.path(directory,"sampleMetadata.tsv")
 #' #exportSampleMetada(mycobacteria,saveFile)
 exportSampleMetada<-function(set, saveFile){
@@ -1310,7 +1330,8 @@ exportSampleMetada<-function(set, saveFile){
 #' @examples 
 #' library(ptairData)
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
+#' mzCalibRef= c(21.022, 59.049141))
 #' saveFile<-file.path(directory,"sampleMetadata.tsv")
 #' #exportSampleMetada(mycobacteria,saveFile)
 #' #mycobacteria<-importSampleMetadata(mycobacteria,saveFile)
@@ -1336,8 +1357,10 @@ importSampleMetadata<-function(set,file){
 #' @export
 methods::setMethod(f="timeLimits",
           signature = "ptrSet",
-          function(object,fracMaxTIC=0.5,fracMaxTICBg=0.2, derivThresholdExp=1,derivThresholdBg=0.05,
-                   minPoints = 2,degreeBaseline=1, baseline=TRUE ,plotDel=FALSE){
+          function(object,fracMaxTIC=0.5,fracMaxTICBg=0.2, 
+                   derivThresholdExp=1,derivThresholdBg=0.05,
+                   minPoints = 2,degreeBaseline=1, baseline=TRUE ,
+                   redefineKnots=TRUE,plotDel=FALSE){
             
             fileNames<-basename(object@parameter$listFile)
             for (file in fileNames){
@@ -1357,6 +1380,8 @@ methods::setMethod(f="timeLimits",
                            minPoints = minPoints)
             
             object@parameter$timeLimit<-paramterTimeLimit
+            
+            if(redefineKnots) object <- defineKnots(object, knotsPeriod = object@parameter$knotsPeriod)
             saveDir<-object@parameter$saveDir
             objName<-object@parameter$name
             if(!is.null(saveDir)){
@@ -1371,34 +1396,134 @@ methods::setMethod(f="timeLimits",
           }
 )
 
+
+## define knots-----
+
+#' Define the knots location
+#' 
+#' \code{defineKnots} function determine the knots location for a ptrSet or ptrRaw object.
+#' There is three possibilities :  
+#' \itemize{
+#' \item \code{method = expiration} in the expiration periods, a knots is placed every \code{knotsPeriod}
+#' seconds, and 1 knots in the middle of two expiration, one at begin and at the end
+#' \item \code{method= uniforme}, the knots are placed uniformly every \code{knotsPeriod} time points
+#' \item give in \code{knotsList} a list of knot, with all base name file in name of the list element. 
+#' All file must be informed. The knots location must be contained in the time axis
+#' }
+#' @param  object ptrSet object
+#' @param knotsPeriod the period in second (times scale) between two knots for the two dimensional modelization
+#' @param method expiration or uniform
+#' @param knotsList a list of knot location for each files, with all base name file in name of the list element
+#' @return a list with numeric vector of knots for each file
+#' @examples 
+#' library(ptairData)
+#' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
+#' mycobacteria <- createPtrSet(dir= directory, 
+#' setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#'
+#' #### placed knots every 2 times points
+#' mycobacteria <- defineKnots(mycobacteria,knotsPeriod=2,method="uniform")
+#' 
+#' #### placed knots every 3 times points in the expiration (default)
+#' mycobacteria <- defineKnots(mycobacteria,knotsPeriod=3,method="expiration")
+#' @rdname defineKnots
+#' @export
+methods::setMethod(f = "defineKnots",
+                   signature= "ptrSet",
+                   function(object, knotsPeriod=3, method=c("expiration","uniform")[1],
+         knotsList=NULL){
+                     
+                     if(knotsPeriod == 0){
+                       knots<-list(NULL)
+                     }else {
+                       if(!is.null(knotsList)){
+                         
+                         #check if all file are set
+                         if(any(!names(knotsList) %in% names(object@TIC))) 
+                           stop( names(knotsList)[!names(knotsList) %in% names(object@TIC)],
+                                 " missing")
+                         
+                         #check if interior knots are in the times axis
+                         test<-apply(names(knotsList),function(file){
+                           knots<- knotsList[[file]]
+                           t <- as.numeric(names(object@TIC[[file]]))
+                           return(knots[1] >= t[1] & utils::tail(knots,1) <= utils::tail(t,1))
+                         } )
+                         
+                         if(any(!test)) stop(paste("knots are not contained in the time axis for file ",names(knotsList)[which(!test)],"\n"))
+                         knots<-knotsList
+                       } else{
+                         knots<-lapply(names(object@TIC),function(file){
+                          background<-object@timeLimit[[file]]$backGround
+                          t<-as.numeric(names(object@TIC[[file]]))
+                          res<-try(defineKnotsFunc(t,background,knotsPeriod,method,file))
+                          if(!is.null(attr(res,"condition"))) res<-NULL
+                          res
+                         })
+                       }
+                       names(knots)<- names(object@TIC)
+                         
+                      
+                     }
+
+                     object@knots<-knots
+                     saveDir<-object@parameter$saveDir
+                     objName<-object@parameter$name
+                     object@parameter$knotsPeriod<-knotsPeriod
+                     
+                     if(!is.null(saveDir)){
+                       if(!is.null(objName)){
+                         changeName <- parse(text=paste0(objName,"<- object "))
+                         eval(changeName)
+                         eval(parse(text =  paste0( "save(" ,objName ,",file= paste0( saveDir,'/', '",objName,".RData '))")))
+                       } else save(object, file=paste0(saveDir,"/ptrSet.RData"))
+                     }
+                     
+                     return(object)
+                   } )
 ##calibration----
 #' @rdname calibration
 #' @export 
 methods::setMethod(f = "calibration",
           signature = "ptrSet", 
           function(x, mzCalibRef = c(21.022, 29.013424,41.03858,75.04406, 
-                                     203.943, 330.8495), tol=70){
+                                     203.943, 330.8495),
+                   calibrationPeriod=60,tol=70){
             
             fileNames<-x@parameter$listFile
             for (file in fileNames){
-              #mass axis and total ion average specturm 
-              spSum <- rhdf5::h5read(file,"/FullSpectra/SumSpectrum",bit64conversion='bit64')
-              spAvg <- spSum/length(x@TIC[[basename(file)]])
-              mz <- rhdf5::h5read(file,"/FullSpectra/MassAxis",bit64conversion='bit64')
+              # #mass axis and total ion average specturm 
+              # spSum <- rhdf5::h5read(file,"/FullSpectra/SumSpectrum",bit64conversion='bit64')
+              # spAvg <- spSum/length(x@TIC[[basename(file)]])
+              # mz <- rhdf5::h5read(file,"/FullSpectra/MassAxis",bit64conversion='bit64')
+              # 
+              # #convert mz to tof 
+              # FirstcalibCoef <- try(rhdf5::h5read(file,"FullSpectra/MassCalibration",index=list(NULL,1)))
+              # attributCalib <- try(rhdf5::h5readAttributes(file,"/FullSpectra"))
+              # if(!is.null(attr(FirstcalibCoef,"condition")) & is.null(attr(attributCalib,"condition"))){
+              #   FirstcalibCoef <-matrix(c(attributCalib$`MassCalibration a`,attributCalib$`MassCalibration b`),ncol=1)
+              # }
+              # 
+              # rownames(FirstcalibCoef)<-c("a","b")
+              # 
+              # #calibration 
+              # calib <- calibrationFun(spAvg,mz,mzCalibRef,FirstcalibCoef,tol)
               
-              #convert mz to tof 
-              FirstcalibCoef <- rhdf5::h5read(file,"FullSpectra/MassCalibration",index=list(NULL,1))
-              rownames(FirstcalibCoef)<-c("a","b")
+              # x@coefCalib[[basename(file)]]<-calib$coefs
+              # x@mzCalibRef[[ basename(file) ]] <- calib$mzCalibRef
+              # x@signalCalibRef[[ basename(file) ]] <- calib$calibSpectr
+              # x@errorCalibPpm[[ basename(file) ]] <- calib$error
+              # x@resolution[[ basename(file)]]<-estimateResol(calib$mzCalibRef,
+              #                                                calib$calibSpectr )
               
-              #calibration 
-              calib <- calibrationFun(spAvg,mz,mzCalibRef,FirstcalibCoef,tol)
-              
-              x@coefCalib[[basename(file)]]<-calib$coefs
-              x@mzCalibRef[[ basename(file) ]] <- calib$mzCalibRef
-              x@signalCalibRef[[ basename(file) ]] <- calib$calibSpectr
-              x@errorCalibPpm[[ basename(file) ]] <- calib$error
-              x@resolution[[ basename(file)]]<-estimateResol(calib$mzCalibRef,
-                                                             calib$calibSpectr )
+              raw<-readRaw(file,mzCalibRef =mzCalibRef,calibrationPeriod = calibrationPeriod )
+              x@coefCalib[[basename(file)]]<-raw@calibCoef
+              x@mzCalibRef[[ basename(file) ]] <- raw@calibMassRef
+              x@signalCalibRef[[ basename(file) ]] <- raw@calibSpectr
+              x@errorCalibPpm[[ basename(file) ]] <- raw@calibError
+              calibSpectr<-alignCalibrationPeak(raw@calibSpectr,raw@calibMassRef,length(raw@time))
+              resolutionEstimated <-estimateResol(calibMassRef =raw@calibMassRef ,calibSpectr = calibSpectr)
+              x@resolution[[ basename(file)]]<-resolutionEstimated
               }
             
             
@@ -1438,11 +1563,11 @@ getDirectory<-function(ptrSet) return(ptrSet@parameter$dir)
 #' @examples 
 #' library(ptairData)
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
+#' mzCalibRef= c(21.022, 59.049141))
 #' mycobacteria<-rmPeakList(mycobacteria)
 rmPeakList<-function(object){
-  object@peakListAligned <- list()
-  object@peakListRaw <-list()
+  object@peakList<-list()
   object@parameter$detectPeakParam <- NULL
   return(object)
 }
@@ -1458,12 +1583,12 @@ methods::setMethod("show","ptrSet",
           function(object){
             nFiles <- length(list.files(object@parameter$dir, recursive = TRUE, pattern="\\.h5$"))
             nFilesCheck <- length(object@parameter$listFile)
-            nFilesProcess <- length(object@peakListRaw)
+            nFilesProcess <- length(object@peakList)
         
             cat("ptrSet object :",object@parameter$name,"\n")
             cat("directory:",object@parameter$dir,"\n")
-            cat("   ", nFiles,"files contains in the directory \n")
-            cat("   ", nFilesCheck, "files check","\n")
+            cat("   ", nFiles,"files contained in the directory \n")
+            cat("   ", nFilesCheck, "files checked","\n")
             cat("   ", nFilesProcess, "files processed by detectPeak","\n")
             if(!is.null(object@parameter$saveDir)) cat("object save in ", object@parameter$saveDir)
           })
@@ -1484,7 +1609,7 @@ methods::setMethod("show","ptrSet",
 #' getPeakList(dirSet)$raw
 #' @export
 getPeakList<-function(set){
-            return(list(aligned=set@peakListAligned,raw=set@peakListRaw))}
+            return(set@peakList)}
 
 
 #' get the file names containing in the directory of a ptrSet

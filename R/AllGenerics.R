@@ -2,7 +2,18 @@
 #' @rdname detectPeak
 #' @export
 setGeneric("detectPeak",
-           function(x, ...){
+           function(x, 
+                    ppm=130, 
+                    minIntensity=10, 
+                    thIntensityRate = 0.01,
+                    mzNominal=NULL, 
+                    resolutionRange=NULL,
+                    fctFit=NULL,
+                    smoothPenalty=NULL,
+                    parallelize=FALSE,
+                    nbCores=2,
+                    saving=TRUE,
+                    saveDir=x@parameter$saveDir,...){
              standardGeneric("detectPeak")
            })
 
@@ -10,7 +21,8 @@ setGeneric("detectPeak",
 #' @rdname calibration
 #' @export
 setGeneric(name = "calibration", 
-           function(x,mzCalibRef = c(21.022, 29.013424,41.03858, 60.0525,203.943, 330.8495), tol=70) {
+           function(x,mzCalibRef = c(21.022, 29.013424,41.03858, 60.0525,203.943, 330.8495), 
+                    calibrationPeriod=60,tol=70) {
              standardGeneric("calibration")
              })
 
@@ -39,8 +51,20 @@ setGeneric("plotRaw",
 #' @export
 setGeneric("timeLimits",
            function(object,fracMaxTIC=0.5,fracMaxTICBg=0.2, derivThresholdExp=1,derivThresholdBg=0.05,
-                    mzBreathTracer=NULL, minPoints=2 ,degreeBaseline=1, baseline=TRUE,plotDel=FALSE ) {
+                    mzBreathTracer=NULL, minPoints=2 ,degreeBaseline=1, baseline=TRUE,
+                    redefineKnots=TRUE,plotDel=FALSE ) {
              standardGeneric("timeLimits")
+           })
+
+
+## defineKnots -----
+#' @param ... not used
+#' @rdname defineKnots
+#' @export
+setGeneric("defineKnots",
+           function(object, knotsPeriod=3, method=c("expiration","uniform","manual")[1],
+                    knotsList=NULL,...) {
+             standardGeneric("defineKnots")
            })
 
 ## PeakList ----
@@ -50,8 +74,9 @@ setGeneric("timeLimits",
 setGeneric("PeakList",
            function(raw,
                     mzNominal = unique(round(raw@mz)), 
-                    ppm = 130, resMinMeanMax=c(3000,5000,8000),
-                    minIntensity=5, fctFit=c("sech2","average")[1], maxIter=2, R2min,autocorNoiseMax = 0.3,
+                    ppm = 130, resolutionRange=c(3000,5000,8000),
+                    minIntensity=5, fctFit=c("sech2","averagePeak")[1], 
+                    peakShape=NULL,maxIter=1, R2min,autocorNoiseMax = 0.3,
                     plotFinal=FALSE, plotAll=FALSE, thNoiseRate=1.1, thIntensityRate = 0.01,
                     countFacFWHM=10, daSeparation=0.005, d=3, windowSize=0.4){
              standardGeneric("PeakList")})
@@ -160,11 +185,11 @@ setGeneric("annotateVOC",
                                "disease_name",
                                "disease_meshid")[c(1,2,5)]){ standardGeneric("annotateVOC") })
 
-##aligneSamples----
+##alignSamples----
 #' @rdname alignSamples
 #' @export
 setGeneric("alignSamples",function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL,
-                                   bgThreshold=2,pValGreaterThres= 2e-26,pValLessThres=0,fracExp=0.3,
+                                   pValGreaterThres= 0.005,pValLessThres=0,fracExp=0.3,
                                    dmzGroup = 0.001,...){standardGeneric("alignSamples")})
 
 ##writte----

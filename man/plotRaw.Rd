@@ -86,8 +86,8 @@ ptrSet <- createPtrSet(dir= directory, setName="testDir",
 mzCalibRef= c(21.022, 59.049141))
 ptairMS::plotRaw(ptrSet,mzRange=59)
 
-patientRaw <- ptairMS::readRaw(system.file("extdata/exhaledAir/ind1/ind1-1.h5",  package = "ptairData"),
-mzCalibRef=c(21.022,59.049141,75.04406))
+patientRaw <- ptairMS::readRaw(system.file("extdata/exhaledAir/ind1/ind1-1.h5",  
+package = "ptairData"),  mzCalibRef=c(21.022,59.049,75.05))
 ptairMS::plotRaw(patientRaw, mzRange = 59)
 ptairMS::plotRaw(patientRaw, mzRange = 59, type = "plotly")
 

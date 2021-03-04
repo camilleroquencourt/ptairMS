@@ -11,8 +11,7 @@ alignSamples(
   ppmGroup = 70,
   fracGroup = 0.8,
   group = NULL,
-  bgThreshold = 2,
-  pValGreaterThres = 2e-26,
+  pValGreaterThres = 0.005,
   pValLessThres = 0,
   fracExp = 0.3,
   dmzGroup = 0.001,
@@ -24,8 +23,7 @@ alignSamples(
   ppmGroup = 70,
   fracGroup = 0.8,
   group = NULL,
-  bgThreshold = 2,
-  pValGreaterThres = 2e-26,
+  pValGreaterThres = 0.001,
   pValLessThres = 0,
   fracExp = 0.3,
   dmzGroup = 0.001,
@@ -39,11 +37,10 @@ alignSamples(
   ppmGroup = 70,
   fracGroup = 0.8,
   group = NULL,
-  bgThreshold = 2,
-  pValGreaterThres = 2e-26,
+  pValGreaterThres = 0.005,
   pValLessThres = 0,
   fracExp = 0.3,
-  dmzGroup = 0.001,
+  dmzGroup = 0.005,
   quantiUnit = c("ppb", "ncps", "cps")[1],
   bgCorrected = TRUE,
   sampleMetadata
@@ -60,10 +57,6 @@ percent of at least one \code{group}, if 0 the filter is not applied}
 \item{group}{character. A sampleMetadata data colnames. If is \code{NULL},variables not presents
 in \code{fracGroup} percent of samples will be deleted. Else, variables not presents
 in \code{fracGroup} percent in each group will be deleted.}
-
-\item{bgThreshold}{if the background quantity is analyzed, only variables where
-quantity > bgThreshold x background or quantity < bgThreshold x background for all
-samples are keeped.}
 
 \item{pValGreaterThres}{threshold of the he p-value of the unilateral t-test, who test that 
 quantidication (in cps) of expiration points are greater than the intenisty of the background.}

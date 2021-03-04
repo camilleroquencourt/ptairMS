@@ -20,7 +20,8 @@ set sampleMetadata in a ptrSet
 \examples{
 library(ptairData)
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
+mzCalibRef= c(21.022, 59.049141))
 SMD<-getSampleMetadata(mycobacteria)
 colnames(SMD)[1]<-"species"
 mycobacteria<-setSampleMetadata(mycobacteria,SMD)

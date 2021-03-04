@@ -1,15 +1,17 @@
 #' Read a h5 file of PTR-TOF-MS data
 #'
-#' \code{readRaw} reads a h5 file with rhdf5 library, and calibrates the mass axis with \code{\link[ptairMS]{calibration}} function.
-#' It returns a \code{\link[ptairMS]{ptrRaw-class}} S4 object that contains raw data.
+#' \code{readRaw} reads a h5 file with rhdf5 library, and calibrates the mass axis 
+#' with \code{mzCalibRef} masses each \code{calibrationPeriod} seconds.
+#' It returns a \code{\link[ptairMS]{ptrRaw-class}} S4 object, that contains raw data.
 #' 
-#' @param filePath h5 file path full name.
-#' @param calibTIS boolean. If true, the function \code{calibration} is apply on the Total Ion Spectrum
-#' with the \code{mzCalibRef} reference masses. 
-#' @param mzCalibRef calibration parameter. Vector of exact theoritical mass values of a intensive peak of moleculs
-#'  and 'unique' in a nominal mass interval
+#' @param filePath h5 absolute file path full name.
+#' @param calib boolean. If true, an external calibration is performed on the \code{calibrationPeriod} sum spectrum 
+#' with mzCalibRef reference masses. 
+#' @param mzCalibRef calibration parameter. Vector of exact theoretical masses values of an intensive peak without overlapping.
+#' @param calibrationPeriod in second, coefficient calibration are estimated for each sum spectrum of 
+#' \code{calibrationPeriod} seconds
 #' @param tolCalibPpm calibration parameter. The maximum error tolerated in ppm. A warning appears for 
-#' error graeter than \code{tolCalibPpm}.
+#' error greater than \code{tolCalibPpm}.
 #' @param maxTimePoint number maximal of time point to read
 #' @return a ptrRaw object, including slot \itemize{
 #' \item rawM the data raw matrix, in count of ions  
@@ -19,11 +21,12 @@
 #' @examples
 #' library(ptairData)
 #' filePathRaw <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
-#' raw <- readRaw(filePathRaw,mzCalibRef=c(21.022, 41.03858, 60.0525))
+#' raw <- readRaw(filePathRaw,mzCalibRef=c(21.022, 60.0525))
 #' @import bit64
 #' @export
-readRaw <- function(filePath, calibTIS=TRUE, 
+readRaw <- function(filePath, calib=TRUE, 
                     mzCalibRef = c(21.022, 29.013424,41.03858, 60.0525,203.943, 330.8495),
+                    calibrationPeriod=60,
                     tolCalibPpm=70,maxTimePoint=900){
 
   if(is.null(filePath) | filePath=="") stop("filePath is empty")
@@ -58,6 +61,10 @@ readRaw <- function(filePath, calibTIS=TRUE,
   calibCoef <- try(rhdf5::h5read(filePath,"FullSpectra/MassCalibration",index=list(NULL,1)))
   
   attributCalib <- try(rhdf5::h5readAttributes(filePath,"/FullSpectra"))
+  if(!is.null(attr(calibCoef,"condition")) & is.null(attr(attributCalib,"condition"))){
+    calibCoef <-matrix(c(attributCalib$`MassCalibration a`,attributCalib$`MassCalibration b`),ncol=1)
+  }
+  
   #singleIon<-attributCalib$`Single Ion Signal`
   #sampleInterval<-attributCalib$SampleInterval
   
@@ -90,35 +97,38 @@ readRaw <- function(filePath, calibTIS=TRUE,
     calibMassRef = c(attributCalib$`MassCalibration m1`, attributCalib$`MassCalibration m2`)
     if(is.null(calibMassRef)) calibMassRef <- 0 } else { 
       calibCoef <- matrix(0)
-      calib_formula <- function(x) NULL
-      calib_invFormula <- function(x) NULL
+      calib_formula <- function(tof,calibCoef) NULL
+      calib_invFormula <- function(m,calibCoef) NULL
       calibMassRef <- 0
-  }
+    }
+  
+  
   
   # write ptrRaw objet
-  raw <- methods::new(Class = "ptrRaw", name= basename(filePath),rawM= rawMn, mz=mzVn, time=timVn,calibCoef=calibCoef,
+  raw <- methods::new(Class = "ptrRaw", name= basename(filePath),rawM= rawMn, mz=mzVn, time=timVn,calibCoef= list(calibCoef),
             calibMzToTof = calib_invFormula, calibToftoMz = calib_formula, calibError=0,
-            calibMassRef= calibMassRef, calibSpectr= list(NULL),
+            calibMassRef= calibMassRef, calibSpectr= list(NULL), peakShape= list(NULL),
             ptrTransmisison = transmission, prtReaction= reaction,date = date_heure)
   
-  if(calibTIS){
-    raw <- calibration(raw, mzCalibRef , tol= tolCalibPpm)
+  if(calib){
+    raw <- calibration(raw, mzCalibRef ,calibrationPeriod = calibrationPeriod, tol= tolCalibPpm)
   }
   
   return(raw)
 }
 
-#' Create a ptrSet object form a directoy
+#' Create a ptrSet object form a directory
 #'
 #' This function creates a \code{\link[ptairMS]{ptrSet-class}} S4 object. It opens each file and: 
 #' \itemize{
-#' \item performs a calibration with \code{\link[ptairMS]{calibration}} function
-#' \item quantify the primary ion (H30+) with the isotope H3180+ mz 21.022 on the average total ion spectrum. 
-#' \item if \code{fracMaxTIC} is different to zero, calculates boundaries on the 
-#' Total Ion Spectrum (TIC) part of the spectrum where 
-#' the TIC intensity is higher than \code{fracMaxTIC * max(TIC)} to identify expirations or headspace analyze
-#' \item provides a default sampleMetadata based on the tree structure of the directory 
-#' (a \code{data.frame} with file names in rowname, and subfolder in column) 
+#' \item performs an external calibration with \code{mzCalibRef} masses every \code{calibrationPeriod}
+#' \item quantifies the primary ion (H3O+ isotope by default)  on the average total ion spectrum. 
+#' \item calculates expirations on the \code{mzBreathTracer} trace. The part of the trace where 
+#' the intensity is higher than \code{fracMaxTIC * max(trace)} is considered as expiration. 
+#' If \code{fracMaxTIC} is different to zero, this step is skipped
+#' \item defines the set of knots for the peak analysis (see \code{\link[ptairMS]{detectPeak}})
+#' \item provides a default sampleMetadata based on the tree structure of the directory and the acquisition date
+#' (a \code{data.frame} with file names in row names) 
 #' \item If \code{saveDir} is not null, the returned object will be saved in \code{.Rdata} in \code{saveDir} with 
 #' \code{setName} as name}
 #'
@@ -126,12 +136,16 @@ readRaw <- function(filePath, calibTIS=TRUE,
 #' @param setName character. The name of the ptrSet object. If `saveDir` is not null, the object will be saved with this name.
 #' @param mzCalibRef Vector of accurate mass values of intensive peaks and 'unique' in a 
 #' nominal mass interval (without overlapping peaks) to performs calibration. See \code{ ?calibration}.
+#' @param calibrationPeriod in second, coefficient calibration are estimated for each sum spectrum of 
+#' \code{calibrationPeriod} seconds
 #' @param fracMaxTIC Percentage (between 0 and 1) of the maximum of the Total Ion Chromatogram (TIC) 
 #' amplitude with baseline removal. We will analyze only the part of the spectrum where 
 #' the TIC intensity is higher than `fracMaxTIC * max(TIC) `. If you want to analyze the entire spectrum, 
 #' set this parameter to 0. 
 #' @param mzBreathTracer NULL or an integer. Correspond to a nominal masses of Extract Ion Chromatogram 
 #' (EIC) for which limits will be computed. If NULL, the limits are calculated on the Total Ion Chromatogram (TIC).
+#' @param knotsPeriod the period in second (times scale) between two knots for the two dimensional modelization
+#' @param mzPrimaryIon the exact mass of the primary ion isotope
 #' @param saveDir The directory where the ptrSet object will be saved in .RData. If NULL, nothing will be saved.
 #' @return a ptrSet objet with slot :
 #' \itemize{
@@ -158,11 +172,15 @@ readRaw <- function(filePath, calibTIS=TRUE,
 #' @examples
 #' library(ptairData)
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' ptrSet<-createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049),
+#' ptrSet<-createPtrSet(dir=directory,setName="ptrSet",mzCalibRef=c(21.022,59.049),
 #' fracMaxTIC=0.9,saveDir= NULL)
 createPtrSet<-function(dir, setName,
                        mzCalibRef= c(21.022, 29.013424,41.03858, 60.0525,203.943, 330.8495),
-                       fracMaxTIC=0.5,mzBreathTracer=NULL,
+                       calibrationPeriod = 60,
+                       fracMaxTIC=0.8,
+                       mzBreathTracer=NULL,
+                       knotsPeriod=3,
+                       mzPrimaryIon=21.022,
                        saveDir=NULL){
   
   # test on parameter
@@ -184,7 +202,8 @@ createPtrSet<-function(dir, setName,
   
   # save parameters
   parameter <- list(dir = dir, listFile= filesFullName, name = setName, mzCalibRef = mzCalibRef,  
-                    timeLimit= list(fracMaxTIC = fracMaxTIC), mzBreathTracer=mzBreathTracer,saveDir = saveDir)
+                    timeLimit= list(fracMaxTIC = fracMaxTIC), mzBreathTracer=mzBreathTracer,
+                    knotsPeriod=knotsPeriod ,saveDir = saveDir)
   
   # create sampleMetadata 
   # test if there is subfolder
@@ -205,7 +224,9 @@ createPtrSet<-function(dir, setName,
   }
   
   # checkSet
-  check <- checkSet(filesFullName, mzCalibRef, fracMaxTIC,mzBreathTracer) 
+  check <- checkSet(filesFullName, mzCalibRef, 
+                    fracMaxTIC,mzBreathTracer,
+                    calibrationPeriod,knotsPeriod,mzPrimaryIon) 
   
   if(length(check$failed) > 0) {
     parameter$listFile <- parameter$listFile[ - which(
@@ -217,11 +238,11 @@ createPtrSet<-function(dir, setName,
   sampleMetadata$date<- Reduce(c,check$date)
   # create ptrSet object
   ptrSet <- methods::new(Class = "ptrSet", parameter = parameter, sampleMetadata = sampleMetadata,
-              mzCalibRef= check$mzCalibRefList, timeLimit = check$timeLimit, signalCalibRef = check$signalCalibRef, 
-              errorCalibPpm= check$errorCalibPpm, coefCalib= check$coefCalibList, primaryIon=check$primaryIon,
+              mzCalibRef= check$mzCalibRefList, timeLimit = check$timeLimit,knots=check$knots, signalCalibRef = check$signalCalibRef, 
+              errorCalibPpm= check$errorCalibPpm, coefCalib= check$coefCalibList,indexTimeCalib=check$indexTimeCalib, primaryIon=check$primaryIon,
               resolution = check$resolution, prtReaction= check$prtReaction,ptrTransmisison=check$ptrTransmisison,
-              TIC = check$TIC, breathTracer=check$breathTracer,peakListRaw = check$peakListRaw, 
-              peakListAligned = check$peakListAligned,date=check$date)
+              TIC = check$TIC, breathTracer=check$breathTracer,fctFit= check$fctFit,peakShape=check$peakShape,
+              peakList= check$peakList,date=check$date)
   
   #save in Rdata with the name choosen 
   if(!is.null(saveDir)){
@@ -245,7 +266,8 @@ createPtrSet<-function(dir, setName,
 #' @examples
 #' library(ptairData)
 #' directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+#' mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
+#' mzCalibRef= c(21.022, 59.049141))
 #' ##add or delete files in the directory 
 #' mycobacteria<- updatePtrSet(mycobacteria)
 updatePtrSet<-function(ptrset){
@@ -351,16 +373,8 @@ updatePtrSet<-function(ptrset){
   return(ptrset)
 }
 
-#' check all files in a directory
-#' 
-#' main function of createPtrSet: opens each files, performs calibration, calculates TIC boundaries and
-#' quantify primary ion . 
-#' @param files list of full names files to chexk
-#' @param mzCalibRef Vector of accurate mass values of intensive peaks and 'unique' in a 
-#' nominal mass interval (without overlapping)
-#' @param fracMaxTIC timeLimits argument
-#' @return list containing in ptrSet object slot
-checkSet <- function(files, mzCalibRef , fracMaxTIC, mzBreathTracer){
+checkSet <- function(files, mzCalibRef, fracMaxTIC, mzBreathTracer,calibrationPeriod,
+                     knotsPeriod,mzPrimaryIon){
   
   # init output list
   mzCalibRefList <- list()
@@ -368,12 +382,15 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC, mzBreathTracer){
   TIC <- list()
   breathTracer<-list()
   timeLimit <- list()
+  knots<-list()
   resolution <- list()
   errorCalibPpm<-list()
-  peakListRaw <- list()
-  peakListAligned<-list()
+  peakList <- list()
   coefCalibList<-list()
+  indexTimeCalib<-list()
   primaryIon<-list()
+  fctFit<-list()
+  peakShape<-list()
   transmisison<-list()
   reaction<-list()
   date<-list()
@@ -384,7 +401,7 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC, mzBreathTracer){
   for (j in seq_along(files)){
    
     # check reading and calibration of file
-    raw <- try(readRaw(files[j], mzCalibRef = mzCalibRef) ) ## files en full name
+    raw <- try(readRaw(files[j], mzCalibRef = mzCalibRef,calibrationPeriod=calibrationPeriod) ) ## files en full name
     if(attr(raw,"class")== "try-error" ){
       message( paste(fileName[j]," opening or calibration failed"))
       failed<-c(failed,fileName[j])
@@ -393,16 +410,23 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC, mzBreathTracer){
     
     # calibration infomration
     mzCalibRefList[[ fileName[j] ]] <- raw@calibMassRef
-    signalCalibRef[[ fileName[j] ]] <- raw@calibSpectr
+    #signalCalibRef[[ fileName[j] ]] <- raw@calibSpectr
     errorCalibPpm[[ fileName[j] ]] <- raw@calibError
     coefCalibList[[ fileName[j] ]] <-raw@calibCoef
-    resolution[[ fileName[j] ]] <- estimateResol(raw@calibMassRef,raw@calibSpectr)
+    indexTimeCalib[[ fileName[j] ]] <- raw@indexTimeCalib
+    
+    # estimate the resolution
+    calibSpectr<-alignCalibrationPeak(raw@calibSpectr,raw@calibMassRef,length(raw@time))
+    signalCalibRef[[ fileName[j] ]] <- calibSpectr
+    resolutionEstimated <-estimateResol(calibMassRef =raw@calibMassRef ,calibSpectr = calibSpectr)
+    resolution[[ fileName[j] ]] <- resolutionEstimated
     reaction[[ fileName[j] ]] <- raw@prtReaction
     transmisison[[ fileName[j]  ]]<- raw@ptrTransmisison
     date[[ fileName[j]  ]] <- raw@date
-    
-    #primary ion quantification
-    
+    resolutionRange<-c(min(resolutionEstimated)*0.8,
+                       mean(resolutionEstimated),
+                       max(resolutionEstimated)*1.2 )
+  
     #time unit 
     #BlockPeriodNS <- try(rhdf5::h5readAttributes(files[j],"/TimingData"))$BlockPeriod #nano seconde
     
@@ -418,28 +442,53 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC, mzBreathTracer){
       breathTracer[[fileName[j]]] <- colSums(raw@rawM[unlist(index),]) 
     }
     # timeLimit
+    
     indLim <- timeLimits(raw, fracMaxTIC = fracMaxTIC,mzBreathTracer = mzBreathTracer)
     timeLimit[[ fileName[j] ]] <- indLim
+    t<-raw@time
+
+    # default knots location every 3 second on expiration
+    if(knotsPeriod == 0){
+      knots<-list(NULL)
+    }else{
+        background<-indLim$backGround
+        knots[[fileName[j]]] <- try(defineKnotsFunc(t,background,knotsPeriod,method="expiration",fileName[j]))
+    }
     
+    l.shape <- determinePeakShape(raw)$peakShapemz
+    peakShape[[fileName[j]]]<-l.shape
+    
+    #check best fit 
+    sech2<-mean(PeakList(raw,mzNominal = raw@calibMassRef,fctFit = "sech2",maxIter = 1,
+                    ppm = 500,thIntensityRate = 0.2,windowSize = 0.2,
+                    resolutionRange = resolutionRange,peakShape=l.shape)$peak$R2)
+    averagePeak<-mean(PeakList(raw,mzNominal = raw@calibMassRef,fctFit = "averagePeak",resolutionRange = resolutionRange,
+                      maxIter = 1,peakShape=l.shape,
+                      ppm = 500,thIntensityRate = 0.2,windowSize = 0.2)$peak$R2)
+    asymGauss<-mean(PeakList(raw,mzNominal = raw@calibMassRef,fctFit = "asymGauss",resolutionRange = resolutionRange,
+                        maxIter = 1,peakShape=l.shape,
+                        ppm = 500,thIntensityRate = 0.2,windowSize = 0.2)$peak$R2)
+    
+    fctFit[[ fileName[j]]]<-c("sech2","averagePeak","asymGauss")[which.max(c(sech2,averagePeak,asymGauss))]
+   
     # check if mass 21 contains in mass axis
     if( ! 21 %in% unique(round(raw@mz)) ) {
       warning("mass 21 not in mass Axis,the ppb quantification can not be done.")
       primaryIonV <- NA
     } else{
-      # p<-detectPeak(raw,mz=c(21,38),timeLimit=patientCovid@timeLimit[[1]],ppm=500,ppmGroupBkg=100,
-      #               processFun= ptairMS:::processFileAvgExp,primaryIon=F)
-      #primaryIon[[ fileName[j] ]] <- p$aligned
-
-      p <- ptairMS::PeakList(raw,mz=c(21), ppm = 700,thIntensityRate = 0.5,minIntensity = 0,
-                             maxIter = 1,thNoiseRate = 0)
-      primaryIndex<-which(abs(p$peak-21.022)*10^6/21 < 200)
+      p <- PeakList(raw,mzNominal=round(mzPrimaryIon), ppm = 700,thIntensityRate = 0.5,minIntensity = 0,
+                             maxIter = 1,thNoiseRate = 0,
+                    fctFit = fctFit[[ fileName[j]]],peakShape=l.shape,windowSize = 0.2)
+      
+      primaryIndex<-which(abs(p$peak-mzPrimaryIon)*10^6/21 < 200)
       if(primaryIndex) primaryIonV <- p$peak$quanti_cps[primaryIndex] else primaryIonV <- NA
           }
     if( ! 38 %in% unique(round(raw@mz)) ) {
       waterCluster <- NA
     } else{
-      p <- ptairMS::PeakList(raw,mz=c(38), ppm = 700,thIntensityRate = 0.5,minIntensity = 0,
-                             maxIter = 1,thNoiseRate = 0)
+      p <- PeakList(raw,mzNominal=c(38), ppm = 700,thIntensityRate = 0.5,minIntensity = 0,
+                             maxIter = 1,thNoiseRate = 0,fctFit = fctFit,peakShape=l.shape,
+                    windowSize = 0.2)
       clusterIndex<-which(abs(p$peak-38.03)*10^6/21 < 200)
       if(length(clusterIndex)!=0) waterCluster<-p$peak$quanti_cps[clusterIndex] else waterCluster <- NA
     }
@@ -453,10 +502,13 @@ checkSet <- function(files, mzCalibRef , fracMaxTIC, mzBreathTracer){
               TIC=TIC ,
               breathTracer=breathTracer,
               timeLimit=timeLimit,
+              knots=knots,
+              indexTimeCalib=indexTimeCalib,
               resolution=resolution,
               errorCalibPpm=errorCalibPpm,
-              peakListRaw=peakListRaw ,
-              peakListAligned=peakListAligned,
+              fctFit=fctFit,
+              peakShape=peakShape,
+              peakList=peakList ,
               coefCalibList=coefCalibList,
               primaryIon=primaryIon, 
               prtReaction= reaction,

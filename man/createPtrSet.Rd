@@ -2,14 +2,17 @@
 % Please edit documentation in R/read_data.R
 \name{createPtrSet}
 \alias{createPtrSet}
-\title{Create a ptrSet object form a directoy}
+\title{Create a ptrSet object form a directory}
 \usage{
 createPtrSet(
   dir,
   setName,
   mzCalibRef = c(21.022, 29.013424, 41.03858, 60.0525, 203.943, 330.8495),
-  fracMaxTIC = 0.5,
+  calibrationPeriod = 60,
+  fracMaxTIC = 0.8,
   mzBreathTracer = NULL,
+  knotsPeriod = 3,
+  mzPrimaryIon = 21.022,
   saveDir = NULL
 )
 }
@@ -21,6 +24,9 @@ createPtrSet(
 \item{mzCalibRef}{Vector of accurate mass values of intensive peaks and 'unique' in a 
 nominal mass interval (without overlapping peaks) to performs calibration. See \code{ ?calibration}.}
 
+\item{calibrationPeriod}{in second, coefficient calibration are estimated for each sum spectrum of 
+\code{calibrationPeriod} seconds}
+
 \item{fracMaxTIC}{Percentage (between 0 and 1) of the maximum of the Total Ion Chromatogram (TIC) 
 amplitude with baseline removal. We will analyze only the part of the spectrum where 
 the TIC intensity is higher than `fracMaxTIC * max(TIC) `. If you want to analyze the entire spectrum, 
@@ -28,6 +34,10 @@ set this parameter to 0.}
 
 \item{mzBreathTracer}{NULL or an integer. Correspond to a nominal masses of Extract Ion Chromatogram 
 (EIC) for which limits will be computed. If NULL, the limits are calculated on the Total Ion Chromatogram (TIC).}
+
+\item{knotsPeriod}{the period in second (times scale) between two knots for the two dimensional modelization}
+
+\item{mzPrimaryIon}{the exact mass of the primary ion isotope}
 
 \item{saveDir}{The directory where the ptrSet object will be saved in .RData. If NULL, nothing will be saved.}
 }
@@ -56,19 +66,20 @@ for each file (see \code{?ptairMS::calibration} for more details.
 \description{
 This function creates a \code{\link[ptairMS]{ptrSet-class}} S4 object. It opens each file and: 
 \itemize{
-\item performs a calibration with \code{\link[ptairMS]{calibration}} function
-\item quantify the primary ion (H30+) with the isotope H3180+ mz 21.022 on the average total ion spectrum. 
-\item if \code{fracMaxTIC} is different to zero, calculates boundaries on the 
-Total Ion Spectrum (TIC) part of the spectrum where 
-the TIC intensity is higher than \code{fracMaxTIC * max(TIC)} to identify expirations or headspace analyze
-\item provides a default sampleMetadata based on the tree structure of the directory 
-(a \code{data.frame} with file names in rowname, and subfolder in column) 
+\item performs an external calibration with \code{mzCalibRef} masses every \code{calibrationPeriod}
+\item quantifies the primary ion (H3O+ isotope by default)  on the average total ion spectrum. 
+\item calculates expirations on the \code{mzBreathTracer} trace. The part of the trace where 
+the intensity is higher than \code{fracMaxTIC * max(trace)} is considered as expiration. 
+If \code{fracMaxTIC} is different to zero, this step is skipped
+\item defines the set of knots for the peak analysis (see \code{\link[ptairMS]{detectPeak}})
+\item provides a default sampleMetadata based on the tree structure of the directory and the acquisition date
+(a \code{data.frame} with file names in row names) 
 \item If \code{saveDir} is not null, the returned object will be saved in \code{.Rdata} in \code{saveDir} with 
 \code{setName} as name}
 }
 \examples{
 library(ptairData)
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-ptrSet<-createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049),
+ptrSet<-createPtrSet(dir=directory,setName="ptrSet",mzCalibRef=c(21.022,59.049),
 fracMaxTIC=0.9,saveDir= NULL)
 }

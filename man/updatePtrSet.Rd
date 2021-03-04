@@ -21,7 +21,8 @@ object with the same parameter used for the function \code{createPtrSet} who has
 \examples{
 library(ptairData)
 directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",mzCalibRef= c(21.022, 59.049141))
+mycobacteria <- createPtrSet(dir= directory, setName="mycobacteria",
+mzCalibRef= c(21.022, 59.049141))
 ##add or delete files in the directory 
 mycobacteria<- updatePtrSet(mycobacteria)
 }

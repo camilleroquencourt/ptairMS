@@ -10,6 +10,8 @@
 #' @param x a prtRaw or ptrSet object
 #' @param mzCalibRef Vector of accurate mass values of intensive peaks and 'unique' in a 
 #' nominal mass interval (without overlapping)
+#' @param calibrationPeriod in second, coreficient calibration are estimated for each sum spectrum of 
+#' \code{calibrationPeriod} seconds
 #' @param tol the maximum error tolerated in ppm. If more than \code{tol} warnings. 
 #' @return the same ptrRaw or ptrSet as in input, with the following modified element:
 #' \itemize{
@@ -22,32 +24,88 @@
 #' @examples 
 #' library(ptairData)
 #' filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
-#' raw <- readRaw(filePath, calibTIS = FALSE)
+#' raw <- readRaw(filePath, calib = FALSE)
 #' rawCalibrated <- calibration(raw)
 #' @rdname calibration
 #' @export 
 methods::setMethod(f = "calibration",
           signature = "ptrRaw", 
           function(x, mzCalibRef = c(21.022, 29.013424,41.03858,59.049141,75.04406, 
-                                              203.943, 330.8495), tol=70){
-            
+                                              203.943, 330.8495), calibrationPeriod=60, tol=70){
+      
             object <- x
             
+           
             # get mz axis and average spectrum
             mz <- object@mz
             time<-c(object@time)
             sp <- rowSums(object@rawM)/(dim(object@rawM)[2]*(time[3]-time[2]))
+  
+            width.window<-0.4
+            
+            #check if mzCalibRef are in mz
+            outMz <- which(vapply(mzCalibRef,
+                                  function(x) !any( round(x) -width.window < mz &
+                                                      mz < round(x) + width.window),
+                                  FUN.VALUE = TRUE ))
+            if(length(outMz)!=0) {
+              message(paste( paste(mzCalibRef[outMz],collapse = " "),
+                             "excluded, not contains in the mass axis \n"))
+              mzCalibRef <- mzCalibRef[-outMz]
+            }
+            
+            # test if there is a only one peak on the TIS
+            nLocalMax <-vapply(mzCalibRef, function(x) {
+              spx<-sp[x-0.4 <mz  & mz< x +0.4 ]
+              length( LocalMaximaSG( sp = spx,
+                                     minPeakHeight = 0.1*max(spx)) )
 
-            #performs calibration
-            calib<-calibrationFun(sp,mz,mzCalibRef,calibCoef = object@calibCoef,tol)
-           
-            # update object object
-            object@mz <- calib$mzVnbis
-            rownames(object@rawM) <- calib$mzVnbis
-            object@calibMassRef <- calib$mzCalibRef
-            object@calibSpectr <- calib$calibSpectr
-            object@calibError <- calib$error
-            object@calibCoef <- calib$coefs
+            }, FUN.VALUE = 0 )
+
+
+            badMass <- which(nLocalMax !=1 )
+            if(length(badMass)!=0){
+              mzCalibRef <- mzCalibRef[-badMass]
+            }
+            object@calibMassRef <- mzCalibRef
+            
+            
+            # determine average peak shape on calibration masses
+            peakShape<-determinePeakShape(object)$peakShapetof
+            object@peakShape<- peakShape
+            
+            # performs calibration every steps second
+            calib_List<-list(NULL)
+            
+            indexTime<-round(diff(time)[1],3)
+            nbIndex<- round(calibrationPeriod/indexTime)
+            
+              for (i in seq(0,(floor(length(time)/nbIndex)-1))) {
+                if(i >= 0){
+                  index <- seq(from=i*nbIndex+1,
+                               to=min((i*nbIndex+nbIndex),length(object@time)))
+                  
+                  if(i == (floor(length(time)/nbIndex)-1) & utils::tail(index,1) < length(time)) index<-c(index,seq(utils::tail(index,1)+1,length(object@time)))
+                  sp.i <- rowSums(object@rawM[,index])
+                  calib_List[[i+1]]<- c(calibrationFun(sp.i,mz,mzCalibRef,calibCoef = object@calibCoef[[1]],
+                                                       peakShape,tol),list(index=index))
+                }
+               
+              }
+            
+            
+            #use the mz axis of the first calibration
+            mzVnbis<-calib_List[[1]]$mzVnbis
+            object@mz <- mzVnbis
+            rownames(object@rawM) <- mzVnbis
+            
+            # update object 
+            matrixEror<- Reduce(rbind,lapply(calib_List,function(x) x$error)) 
+            if(length(calib_List)>1) matrixEror <- apply(matrixEror,2,mean)
+            object@indexTimeCalib<- lapply(calib_List,function(x) x$index)
+            object@calibSpectr <- lapply(calib_List,function(x) x$calibSpectr)
+            object@calibError <-matrixEror
+            object@calibCoef <- lapply(calib_List,function(x) x$coefs)
 
             return(object)
           } )
@@ -60,68 +118,65 @@ methods::setMethod(f = "calibration",
 #' @param mz mass axis 
 #' @param mzCalibRef masses of know reference peaks
 #' @param calibCoef coeficient of the previous calibration
+#' @param peakShape a list with reference axis and a reference peak shape centered in zero
 #' @param tol maximum error tolarated in ppm
 #' @return list 
-calibrationFun<-function(sp,mz,mzCalibRef,calibCoef,tol){
+calibrationFun<-function(sp,mz,mzCalibRef,calibCoef,peakShape,tol){
   
   width.window<-0.4
   mzToTofFunc<-function(mz) mzToTof(mz,calibCoef)
   
-  # check if mzCalibRef are in mz
-  outMz <- which(vapply(mzCalibRef, 
-                        function(x) !any( round(x) -width.window < mz & 
-                                            mz < round(x) + width.window),
-                        FUN.VALUE = TRUE ))
-  if(length(outMz)!=0) {
-    message(paste( paste(mzCalibRef[outMz],collapse = " "),
-                   "excluded, not contains in the mass axis \n"))
-    mzCalibRef <- mzCalibRef[-outMz]
-  }
-  
+ 
+
   # calculate tof axis
   if(is.null(mzToTofFunc(1))) tof<-seq(0,length(mz)-1) else tof <- mzToTofFunc(mz)
   
-  #spectrum of mass calib 
+  # spectrum of mass calib 
   spTronc <- lapply(mzCalibRef,function(m) {
-    index<- which((mz < m + width.window) & (mz > m - width.window))
+    index<- which((mz <= m + width.window) & (mz >= m - width.window))
     tof<-tof[index]
+    noise<- sp[which( ( ( m-1 + width.window) < mz) & (mz < m - width.window) )]
     mz <- mz[index]
-    signal <- sp[index] 
-    return(list(signal=signal,mz=mz,tof=tof))})
+    signal <- sp[index]
+    return(list(signal=signal,mz=mz,tof=tof,noise=noise))})
   
   # test if there is a only one peak
-  nLocalMax <-vapply(spTronc, function(x) {
-    length( LocalMaximaSG( sp = x$signal,
-                           minPeakHeight = 0.2*max(x$signal)) )
-    
-  }, FUN.VALUE = 0 )
-  
-  
-  badMass <- which(nLocalMax !=1 ) 
-  if(length(badMass)!=0){
-    
-    mzCalibRef <- mzCalibRef[-badMass]
-    spTronc <- spTronc[-badMass]
-  }
+  # nLocalMax <-vapply(spTronc, function(x) {
+  #   length( LocalMaximaSG( sp = x$signal,
+  #                          minPeakHeight = 0.2*max(x$signal)) )
+  #   
+  # }, FUN.VALUE = 0 )
+  # 
+  # 
+  # badMass <- which(nLocalMax !=1 ) 
+  # if(length(badMass)!=0){
+  #   
+  #   mzCalibRef <- mzCalibRef[-badMass]
+  #   spTronc <- spTronc[-badMass]
+  # }
   
   if( length(mzCalibRef) < 2 ) stop("To few references masses for calibration")
   
-  # calculate the tof of reference masses
+  # calculate the tof of reference masses with peak shape 
   tofMax <- vapply(spTronc, function(x) {
     tofrange <- x$tof
     sp<- x$signal
-    t<-tofrange[which.max(sp)]
-    delta<-10000 * log(sqrt(2)+1)*2/ t
-    init<-list(m=t,d1=delta,d2=delta,h=max(sp))
-    fit<-suppressWarnings(minpack.lm::nls.lm(par=init, 
-                                             fn =function(par,x,y) y- sech2(
-                                               par$m,par$d1,par$d2,par$h,x),
-                                             x= tofrange , y = sp))
-    tofMax<-fit$par$m
-    
-    
-    #interpol<- stats::spline( tofrange, sp, n=1000*length(tofrange) )
-    #tofMax<-interpol$x[ which.max(interpol$y)]
+    sp<-sp-snipBase(sp)
+    acf<- stats::acf(x$noise ,lag.max=1, plot=FALSE)[1]$acf
+    localMax<-LocalMaximaSG(sp = sp,minPeakHeight = max(sp)*0.2,noiseacf = min(acf,0.3))
+    tcenter<-tofrange[localMax[which.max(sp[localMax])]]
+    initTof<-matrix(c(tcenter,
+                      tcenter/10000,
+                      max(sp)),nrow = 1)
+    largerfit<- initTof[2] 
+    fit<-fit_averagePeak(initTof,
+                         l.shape = peakShape,
+                         sp = sp[tcenter-largerfit < tofrange & tofrange < tcenter +largerfit],
+                         bin = tofrange[tcenter-largerfit < tofrange & tofrange < tcenter +largerfit],
+                         lower.cons=NULL ,upper.cons=NULL)
+    # plot(tofrange,sp)
+    # lines(tofrange[tcenter-largerfit < tofrange & tofrange < tcenter +largerfit],fit$fit.peak)
+    tofMax<-fit$par_estimated[1,]
     return(tofMax)
   },FUN.VALUE = 0.1)
   
@@ -143,7 +198,7 @@ calibrationFun<-function(sp,mz,mzCalibRef,calibCoef,tol){
   
   # spectrum of calibration masses with new mass axis
   calibSpectr <- lapply(mzCalibRef,function(m) {
-    index<- which((mzVnbis < m + width.window) & (mzVnbis > m - width.window))
+    index<- which((mzVnbis <= m + width.window) & (mzVnbis >= m - width.window))
     mz <- mzVnbis[index]
     signal <- sp[index] 
     return(list(signal=signal,mz=mz))})
@@ -157,6 +212,24 @@ calibrationFun<-function(sp,mz,mzCalibRef,calibCoef,tol){
               coefs= coefs))
   
 }
+
+
+alignCalibrationPeak<-function(calibSpectr,calibMassRef,ntimes){
+  lapply(seq(1,length(calibMassRef)),
+         function(m) {
+           mz1<-calibSpectr[[1]][[m]]$mz
+           signal<-Reduce(rbind,
+                          lapply(calibSpectr,
+                                 function(x)  stats::spline(x= x[[m]]$mz,y=x[[m]]$signal,
+                                                    xout=mz1)$y))
+           if(!is.null(nrow(signal))){
+             signal<-apply(signal, 2,function(x) sum(x) / ntimes)
+           } else signal<- signal/ntimes
+           list(mz=mz1,signal=signal) 
+           })
+}
+
+
 
 tofToMz <- function(tof,calibCoef) {((tof - calibCoef['b',]) / calibCoef['a',]) ^ 2}
 mzToTof <- function(m,calibCoef) {sqrt(m)*calibCoef['a',] + calibCoef['b',]}
@@ -578,11 +651,11 @@ methods::setMethod(f = "plotRaw",
 methods::setMethod(f="plotCalib",
           signature = "ptrRaw",
           function(object,ppm=2000,...){
-  
+   
         raw <- object
         # get mass and specter
         mzCalibRef<- raw@calibMassRef
-        calibSpectr <- raw@calibSpectr
+        calibSpectr<-alignCalibrationPeak(raw@calibSpectr,mzCalibRef,length(raw@time))
         error <- raw@calibError
   
         # plot in a window of 2000 ppm
@@ -623,7 +696,6 @@ methods::setMethod(f="plotCalib",
 #' raw <- readRaw(filePath)
 #' p <- plotTIC(raw)
 #' p
-#' 
 methods::setMethod(f="plotTIC",
           signature = "ptrRaw",
           function(object, type, baselineRm, showLimits,fracMaxTIC=0.5,...){
@@ -656,7 +728,7 @@ methods::setMethod(f="plotTIC",
                axis.title = ggplot2::element_text(size=16),
                axis.text = ggplot2::element_text(size=14),
                legend.text =  ggplot2::element_text(size=14),
-               legend.title = ggplot2::element_text(size=16))
+               legend.title = ggplot2::element_text(size=16)) + ggplot2::theme_classic()
                 
             switch (type,
                     ggplot = return(plot),
@@ -686,6 +758,8 @@ methods::setMethod(f="plotTIC",
 #'  whose limits you want to compute. If NULL, the limits are calculated on the Total Ion Chromatogram (TIC).
 #' @param minPoints minimum duration of an expiration (in index).
 #' @param degreeBaseline the degree of polynomial baseline function
+#' @param baseline logical, should the trace be baseline corrected?
+#' @param redefineKnots logical, should teh knot location must be redefined with the new times limits ?
 #' @param plotDel boolean. If TRUE, the Chormatogram is ploted with limits and threshold.
 #' @return a list with expirations limits (a matrix of index, where each colomn correspond to one expriration, the first row 
 #' it is the beginning and the seconde the end, or NA if no limits are detected) and index of the background.
@@ -700,19 +774,15 @@ methods::setMethod(f="plotTIC",
 #'@export
 methods::setMethod(f="timeLimits",
           signature = "ptrRaw",
-          function(object,fracMaxTIC=0.5,fracMaxTICBg=0.5,derivThresholdExp=0.5,derivThresholdBg=0.01, 
+          function(object,fracMaxTIC=0.6,fracMaxTICBg=0.2,derivThresholdExp=0.5,derivThresholdBg=0.05, 
                    mzBreathTracer= NULL, 
-                   minPoints = 2,degreeBaseline=1,baseline=TRUE, plotDel=FALSE){
+                   minPoints = 2,degreeBaseline=1,baseline=TRUE,redefineKnots=TRUE, plotDel=FALSE){
             
             rawM <-object@rawM
             mz <- object@mz
             
             if(is.null(dim(rawM))) stop("rawM must be a matrix")
             if(fracMaxTIC <0 || fracMaxTIC > 1) stop("fracMaxTIC must be between 0 and 1")
-            if(fracMaxTIC==0) {
-              return(list(exp=matrix(c(1,ncol(rawM)),ncol=1,nrow=2,dimnames = list(c("start","end"))),
-                          backGround=NULL))
-                     }
             if(is.null(mzBreathTracer)) { TIC <- colSums(rawM)
             } else {
               index<- lapply(mzBreathTracer, function(x) {
@@ -734,6 +804,10 @@ timeLimitFun<-function(TIC,fracMaxTIC=0.5, fracMaxTICBg=0.5,derivThresholdExp=0.
                        mzBreathTracer= NULL, 
                        minPoints = 3, degreeBaseline=1,baseline=TRUE,plotDel=FALSE){
   
+  if(fracMaxTIC==0) {
+    return(list(exp=matrix(c(1,length(TIC)),ncol=1,nrow=2,dimnames = list(c("start","end"))),
+                backGround=NULL))
+  }
   ## baseline corretion
   if(baseline) bl <- try(baselineEstimation(TIC,d=degreeBaseline)) else bl<-0
   if(is.null(attr(bl,"condition"))) TIC.blrm<-TIC - bl else TIC.blrm<-TIC
@@ -830,19 +904,94 @@ bakgroundDetect<-function(TIC,derivThreshold=0.01,  minPoints = 4, plotDel=FALSE
   return(limBg)
 }
 
+### defineknots ----
+#' @param timeLimit index time of the expiration limits and background 
+#' @return umeric vector of knots 
+#' @rdname defineKnots
+#' @export
+methods::setMethod(f = "defineKnots",
+                   signature= "ptrRaw",
+                   function(object, knotsPeriod=3, method=c("expiration","uniform")[1],
+                            knotsList=NULL,timeLimit=list(NULL)){
+                     
+                     if(knotsPeriod == 0){
+                       knots<-list(NULL)
+                       } else {
+                         if(!is.null(knotsList)){
+                           t <- object@time
+                           
+                           if(knotsList[1] >= t[1] & utils::tail(knotsList,1) <= utils::tail(t,1))
+                             stop(paste("knots are not contained in the time axis \n"))
+                         } else {
+                           background<-timeLimit$backGround
+                           t<-object@time
+                           knots<-try(defineKnotsFunc(t,background,knotsPeriod,method))
+                         }
+                       }
+                      
+                    return(knots)
+                   } )
+
+
+defineKnotsFunc<-function(t,background,knotsPeriod,method,file=NULL){
+  # knot equally spaced
+  duration<-utils::tail(t,1)
+  knots<-seq(t[1],utils::tail(t,1),length.out = duration/knotsPeriod)
+
+  if(method=="expiration" & !is.null(background)){
+    # reduce number of knots in bakcgrounds periods
+    knots<-defineKnotsExpiration(t,background,knots)
+  }
+  
+  test<-vapply(seq_along(knots[-1]),
+               function(i)  any( knots[i]  <t& t < knots[i+1]) ,
+               FUN.VALUE = TRUE)
+  if(!all(test)){
+    warning(paste(file,"knotsPeriod is to short, knots set to NULL"))
+    knots<-NULL
+  }
+  if(length(knots)>100) warning(paste(file,"K= ", length(knots),"we suggest to set a highter knots frequency \n"))
+  return(knots)
+}
+
+
+defineKnotsExpiration<-function(t,background,knots){
+  
+  periods<- c(0,which(diff(background) > 1),length(background))
+  #background periods
+  bg <-lapply(seq(1,length(periods)-1),function(i){
+    (t[background[periods[i]+1]]):t[background[periods[i+1]]]
+  }) 
+  
+  # keep only first, middle and last point of each background periods, 
+  #if their exceed three points
+  newknot<-list(NULL)
+  for(j in seq_along(bg)){
+    k <- knots[ bg[[j]][1]<= knots & knots <= utils::tail(bg[[j]],1)] #knots in the background period
+    if(length(k)>3){
+      k <-  c(k[1],mean(k),utils::tail(k,1)) # select first, middle and last point of the background periods
+      knots<-knots[-which( bg[[j]][1]<knots & knots < utils::tail(bg[[j]],1))] # delete knots 
+    } 
+    newknot[[j]]<-k
+  }
+  knots<-sort(unique(c(knots,Reduce(c,newknot)))) # add new knots
+  return(knots)
+  
+}
 ## PeakList ----
 #' Detection and quantification of peaks on spectrum. 
 #'
 #' @param raw ptrRaw object 
 #' @param mzNominal the vector of nominal mass where peaks will be detected 
 #' @param ppm the minimum distance between two peeks in ppm 
-#' @param resMinMaxMean vector with resolution min, resolution Mean, and resolution max of the PTR
+#' @param resolutionRange vector with resolution min, resolution Mean, and resolution max of the PTR
 #' @param minIntensity the minimum intenisty for peaks detection. The final threshold for peak detection
 #' will be : max ( \code{minPeakDetect} , thresholdNoise ). The thresholdNoise correspond to
 #'  max(\code{thNoiseRate} * max( noise around the nominal mass), \code{thIntensityRate} * 
 #'  max( intenisty in the nominal mass). The noise around the nominal mass correspond : 
 #'  \code{[m-windowSize-0.2,m-windowSize]U[m+windowSize,m+WindowSize+0.2]}.
 #' @param fctFit the function for the quantification of Peak, should be average or Sech2
+#' @param peakShape a list with reference axis and a reference peak shape centered in zero
 #' @param maxIter maximum ittertion of residual analysis
 #' @param R2min R2 minimum to stop the itterative residual analysis
 #' @param autocorNoiseMax the autocorelation threshold for Optimal windows Savitzky Golay 
@@ -876,8 +1025,9 @@ bakgroundDetect<-function(TIC,derivThreshold=0.01,  minPoints = 4, plotDel=FALSE
 methods::setMethod(f="PeakList",
           signature = "ptrRaw",
           function(raw,
-                   mzNominal = unique(round(raw@mz)), ppm = 130, resMinMeanMax=c(300,5000,8000),
-                   minIntensity=5, fctFit=c("sech2","average")[1], maxIter=2,R2min=0.995, autocorNoiseMax = 0.3,
+                   mzNominal = unique(round(raw@mz)), ppm = 130, resolutionRange=c(300,5000,8000),
+                   minIntensity=5, fctFit=c("sech2","averagePeak")[1],
+                   peakShape=NULL,maxIter=3, R2min=0.995, autocorNoiseMax = 0.3,
                    plotFinal=FALSE, plotAll=FALSE, thNoiseRate=1.1, thIntensityRate = 0.01,
                    countFacFWHM=10, daSeparation=0.005, d=3, windowSize=0.4) {
   
@@ -885,65 +1035,110 @@ methods::setMethod(f="PeakList",
   sp <- rowSums(raw@rawM)/(ncol(raw@rawM)*(raw@time[3]-raw@time[2])) # average spectrum 
   mz <- raw@mz # mass axis
   mzCalibRef <- raw@calibMassRef 
-  calibCoef<-raw@calibCoef
+  calibCoef<-raw@calibCoef[[1]]
   
   
-  if(fctFit=="average") l.shape<-determinePeakShape(sp,mz,massRef = mzCalibRef) else l.shape=NULL
+  if(fctFit=="averagePeak" & is.null(peakShape)){
+    peakShape<-determinePeakShape(raw)$peakShapemz
+    raw@peakShape<-peakShape
+  }
   
-  prePeaklist <- lapply(mzNominal, function(m) peakListNominalMass(m,mz,sp,ppm, calibCoef,resMinMeanMax,
-                                                                    minIntensity, fctFit, maxIter,R2min, autocorNoiseMax ,
-                                                                    plotFinal, plotAll, thNoiseRate, thIntensityRate ,
-                                                                    countFacFWHM, daSeparation, d, windowSize,l.shape) )
+
+  prePeaklist <- lapply(mzNominal, function(m) {
+    peakListNominalMass(i = m,mz = mz,sp = sp,ppmPeakMinSep = ppm, 
+                        calibCoef =calibCoef, resolutionRange = resolutionRange,
+                        minPeakDetect = minIntensity, fitFunc = fctFit, 
+                        maxIter = maxIter,R2min = R2min, autocorNoiseMax = autocorNoiseMax ,
+                        plotFinal, plotAll, thNoiseRate, thIntensityRate ,
+                        countFacFWHM, daSeparation, d, windowSize,peakShape) 
+  })
   
   peaklist<-do.call(rbind,lapply(prePeaklist, function(x) x[[1]]))
   warning <-do.call(rbind,lapply(prePeaklist, function(x) x[[2]]))
   infoPlot<- do.call(c,lapply(prePeaklist, function(x) x[[3]]))
+  baseline<- do.call(c,lapply(prePeaklist, function(x) x[[4]]))
   
-  return(list(peak=peaklist, warning=warning,infoPlot=infoPlot))
+  return(list(peak=peaklist, warning=warning,infoPlot=infoPlot,baseline=baseline))
 })
 
 ##TODO peakLIst method dor spectrum array
 
 ##detectpeak----
+#' @param knots numeric vector correspond to the knot that will be use for the two dimensional 
+#' regression for each file. Should be provided by \code{\link[ptairMS]{defineKnots}} function
+#' @param timeLimit index time of the expiration limits and background. 
+#' Should be provided by \code{\link[ptairMS]{timeLimits}} function
+#' @param mzPrimaryIon the exact mass of the primary ion isotope
 #' @rdname detectPeak
-#' @examples 
+#' @examples
 #' 
 #' library(ptairData)
 #' filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
 #' raw <- readRaw(filePath,mzCalibRef=c(21.022,59.049))
 #' timeLimit<-timeLimits(raw,fracMaxTIC=0.7)
-#' peakList <- detectPeak(raw, timeLimit=timeLimit, mzNominal = c(21,59))
-#' peakList$aligned
+#' knots<-defineKnots(object = raw,timeLimit=timeLimit)
+#' peakList <- detectPeak(raw, timeLimit=timeLimit, mzNominal = c(21,59),
+#' smoothPenalty=0,knots=knots)
+#' Biobase::fData(peakList)
 #' @export
 methods::setMethod(f="detectPeak",
           signature = "ptrRaw",
           function(x, 
-                   mzNominal=NULL , timeLimit, ppm=130, resMinMeanMax=c(3000,5000,8000), 
-                   ppmGroupBkg=50, fracGroup=0.8, minIntensity=10, 
-                   fctFit=c("sech2","average")[1],thIntensityRate=0.01,
-                   processFun=processFileSepExp,primaryIon=T,...)
+                   ppm=130, 
+                   minIntensity=10, 
+                   thIntensityRate = 0.01,
+                   mzNominal=NULL, 
+                   resolutionRange=NULL,
+                   fctFit="averagePeak",
+                   smoothPenalty=NULL,
+                  timeLimit,
+                  knots=NULL,
+                  mzPrimaryIon=21.022,
+                  ...)
           {
             raw<-x
             #get infomration
             massCalib<-raw@calibMassRef
             
-            if(! is.null(timeLimit$backGound)) indBg<- timeLimit$backGound else indBg<-seq_along(raw@time)
-            raw.bg<-raw
-            raw.bg@rawM<-raw.bg@rawM[,indBg]
-            raw.bg@time<-raw.bg@time[indBg]
+            #resolution
+            if(is.null(resolutionRange)){
+              calibSpectr<-alignCalibrationPeak(raw@calibSpectr,calibMassRef = massCalib,ntimes = length(raw@time))
+              resolutionEstimated<-estimateResol(raw@calibMassRef,calibSpectr)
+              resolutionRange<-  c( floor(min(resolutionEstimated)/1000)*1000,
+                                    round(mean(resolutionEstimated)/1000)*1000,
+                                    ceiling(max(resolutionEstimated)/1000)*1000 )
+            }
             
-            if(primaryIon){
-              p<-PeakList(raw.bg,mz=21,ppm=500)
-              primaryIon<- list(primaryIon=p$peak$quanti_cps)
-            } else primaryIon <- list(primaryIon=NA)
-        
-            peakLists<-processFun(raw,massCalib,primaryIon,timeLimit, mzNominal,
-                                                  ppm, resMinMeanMax,ppmGroupBkg, 
-                                                  fracGroup,minIntensity, 
-                                                  fctFit,thIntensityRate=thIntensityRate)
+           
+          #peakShape  
+            peakShape <- determinePeakShape(raw)$peakShapemz
+            
+          #primary ion
+          p<-PeakList(raw,mzNominal = round(21.022),ppm=700,minIntensity = 50,maxIter = 1)
+          primaryIon <- list(primaryIon=p$peak$quanti_cps)
+           
+          #knot
+         
+          peakLists<-processFileTemporal(fullNamefile = raw,massCalib = massCalib,
+                                  primaryIon=primaryIon,indTimeLim = timeLimit, mzNominal = mzNominal,
+                                  ppm=ppm, resolutionRange = resolutionRange,minIntensity = minIntensity, knots = knots, 
+                                  smoothPenalty=smoothPenalty,
+                                  fctFit=fctFit,thIntensityRate=thIntensityRate,peakShape = peakShape,...)
             
             
-
+              
+            x<-peakLists
+              infoPeak<- grep("parameter",colnames(x$raw))
+              colnames(x$raw)[infoPeak]<-c("parameterPeak.delta1","parameterPeak.delta2",
+                                           "parameterPeak.heigh")
+              assayMatrix<- as.matrix(x$raw)[,-c(1,2,3,4,infoPeak),drop=FALSE]
+              rownames(assayMatrix)<- round(x$raw$Mz,4)
+              featuresMatrix<- data.frame(cbind((as.matrix(x$raw)[,c(1,2,3,4,infoPeak),drop=FALSE]),(x$aligned[,-1])))
+              rownames(featuresMatrix)<-rownames(assayMatrix)
+              peakLists<-Biobase::ExpressionSet(assayData =assayMatrix,
+                                     featureData = Biobase::AnnotatedDataFrame(featuresMatrix))
+          
+            
             return(peakLists)
           } )
 

@@ -4,7 +4,7 @@
 \alias{calibrationFun}
 \title{calibration function}
 \usage{
-calibrationFun(sp, mz, mzCalibRef, calibCoef, tol)
+calibrationFun(sp, mz, mzCalibRef, calibCoef, peakShape, tol)
 }
 \arguments{
 \item{sp}{spectrum}
@@ -14,6 +14,8 @@ calibrationFun(sp, mz, mzCalibRef, calibCoef, tol)
 \item{mzCalibRef}{masses of know reference peaks}
 
 \item{calibCoef}{coeficient of the previous calibration}
+
+\item{peakShape}{a list with reference axis and a reference peak shape centered in zero}
 
 \item{tol}{maximum error tolarated in ppm}
 }

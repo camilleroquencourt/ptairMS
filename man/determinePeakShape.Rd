@@ -2,21 +2,12 @@
 % Please edit documentation in R/peak_detection.R
 \name{determinePeakShape}
 \alias{determinePeakShape}
-\title{Determine peak shape from raw data}
+\title{Determine peak shape from raw data in tof}
 \usage{
-determinePeakShape(
-  sp,
-  mz,
-  massRef = c(21.022, 29.013424, 41.03858, 75.04406, 203.943, 330.8495),
-  plotShape = FALSE
-)
+determinePeakShape(raw, plotShape = FALSE)
 }
 \arguments{
-\item{sp}{vector with spectrum values where the peak shape will be extimated}
-
-\item{mz}{vectr with mass axis}
-
-\item{massRef}{the accurate mass of the reference peak (for example the same that used for calibration)}
+\item{raw}{a \code{\link[ptairMS]{ptrRaw-class}} object}
 
 \item{plotShape}{if true plot each reference peak and the average peak (the peak shape)}
 }

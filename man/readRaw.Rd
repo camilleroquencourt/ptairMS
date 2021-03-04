@@ -6,23 +6,26 @@
 \usage{
 readRaw(
   filePath,
-  calibTIS = TRUE,
+  calib = TRUE,
   mzCalibRef = c(21.022, 29.013424, 41.03858, 60.0525, 203.943, 330.8495),
+  calibrationPeriod = 60,
   tolCalibPpm = 70,
   maxTimePoint = 900
 )
 }
 \arguments{
-\item{filePath}{h5 file path full name.}
+\item{filePath}{h5 absolute file path full name.}
 
-\item{calibTIS}{boolean. If true, the function \code{calibration} is apply on the Total Ion Spectrum
-with the \code{mzCalibRef} reference masses.}
+\item{calib}{boolean. If true, an external calibration is performed on the \code{calibrationPeriod} sum spectrum 
+with mzCalibRef reference masses.}
 
-\item{mzCalibRef}{calibration parameter. Vector of exact theoritical mass values of a intensive peak of moleculs
-and 'unique' in a nominal mass interval}
+\item{mzCalibRef}{calibration parameter. Vector of exact theoretical masses values of an intensive peak without overlapping.}
+
+\item{calibrationPeriod}{in second, coefficient calibration are estimated for each sum spectrum of 
+\code{calibrationPeriod} seconds}
 
 \item{tolCalibPpm}{calibration parameter. The maximum error tolerated in ppm. A warning appears for 
-error graeter than \code{tolCalibPpm}.}
+error greater than \code{tolCalibPpm}.}
 
 \item{maxTimePoint}{number maximal of time point to read}
 }
@@ -34,11 +37,12 @@ a ptrRaw object, including slot \itemize{
 }
 }
 \description{
-\code{readRaw} reads a h5 file with rhdf5 library, and calibrates the mass axis with \code{\link[ptairMS]{calibration}} function.
-It returns a \code{\link[ptairMS]{ptrRaw-class}} S4 object that contains raw data.
+\code{readRaw} reads a h5 file with rhdf5 library, and calibrates the mass axis 
+with \code{mzCalibRef} masses each \code{calibrationPeriod} seconds.
+It returns a \code{\link[ptairMS]{ptrRaw-class}} S4 object, that contains raw data.
 }
 \examples{
 library(ptairData)
 filePathRaw <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
-raw <- readRaw(filePathRaw,mzCalibRef=c(21.022, 41.03858, 60.0525))
+raw <- readRaw(filePathRaw,mzCalibRef=c(21.022, 60.0525))
 }

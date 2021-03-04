@@ -4,7 +4,7 @@
 \alias{snipBase}
 \title{Baseline estimation}
 \usage{
-snipBase(sp, widthI = 15, iteI = 3)
+snipBase(sp, widthI = 11, iteI = 5)
 }
 \arguments{
 \item{sp}{an array with spectrum values}

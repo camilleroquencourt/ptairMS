@@ -198,7 +198,7 @@ aggregateTemporalFile<-function(time, indTimeLim, matPeak, funAggreg,dbl=4){
   
   if(!is.null(indBg)){
     bg<-TRUE
-    XIC<-as.matrix(matPeak[,5:ncol(matPeak),drop=FALSE])
+    XIC<-as.matrix(matPeak[,(ncol(matPeak)-length(time)+1):ncol(matPeak),drop=FALSE])
     
     ##baseline Corrected
     XICbl<-t(apply(XIC,1,function(x){
@@ -249,9 +249,6 @@ aggregateTemporalFile<-function(time, indTimeLim, matPeak, funAggreg,dbl=4){
 #' @param group character. A sampleMetadata data colnames. If is \code{NULL},variables not presents
 #' in \code{fracGroup} percent of samples will be deleted. Else, variables not presents
 #' in \code{fracGroup} percent in each group will be deleted. 
-#' @param bgThreshold if the background quantity is analyzed, only variables where
-#' quantity > bgThreshold x background or quantity < bgThreshold x background for all
-#' samples are keeped.
 #' @param pValGreaterThres threshold of the he p-value of the unilateral t-test, who test that 
 #' quantidication (in cps) of expiration points are greater than the intenisty of the background. 
 #' @param pValLessThres threshold of the he p-value of the unilateral t-test, who test that 
@@ -276,16 +273,16 @@ aggregateTemporalFile<-function(time, indTimeLim, matPeak, funAggreg,dbl=4){
 #' @import data.table
 #'@export
 setMethod(f="alignSamples",signature = "ptrSet",
-            function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL, 
-                     bgThreshold=2,pValGreaterThres= 2e-26,pValLessThres=0,fracExp=0.3,
+            function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL
+                     ,pValGreaterThres= 0.001,pValLessThres=0,fracExp=0.3,
                          dmzGroup = 0.001,quantiUnit=c("ppb","ncps","cps")[1],bgCorrected=TRUE,...
                          ){
               
             sampleMetadata <- X@sampleMetadata
-            peakList <- X@peakListAligned
+            peakList <- X@peakList
             eSet<- alignSamplesFunc(peakList = peakList,sampleMetadata = sampleMetadata,
                                     ppmGroup =ppmGroup, fracGroup = fracGroup , group = group,
-                                    bgThreshold =bgThreshold, pValGreaterThres = pValGreaterThres,
+                                     pValGreaterThres = pValGreaterThres,
                                     pValLessThres = pValLessThres,fracExp = fracExp, dmzGroup=dmzGroup,
                                     quantiUnit = quantiUnit,bgCorrected=bgCorrected)
   
@@ -297,13 +294,14 @@ setMethod(f="alignSamples",signature = "ptrSet",
 #' @export
 setMethod(f="alignSamples",signature = "data.frame",
           function(X, ppmGroup = 70, fracGroup = 0.8, group=NULL,
-                   bgThreshold=2,pValGreaterThres= 2e-26,pValLessThres=0,fracExp=0.3,
-                   dmzGroup = 0.001,quantiUnit=c("ppb","ncps","cps")[1], bgCorrected=TRUE,sampleMetadata
+                   pValGreaterThres= 0.005,
+                   pValLessThres=0,fracExp=0.3,
+                   dmzGroup = 0.005,quantiUnit=c("ppb","ncps","cps")[1], bgCorrected=TRUE,sampleMetadata
           ){
             
             eSet<- alignSamplesFunc(peakList = X,sampleMetadata = sampleMetadata,
                                     ppmGroup =ppmGroup, fracGroup = fracGroup , group = group,
-                                    bgThreshold =bgThreshold, pValGreaterThres = pValGreaterThres,
+                                    pValGreaterThres = pValGreaterThres,
                                     pValLessThres = pValLessThres,fracExp = fracExp, dmzGroup=dmzGroup,
                                     quantiUnit = quantiUnit,bgCorrected=bgCorrected)
             
@@ -313,10 +311,15 @@ setMethod(f="alignSamples",signature = "data.frame",
 
 alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100, 
                              fracGroup=0.8, group=NULL, dmzGroup=0.001,
-                             bgThreshold=2,pValGreaterThres= 2e-26,pValLessThres=0,fracExp=0.3,
+                             pValGreaterThres= 0.005,pValLessThres=0,fracExp=0.3,
                              quantiUnit=c("ppb","ncps","cps")[1],bgCorrected=TRUE){
   
-  testquantiUnit<-Reduce(c,lapply(peakList,function(x) all(is.na(x[,paste0("quanti_",quantiUnit)]))))
+  
+  peakList<-lapply(peakList, function(x) as.data.table(Biobase::fData(x)[,-c(2,3,4)]))
+  testquantiUnit<-Reduce(c,lapply(peakList,function(x){
+    x<-as.matrix(x)
+    all(is.na(x[,paste0("quanti_",quantiUnit)]))
+  }))
   
   
   if(any(testquantiUnit)){
@@ -341,14 +344,16 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
       other<- seq_len(ncol(x))[-c(quanti,bg,diff)]
       
       if(bgCorrected){
-        quanti<-diff[which(grepl(quantiUnit,colnames(x)[quanti]))]
+        quanti<-diff[which(grepl(quantiUnit,colnames(x)[diff]))]
+        colnames(x)[quanti]<-paste("quanti",quantiUnit,sep="_")
       }else quanti<-quanti[which(grepl(quantiUnit,colnames(x)[quanti]))]
       
       bg <- bg[which(grepl(quantiUnit,colnames(x)[bg]))]
       
       .SD<-data.table::.SD
       x<-x[,.SD,.SD=colnames(x)[c(other,quanti,bg)]]
-      colnames(x)[4]<-paste("quanti",quantiUnit,sep="_")
+     
+      
       x
     })
   } else {
@@ -412,7 +417,7 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
   colnames(X) <- names(peakList)
   
   
-  filtered <- fliterEset(X,sampleMetadata,groupMat,groupList,peakList,group,fracGroup,bgThreshold,
+  filtered <- fliterEset(X,sampleMetadata,groupMat,groupList,peakList,group,fracGroup,
                        pValGreaterThres,pValLessThres,fracExp)
   
   if(is.null(filtered)) return(NULL)
@@ -431,8 +436,8 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
                           stringsAsFactors = FALSE)
  
   order<-order(as.numeric(rownames(X)))
-  X<-X[order,,drop=F]
-  Xbg<-Xbg[order,,drop=F]
+  X<-X[order,,drop=FALSE]
+  Xbg<-Xbg[order,,drop=FALSE]
   rownames(Xbg) <- rownames(X)
   message(nrow(X), " peaks aligned")
   featureData <- Biobase::AnnotatedDataFrame(as.data.frame(Xbg))
@@ -444,7 +449,7 @@ alignSamplesFunc <- function(peakList,sampleMetadata, ppmGroup=100,
 }
 
 
-fliterEset<-function(X,sampleMetadata,groupMat,groupList,peakList,group,fracGroup,bgThreshold,
+fliterEset<-function(X,sampleMetadata,groupMat,groupList,peakList,group,fracGroup,
                      pValGreaterThres,pValLessThres,fracExp){
   
   nSample<- ncol(X)
@@ -489,18 +494,6 @@ fliterEset<-function(X,sampleMetadata,groupMat,groupList,peakList,group,fracGrou
     rownames(Xbg) <- rownames(X)
     colnames(Xbg) <- paste("Background -",names(peakList))
     
-    if(bgThreshold!=0 & "fracExp" %in% colnames(peakList[[1]])){
-      rap<-Xbg/X
-      kepp <- which(apply(rap,1,
-                          function(x) sum( 1/bgThreshold > x  | x > bgThreshold , na.rm=TRUE)/sum(!is.na(x)) 
-                          >= fracExp ))
-      X <- X[kepp,,drop=FALSE]
-      Xbg<-Xbg[kepp,,drop=FALSE]
-      if( nrow(X)==0 ) {
-        warning(paste("peakList is empty, there is no peak presents in more thant ", bgThreshold, "* background"))
-        return(NULL)
-      }
-    }
     
     if(pValGreaterThres !=1 & "pValGreater" %in%  colnames(peakList[[1]])){
       groupMatpVal <- do.call(rbind, lapply( groupList, 
@@ -529,11 +522,17 @@ fliterEset<-function(X,sampleMetadata,groupMat,groupList,peakList,group,fracGrou
         output
       })
       
+      
       nFile <- length(peakList)
       matPvalGreater <- t(matrix(matPvalGreater, nrow = nSample))
       matPvalGreater <- matPvalGreater[keepVar,,drop=FALSE]
-      Keep1<- which(apply(matPvalGreater,1,function(x) sum(x < pValGreaterThres,na.rm=T)/sum(!is.na(x)) >= fracExp))
+      if(!is.null(fracExp)){
+        Keep1<- which(apply(matPvalGreater,1,function(x) sum(x < pValGreaterThres,na.rm=TRUE)/sum(!is.na(x)) >= fracExp))
+      } else {
+        Keep1<-which(matPvalGreater < pValGreaterThres)
+      }
       
+
       matPvalLess<-apply(groupMatpVal[,c("pValLess","Samples")], MARGIN=1, function(x){
         output<-rep(NA,nSample)
         ch.Area <- x[1]
@@ -549,11 +548,44 @@ fliterEset<-function(X,sampleMetadata,groupMat,groupList,peakList,group,fracGrou
       
       matPvalLess <- t(matrix(matPvalLess, nrow = nSample))
       matPvalLess <- matPvalLess[keepVar,,drop=FALSE]
-      Keep2<- which(apply(matPvalLess,1,function(x) sum( x < pValLessThres,na.rm=T)/sum(!is.na(x)) >= fracExp))
+      
+      if(!is.null(fracExp)){
+        Keep2<- which(apply(matPvalGreater,1,function(x) sum(x < pValLessThres,na.rm=TRUE)/sum(!is.na(x)) >= fracExp))
+      } else {
+        Keep2<-which(matPvalGreater < pValLessThres)
+      }
+      
       
       if(length(union(Keep1,Keep2))!=0) {
-        X<-X[union(Keep1,Keep2),,drop=FALSE]
-        Xbg<-Xbg[union(Keep1,Keep2),,drop=FALSE]
+        if(!is.null(fracExp)){
+          X<-X[union(Keep1,Keep2),,drop=FALSE]
+          Xbg<-Xbg[union(Keep1,Keep2),,drop=FALSE]
+        } else{
+          X[! seq(1,length(X)) %in% union(Keep1,Keep2) ]<-NA
+          
+          #filter on samples frenquency
+          if(!is.null(group)){
+            groupFac <- as.factor(sampleMetadata[,group])
+            test <- apply(X,1,
+                          function(x) vapply(levels(groupFac),
+                                             function(y) 
+                                               sum(!is.na(x[groupFac==y]))/length(x[groupFac==y]) > fracGroup,
+                                             TRUE))
+            keepVar<-apply(test,2,any)
+            
+          }else {
+            keepVar<- apply(X, 1, function(y) sum(!is.na(y))/length(y) > fracGroup)
+            
+          }
+          
+          X<- X[keepVar,,drop=FALSE]
+          Xbg<-Xbg[keepVar,,drop=FALSE]
+          if( nrow(X) ==0 ) { 
+            warning(paste("peakList is empty, there is no peak presents in more thant ", fracGroup, "% of samples"))
+            return(NULL)
+          }
+        }
+        
       } else {
         warning(paste("peakList is empty"))
         return(NULL)
@@ -569,6 +601,9 @@ fliterEset<-function(X,sampleMetadata,groupMat,groupList,peakList,group,fracGrou
 imputeFunc<-function(file,missingValues,eSet,ptrSet){
   
   fctFit<-ptrSet@parameter$detectPeakParam$fctFit
+  if(fctFit=="NULL") fctFit<- ptrSet@fctFit[[file]]
+  
+  l.shape<- ptrSet@peakShape[[file]]
   primaryIon<-ptrSet@primaryIon
   filesFullName<-ptrSet@parameter$listFile
   j<-which(file==colnames(Biobase::exprs(eSet)))
@@ -604,11 +639,11 @@ imputeFunc<-function(file,missingValues,eSet,ptrSet){
   #calibrate mass axis
   FirstcalibCoef <- rhdf5::h5read(filesFullName.j,"FullSpectra/MassCalibration",index=list(NULL,1))
   tof <- sqrt(mzAxis)*FirstcalibCoef[1,1] + FirstcalibCoef[2,1]
-  coefCalib<-ptrSet@coefCalib[[file]]
+  coefCalib<-ptrSet@coefCalib[[file]][[1]]
   mzAxis <- ((tof-coefCalib['b',])/coefCalib['a',])^2
   
   #peak list raw
-  peakListRaw.j<-ptrSet@peakListRaw[[file]]
+  peakListRaw.j<- Biobase::fData(ptrSet@peakList[[file]])
   quantiImpute<-list()
   
   for (m in unique(round(mzMissing))){
@@ -634,8 +669,10 @@ imputeFunc<-function(file,missingValues,eSet,ptrSet){
       # cumFitPeak
       
       fitPeaks <- apply(peakAlsoDetected,1,
-                        function(x) eval(parse(text=fctFit))(x["Mz"],x["parameter.1"],
-                                          x["parameter.2"],x["parameter.3"],x = mzAxis.m)
+                        function(x) eval(parse(text=fctFit))(x["Mz"],x["parameterPeak.delta1"],
+                                          x["parameterPeak.delta2"],x["parameterPeak.height"],
+                                          x = mzAxis.m,
+                                          l.shape=l.shape)
       )
       if(nrow(peakAlsoDetected)>1) cumFitPeak <- rowSums(fitPeaks) else cumFitPeak <- c(fitPeaks)
       spectrum<- spectrum-cumFitPeak
@@ -651,7 +688,7 @@ imputeFunc<-function(file,missingValues,eSet,ptrSet){
     h<- vapply(mz, function(m) max(max(spectrum[which(abs(mzAxis.m-m)<(m*50/10^6))]),1),0)
     
     
-    initMz <- matrix(c(mz,log(sqrt(2)+1)*2/delta,
+    initMz <- matrix(c(mz,delta,
                        h),nrow=n.peak)
     colnames(initMz)<-c("m","delta1","delta2","h")
     
@@ -661,8 +698,8 @@ imputeFunc<-function(file,missingValues,eSet,ptrSet){
                                         rep(0.1, n.peak)),ncol = 4) 
                       -
                         matrix(c(initMz[,"m"]/(resolution_mean*100),
-                                 -resolution_lower*log(sqrt(2)+1)*2/initMz[,"m"],
-                                 -resolution_lower*log(sqrt(2)+1)*2/initMz[,"m"],
+                                 -initMz[,"m"]/(resolution_lower*2),
+                                 -initMz[,"m"]/(resolution_lower*2),
                                  rep(0, n.peak)),ncol = 4)))
     
     upper.cons <- c(t( initMz * matrix(c(rep(1, n.peak),
@@ -670,12 +707,13 @@ imputeFunc<-function(file,missingValues,eSet,ptrSet){
                                          rep(Inf, n.peak)),ncol = 4) 
                        +
                          matrix(c(initMz[,"m"]/(resolution_mean*100),
-                                  resolution_upper*log(sqrt(2)+1)*2/initMz[,"m"],
-                                  resolution_upper*log(sqrt(2)+1)*2/initMz[,"m"],
+                                  initMz[,"m"]/(resolution_upper*2),
+                                  initMz[,"m"]/(resolution_upper*2),
                                   rep(0, n.peak)),ncol = 4)))
     
     
-    fit <- fitPeak(initMz, spectrum, mzAxis.m, lower.cons, upper.cons,fctFit)
+    fit <- fitPeak(initMz = initMz,sp =  spectrum, mz.i = mzAxis.m, 
+                   lower.cons, upper.cons,funcName = fctFit,l.shape = l.shape)
     
     fit.peak <- fit$fit.peak
     par_estimated<-fit$par_estimated
@@ -683,7 +721,7 @@ imputeFunc<-function(file,missingValues,eSet,ptrSet){
     quanti.m <- apply(par_estimated,2, function(x){
       th<-10*0.5*(log(sqrt(2)+1)/x[2]+log(sqrt(2)+1)/x[3])
       mz.x <- mzAxis.m[ x[1] - th < mz & mz < x[1]+th ]
-      sum(eval(parse(text=fctFit))(x[1],x[2],x[3],x[4],mz.x),na.rm =TRUE)}) 
+      sum(eval(parse(text=fctFit))(x[1],x[2],x[3],x[4],mz.x,l.shape),na.rm =TRUE)}) 
     
     list_peak<-cbind(Mz=mz,quanti=quanti.m/(primaryIon[[file]]$primaryIon*488))
     
@@ -779,8 +817,9 @@ impute <- function(eSet,ptrSet,parallelize=FALSE,nbCores=2){
 #'
 #' Imputing missing values by returning back to the raw data and fitting the 
 #' peak shape function on the noise / residuals
-#' @param eSet an expression set retun by alignSamples function 
+#' @param X the peak table matrix with missing values
 #' @param ptrSet processed by detectPeak function
+#' @param quantiUnit the unit of the quantities in the matrix \code{X} (ppb, cps or ncps)
 #' @return the same expression set as in input, with missing values imputing
 #' @export 
 imputeMat <- function(X,ptrSet,quantiUnit){

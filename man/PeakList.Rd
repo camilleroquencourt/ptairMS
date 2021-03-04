@@ -9,10 +9,11 @@ PeakList(
   raw,
   mzNominal = unique(round(raw@mz)),
   ppm = 130,
-  resMinMeanMax = c(3000, 5000, 8000),
+  resolutionRange = c(3000, 5000, 8000),
   minIntensity = 5,
-  fctFit = c("sech2", "average")[1],
-  maxIter = 2,
+  fctFit = c("sech2", "averagePeak")[1],
+  peakShape = NULL,
+  maxIter = 1,
   R2min,
   autocorNoiseMax = 0.3,
   plotFinal = FALSE,
@@ -29,10 +30,11 @@ PeakList(
   raw,
   mzNominal = unique(round(raw@mz)),
   ppm = 130,
-  resMinMeanMax = c(300, 5000, 8000),
+  resolutionRange = c(300, 5000, 8000),
   minIntensity = 5,
-  fctFit = c("sech2", "average")[1],
-  maxIter = 2,
+  fctFit = c("sech2", "averagePeak")[1],
+  peakShape = NULL,
+  maxIter = 3,
   R2min = 0.995,
   autocorNoiseMax = 0.3,
   plotFinal = FALSE,
@@ -52,6 +54,8 @@ PeakList(
 
 \item{ppm}{the minimum distance between two peeks in ppm}
 
+\item{resolutionRange}{vector with resolution min, resolution Mean, and resolution max of the PTR}
+
 \item{minIntensity}{the minimum intenisty for peaks detection. The final threshold for peak detection
 will be : max ( \code{minPeakDetect} , thresholdNoise ). The thresholdNoise correspond to
  max(\code{thNoiseRate} * max( noise around the nominal mass), \code{thIntensityRate} * 
@@ -59,6 +63,8 @@ will be : max ( \code{minPeakDetect} , thresholdNoise ). The thresholdNoise corr
  \code{[m-windowSize-0.2,m-windowSize]U[m+windowSize,m+WindowSize+0.2]}.}
 
 \item{fctFit}{the function for the quantification of Peak, should be average or Sech2}
+
+\item{peakShape}{a list with reference axis and a reference peak shape centered in zero}
 
 \item{maxIter}{maximum ittertion of residual analysis}
 
@@ -84,8 +90,6 @@ centered in the mass peak center.}
 
 \item{windowSize}{peaks will be detected only around  m - windowSize ; m + windowSize, for all 
 m in \code{mzNominal}}
-
-\item{resMinMaxMean}{vector with resolution min, resolution Mean, and resolution max of the PTR}
 }
 \value{
 a list containning: \itemize{
