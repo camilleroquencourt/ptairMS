@@ -1603,7 +1603,7 @@ rmPeakList<-function(object){
 #' @export 
 methods::setMethod("show","ptrSet",
           function(object){
-            dir<-ptrSet@parameter$dir
+            dir<-object@parameter$dir
             fileCheck<-object@parameter$listFile
             if(class(dir)=="expression") {
               dir<-eval(dir)

@@ -16,7 +16,7 @@ test_annotateVOC_and_isotope <- function(){
   # data.frame
   fdataDF <- Biobase::fData(bacteria.eset)
   annotateDataFrameDF <- annotateVOC(fdataDF)
-  testthat::expect_identical(annotateDataFrameDF["59.0489", "vocDB_name_iupac"],
+  testthat::expect_identical(annotateDataFrameDF[1, "vocDB_name_iupac"],
                              "prop-2-en-1-ol, propan-2-one, propanal")
   
   # ExpressionSet
