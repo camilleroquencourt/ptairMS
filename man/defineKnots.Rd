@@ -59,7 +59,6 @@ All file must be informed. The knots location must be contained in the time axis
 }
 }
 \examples{
-library(ptairMS)
 data(mycobacteriaSet)
 
 #### placed knots every 2 times points

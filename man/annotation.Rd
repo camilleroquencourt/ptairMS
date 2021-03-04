@@ -72,7 +72,6 @@ Putatively annotate VOC mz by using the reference compilation from the literatur
 and detect isotope thanks to the \code{findIsotope} function.
 }
 \examples{
-library(ptairMS)
 data(mycobacteriaSet)
 mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal =c(59,79))
 bacteria.eset <-alignSamples(mycobacteriaSet,pValGreaterThres=0.05)

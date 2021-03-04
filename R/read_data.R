@@ -264,7 +264,6 @@ createPtrSet<-function(dir, setName,
 #' @return teh same ptrset object than ininput, but completed with new files and without deleted files in the directory
 #' @export
 #' @examples
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' ##add or delete files in the directory 
 #' # mycobacteriaSet<- updatePtrSet(mycobacteriaSet)
@@ -277,7 +276,8 @@ updatePtrSet<-function(ptrset){
   sampleMetadata <- ptrset@sampleMetadata
   
   # files in the diretcory 
-  if(class(parameter$dir) == "expression"){
+  
+  if(methods::is(parameter$dir,"expression")){
     parameter$dir<-eval(parameter$dir)
     filesDirFullName <- eval(parse(text='list.files(parameter$dir, recursive = TRUE, pattern=".h5$",full.names = TRUE)'))
     filesDirFullNameParam<-parse(text='list.files(parameter$dir, recursive = TRUE, pattern=".h5$",full.names = TRUE)')

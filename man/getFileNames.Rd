@@ -22,7 +22,6 @@ a vector of character that contains all file names
 get the file names containing in the directory of a ptrSet
 }
 \examples{
-library(ptairMS)
 data(mycobacteriaSet)
 getFileNames(mycobacteriaSet)
 }

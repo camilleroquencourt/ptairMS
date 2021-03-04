@@ -12,7 +12,6 @@ utils::globalVariables(c("error","name","out","intervalRef","signal","signal0","
 #' @rdname plot
 #' @export
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' plot(mycobacteriaSet)
 #' plot(mycobacteriaSet,typePlot="calibError")
@@ -108,7 +107,7 @@ plotCalibError<- function(set){
             
             #get list files
             listFiles <- set@parameter$listFile
-            if(class(listFiles)=="expression") listFiles<-eval(listFiles)
+            if(methods::is(listFiles,"expression")) listFiles<-eval(listFiles)
             
             # number of files
             nfiles<-length(massCalib)
@@ -500,7 +499,6 @@ plotPtrReaction<-function(pSet){
 #' @export
 #' @rdname plotCalib
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' plotCalib(mycobacteriaSet,fileNames=getFileNames(mycobacteriaSet)[1])
 #'
@@ -513,7 +511,7 @@ methods::setMethod(f="plotCalib",
           function(object,ppm=2000, pdfFile=NULL, fileNames=NULL,...){
             
             fileNamesObject<-object@parameter$listFile
-            if(class(fileNamesObject)=="expression") fileNamesObject<-eval(fileNamesObject)
+            if(methods::is(fileNamesObject,"expression")) fileNamesObject<-eval(fileNamesObject)
             set<-object
             # get list files
             if(is.null(fileNames)) {
@@ -523,7 +521,7 @@ methods::setMethod(f="plotCalib",
               # put in basename  
               fileNames <- basename(fileNames)
               
-              if(class(fileNames)=="expression") fileNames<-eval(fileNames)
+              if(methods::is(fileNames,"expression")) fileNames<-eval(fileNames)
               test<-fileNames %in% basename(fileNamesObject)
               if(!all(test)) stop( "This file(s) names are not in the directory: \n" ,
                                    paste(! fileNames[test],collapse="\n"))
@@ -602,7 +600,6 @@ methods::setMethod(f="plotCalib",
 #' @importFrom grDevices dev.off pdf
 #' @export
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' plotTIC(mycobacteriaSet,type="ggplot")
 methods::setMethod(f="plotTIC",
@@ -612,7 +609,7 @@ methods::setMethod(f="plotTIC",
             
             
             fileNamesObject<- object@parameter$listFile
-            if(class(fileNamesObject) == "expression") fileNamesObject<-eval(fileNamesObject)
+            if(methods::is(fileNamesObject,"expression")) fileNamesObject<-eval(fileNamesObject)
             
             set<- object 
             # get list files
@@ -746,7 +743,6 @@ methods::setMethod(f="plotTIC",
 #' @param ... not used
 #' @rdname plotRaw
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' ptairMS::plotRaw(mycobacteriaSet,mzRange=59,fileNames="Control1.h5")
 #'
@@ -774,7 +770,7 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
   set<-object
   
   fileNamesObject<- set@parameter$listFile
-  if(class(fileNamesObject) == "expression") fileNamesObject<-eval(fileNamesObject)
+  if(methods::is(fileNamesObject, "expression")) fileNamesObject<-eval(fileNamesObject)
   
   
   
@@ -1038,7 +1034,7 @@ methods::setMethod(f="plotFeatures",
           function(set, mz, typePlot , addFeatureLine, ppm, pdfFile, fileNames,colorBy){
             
             fileNamesObject<- set@parameter$listFile
-            if(class(fileNamesObject) == "expression") fileNamesObject<-eval(fileNamesObject)
+            if(methods::is(fileNamesObject, "expression")) fileNamesObject<-eval(fileNamesObject)
             
             
             
@@ -1212,14 +1208,13 @@ methods::setMethod(f="plotFeatures",
 #' @return a data.frame 
 #' @export
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' SMD<- resetSampleMetadata(mycobacteriaSet)
 resetSampleMetadata<-function(ptrset){
   
   dir<-ptrset@parameter$dir
   fileNamesObject <- ptrset@parameter$listFile
-  if(class(dir) == "expression"){
+  if(methods::is(dir,"expression")){
     dir<- eval(dir)
     fileNamesObject<- eval(fileNamesObject)
   } 
@@ -1262,7 +1257,6 @@ resetSampleMetadata<-function(ptrset){
 #' @return a data.frame 
 #' @export
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' SMD<-getSampleMetadata(mycobacteriaSet)
 getSampleMetadata<- function(set){
@@ -1279,7 +1273,6 @@ getSampleMetadata<- function(set){
 #' @return the ptrSet object in argument with the sampleMetadata modified
 #' @export
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' SMD<-getSampleMetadata(mycobacteriaSet)
 #' colnames(SMD)[1]<-"species"
@@ -1292,7 +1285,7 @@ setSampleMetadata<- function(set, sampleMetadata){
     # check if row names contains all files 
   
             files <- set@parameter$listFile
-            if(class(files) == "expression") files <- eval(files)
+            if(methods::is(files, "expression")) files <- eval(files)
             
             fileName <- basename(files)
             testFilesName <- fileName %in% row.names(sampleMetadata)
@@ -1317,7 +1310,6 @@ setSampleMetadata<- function(set, sampleMetadata){
 #' @return nothing
 #' @export
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' saveFile<-file.path(getwd(),"sampleMetadata.tsv")
 #' #exportSampleMetada(mycobacteriaSet,saveFile)
@@ -1342,7 +1334,6 @@ exportSampleMetada<-function(set, saveFile){
 #' @return a ptrSet with th enew sample Metadata
 #' @export
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' saveFile<-file.path(getwd(),"sampleMetadata.tsv")
 #' #exportSampleMetada(mycobacteriaSet,saveFile)
@@ -1354,7 +1345,7 @@ importSampleMetadata<-function(set,file){
             
             # check if row names contains all files 
             dir<-set@parameter$dir
-            if(class(dir)=="expression") dir<-eval(dir)
+            if(methods::is(dir,"expression")) dir<-eval(dir)
             files <- list.files(dir, recursive = TRUE, pattern="\\.h5$")
             fileName <- basename(files)
             testFilesName <- fileName %in% row.names(sampleMetadata)
@@ -1378,7 +1369,7 @@ methods::setMethod(f="timeLimits",
             
             
             fileNames<-object@parameter$listFile
-            if(class(fileNames) == "expression") fileNames <- eval(fileNames)
+            if(methods::is(fileNames,"expression")) fileNames <- eval(fileNames)
             fileNames<-basename(fileNames)
             
             
@@ -1435,7 +1426,6 @@ methods::setMethod(f="timeLimits",
 #' @param knotsList a list of knot location for each files, with all base name file in name of the list element
 #' @return a list with numeric vector of knots for each file
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #'
 #' #### placed knots every 2 times points
@@ -1508,7 +1498,7 @@ methods::setMethod(f = "calibration",
                    calibrationPeriod=60,tol=70){
             
             fileNames<-x@parameter$listFile
-            if(class(fileNames) == "expression") fileNames<- eval(fileNames)
+            if(methods::is(fileNames,"expression")) fileNames<- eval(fileNames)
             
             
             for (file in fileNames){
@@ -1565,13 +1555,12 @@ methods::setMethod(f = "calibration",
 #' @param ptrSet ptrSte object 
 #' @return the directory in absolute path as character
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' getDirectory(mycobacteriaSet)
 #' @export
 getDirectory<-function(ptrSet) {
   dir<-ptrSet@parameter$dir
-  if(class(dir)=="expression") dir<-eval(dir)
+  if(methods::is(dir,"expression")) dir<-eval(dir)
   return(dir)
   
 }
@@ -1585,7 +1574,6 @@ getDirectory<-function(ptrSet) {
 #' @return a ptrSet
 #' @export
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' mycobacteriaSet<-rmPeakList(mycobacteriaSet)
 rmPeakList<-function(object){
@@ -1605,7 +1593,7 @@ methods::setMethod("show","ptrSet",
           function(object){
             dir<-object@parameter$dir
             fileCheck<-object@parameter$listFile
-            if(class(dir)=="expression") {
+            if(methods::is(dir,"expression")) {
               dir<-eval(dir)
               fileCheck<- eval(fileCheck)
             }
@@ -1631,7 +1619,6 @@ methods::setMethod("show","ptrSet",
 # 'in the \code{createPtrSet} function, then there is just one peak list per file 
 #' \item aligned: for each file the peak List after aligning between time periods and removing background threshold}
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' mycobacteriaSet <- detectPeak(mycobacteriaSet , mzNominal=c(59,60))
 #' getPeakList(mycobacteriaSet)
@@ -1646,7 +1633,6 @@ getPeakList<-function(set){
 #' prepended to the file names.
 #' @return a vector of character that contains all file names
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' getFileNames(mycobacteriaSet)
 #' @rdname getFileNames
@@ -1654,7 +1640,7 @@ getPeakList<-function(set){
 methods::setMethod("getFileNames",signature = "ptrSet",
           function(object, fullNames){
             fileFullNames <- object@parameter$listFile
-            if(class(fileFullNames) == "expression") fileFullNames<-eval(fileFullNames)
+            if(methods::is(fileFullNames,"expression")) fileFullNames<-eval(fileFullNames)
             
             if(fullNames) return(fileFullNames) else return(basename(fileFullNames))
           })

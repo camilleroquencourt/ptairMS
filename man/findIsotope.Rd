@@ -20,7 +20,6 @@ features data of the expressionSet (Biobase::fData()) the isotope m/z in the "is
 of the more intenisf peak of the clusters.
 }
 \examples{
-library(ptairMS)
 data(mycobacteriaSet)
 mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(59,60))
 bacteria.eset <- alignSamples(mycobacteriaSet,fracGroup=0.9,pValGreaterThres=0.05)

@@ -38,7 +38,6 @@ utils::globalVariables("::<-")
 #' @param ... parameter of processFun
 #' @return a S4 object ptrSet, that contains the input ptrset completed with the peakLists. 
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(59,60))
 #' getPeakList(mycobacteriaSet)
@@ -69,7 +68,7 @@ setMethod(f="detectPeak",
             indTimeLim<-ptrset@timeLimit
             parameter <- ptrset@parameter
             dir <- parameter$dir
-            if(class(dir)=="expression") dir<-eval(dir)
+            if(methods::is(dir,"expression")) dir<-eval(dir)
             peakList <-ptrset@peakList
             peakShape<-ptrset@peakShape
             paramOld <- parameter$detectPeakParam
@@ -86,7 +85,7 @@ setMethod(f="detectPeak",
               
             #files already check by checkSet 
             files <- parameter$listFile 
-            if(class(files) == "expression") files<- eval(files) 
+            if(methods::is(files,"expression")) files<- eval(files) 
             
             fileName <- basename(files)
            

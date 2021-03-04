@@ -23,7 +23,6 @@ Imputing missing values by returning back to the raw data and fitting the
 peak shape function on the noise / residuals
 }
 \examples{
-library(ptairMS)
 data(mycobacteriaSet)
 mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(21,63))
 getSampleMetadata(mycobacteriaSet)

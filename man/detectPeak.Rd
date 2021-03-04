@@ -123,7 +123,6 @@ knots<-defineKnots(object = raw,timeLimit=timeLimit)
 peakList <- detectPeak(raw, timeLimit=timeLimit, mzNominal = c(21,59),
 smoothPenalty=0,knots=knots)
 Biobase::fData(peakList)
-library(ptairMS)
 data(mycobacteriaSet)
 mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(59,60))
 getPeakList(mycobacteriaSet)

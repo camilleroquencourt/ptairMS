@@ -80,7 +80,6 @@ Displays the image of the matrix of intensities, the TIC and the TIS,
 for the selected m/z and time ranges
 }
 \examples{
-library(ptairMS)
 data(mycobacteriaSet)
 ptairMS::plotRaw(mycobacteriaSet,mzRange=59,fileNames="Control1.h5")
 

@@ -19,7 +19,6 @@
 #' @export
 #' @examples
 #'\dontrun{
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' mycobacteriaSet <- ptairMS::detectPeak(mycobacteriaSet)
 #' eset <- ptairMS::alignSamples(mycobacteriaSet)

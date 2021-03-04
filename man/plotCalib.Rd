@@ -31,7 +31,6 @@ plot
 Plot the calibration peaks
 }
 \examples{
-library(ptairMS)
 data(mycobacteriaSet)
 plotCalib(mycobacteriaSet,fileNames=getFileNames(mycobacteriaSet)[1])
 

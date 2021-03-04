@@ -68,7 +68,6 @@ filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptair
 raw <- readRaw(filePath)
 p <- plotTIC(raw)
 p
-library(ptairMS)
 data(mycobacteriaSet)
 plotTIC(mycobacteriaSet,type="ggplot")
 }

@@ -19,7 +19,6 @@ a list containing:
 get the peak list of a ptrSet object
 }
 \examples{
-library(ptairMS)
 data(mycobacteriaSet)
 mycobacteriaSet <- detectPeak(mycobacteriaSet , mzNominal=c(59,60))
 getPeakList(mycobacteriaSet)

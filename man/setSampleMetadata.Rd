@@ -18,7 +18,6 @@ the ptrSet object in argument with the sampleMetadata modified
 set sampleMetadata in a ptrSet
 }
 \examples{
-library(ptairMS)
 data(mycobacteriaSet)
 SMD<-getSampleMetadata(mycobacteriaSet)
 colnames(SMD)[1]<-"species"

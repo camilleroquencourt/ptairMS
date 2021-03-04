@@ -261,7 +261,6 @@ aggregateTemporalFile<-function(time, indTimeLim, matPeak, funAggreg,dbl=4){
 #' @param ... not used
 #' @return an expressionSet (Biobase object), with annotaTion in features Data
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(21,59))
 #' eset <- alignSamples(mycobacteriaSet,pValGreaterThres=0.05)
@@ -606,7 +605,7 @@ imputeFunc<-function(file,missingValues,eSet,ptrSet){
   primaryIon<-ptrSet@primaryIon
   filesFullName<-ptrSet@parameter$listFile
   
-  if(class(filesFullName) == "expression") filesFullName<- eval(filesFullName) 
+  if(methods::is(filesFullName,"expression")) filesFullName<- eval(filesFullName) 
   
   j<-which(file==colnames(Biobase::exprs(eSet)))
   filesFullName.j<-filesFullName[which(basename(filesFullName)==file)]
@@ -766,7 +765,6 @@ imputeFunc<-function(file,missingValues,eSet,ptrSet){
 #' @return the same expression set as in input, with missing values imputing
 #' @export 
 #' @examples
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(21,63))
 #' getSampleMetadata(mycobacteriaSet)
@@ -841,7 +839,7 @@ imputeMat <- function(X,ptrSet,quantiUnit){
   
   #get files full names in ptrSet object
   filesFullName<-ptrSet@parameter$listFile
-  if(class(filesFullName) == "expression") filesFullName<- eval(filesFullName) 
+  if(methods::is(filesFullName,"expression")) filesFullName<- eval(filesFullName) 
   
   for (file in namesFilesMissingValues){
     j<-which(file==colnames(X))

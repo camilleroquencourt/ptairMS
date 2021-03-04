@@ -16,7 +16,6 @@ a data.frame
 get sampleMetadata of a ptrSet
 }
 \examples{
-library(ptairMS)
 data(mycobacteriaSet)
 SMD<-getSampleMetadata(mycobacteriaSet)
 }

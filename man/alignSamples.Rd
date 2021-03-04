@@ -84,7 +84,6 @@ an expressionSet (Biobase object), with annotaTion in features Data
 Align mass tables of different samples
 }
 \examples{
-library(ptairMS)
 data(mycobacteriaSet)
 mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(21,59))
 eset <- alignSamples(mycobacteriaSet,pValGreaterThres=0.05)

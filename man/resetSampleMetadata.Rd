@@ -16,7 +16,6 @@ a data.frame
 reset the default sampleMetadata
 }
 \examples{
-library(ptairMS)
 data(mycobacteriaSet)
 SMD<- resetSampleMetadata(mycobacteriaSet)
 }

@@ -23,7 +23,6 @@ plot
 ptrSet object
 }
 \examples{
-library(ptairMS)
 data(mycobacteriaSet)
 plot(mycobacteriaSet)
 plot(mycobacteriaSet,typePlot="calibError")

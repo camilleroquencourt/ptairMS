@@ -18,7 +18,6 @@ nothing
 export sampleMetadata
 }
 \examples{
-library(ptairMS)
 data(mycobacteriaSet)
 saveFile<-file.path(getwd(),"sampleMetadata.tsv")
 #exportSampleMetada(mycobacteriaSet,saveFile)

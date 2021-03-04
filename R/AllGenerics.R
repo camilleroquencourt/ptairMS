@@ -104,7 +104,6 @@ setGeneric("plotTIC",
 #' @param colorBy character. A column name of sample metadata by which the line are colored. 
 #' @return a plotly or ggplot2 object 
 #' @examples 
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' plotF<-plotFeatures(mycobacteriaSet,mz=59.049,type="ggplot")
 #' print(plotF)
@@ -147,7 +146,6 @@ setGeneric("getFileNames", function(object,fullNames=FALSE){
 #' @return Returns the data.frame with additional columns containing the vocDB informations
 #' for the matched ion_mass values as well as the detected isotopes
 #' @examples
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal =c(59,79))
 #' bacteria.eset <-alignSamples(mycobacteriaSet,pValGreaterThres=0.05)

@@ -19,7 +19,6 @@ object with the same parameter used for the function \code{createPtrSet} who has
 \code{updatePtrSet} also delete from the ptrSet deleted files in the directory.
 }
 \examples{
-library(ptairMS)
 data(mycobacteriaSet)
 ##add or delete files in the directory 
 # mycobacteriaSet<- updatePtrSet(mycobacteriaSet)

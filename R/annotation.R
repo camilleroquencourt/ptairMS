@@ -394,7 +394,6 @@ formula2mass <- function(formula.vc,
 #' @param ppm presision for the mass matching
 #' @return an expresion with the column isotope added in teh features data
 #' @examples
-#' library(ptairMS)
 #' data(mycobacteriaSet)
 #' mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(59,60))
 #' bacteria.eset <- alignSamples(mycobacteriaSet,fracGroup=0.9,pValGreaterThres=0.05)
