@@ -18,7 +18,7 @@ nothing
 export sampleMetadata
 }
 \examples{
-data(mycobacteriaSet)
+data(exhaledPtrset )
 saveFile<-file.path(getwd(),"sampleMetadata.tsv")
-#exportSampleMetada(mycobacteriaSet,saveFile)
+#exportSampleMetada(exhaledPtrset ,saveFile)
 }

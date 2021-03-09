@@ -1,7 +1,6 @@
 testthat::context("Test Peak detection")
 
 test_PeakList<-function(){
-  
   ## error
   testthat::expect_error(PeakList(NULL))
   

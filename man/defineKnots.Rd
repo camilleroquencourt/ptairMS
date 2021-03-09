@@ -59,11 +59,11 @@ All file must be informed. The knots location must be contained in the time axis
 }
 }
 \examples{
-data(mycobacteriaSet)
+data(exhaledPtrset)
 
 #### placed knots every 2 times points
-mycobacteria <- defineKnots(mycobacteriaSet,knotsPeriod=2,method="uniform")
+mycobacteria <- defineKnots(exhaledPtrset ,knotsPeriod=2,method="uniform")
 
 #### placed knots every 3 times points in the expiration (default)
-mycobacteria <- defineKnots(mycobacteriaSet,knotsPeriod=3,method="expiration")
+mycobacteria <- defineKnots(exhaledPtrset ,knotsPeriod=3,method="expiration")
 }

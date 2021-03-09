@@ -264,9 +264,9 @@ createPtrSet<-function(dir, setName,
 #' @return teh same ptrset object than ininput, but completed with new files and without deleted files in the directory
 #' @export
 #' @examples
-#' data(mycobacteriaSet)
+#' data(exhaledPtrset)
 #' ##add or delete files in the directory 
-#' # mycobacteriaSet<- updatePtrSet(mycobacteriaSet)
+#' # exhaledPtrset<- updatePtrSet(exhaledPtrset)
 updatePtrSet<-function(ptrset){
 
   if(! methods::is(ptrset,"ptrSet")) stop("ptrset must be a ptrSet object. Use createPtrSet function")

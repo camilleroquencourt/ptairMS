@@ -16,6 +16,6 @@ a data.frame
 get sampleMetadata of a ptrSet
 }
 \examples{
-data(mycobacteriaSet)
-SMD<-getSampleMetadata(mycobacteriaSet)
+data(exhaledPtrset )
+SMD<-getSampleMetadata(exhaledPtrset )
 }

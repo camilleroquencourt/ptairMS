@@ -58,6 +58,7 @@ Two real PTR-TOF-MS raw data sets are available in the _**ptairData**_ package.
 
 Note: To limit the size of the data and speed up the analysis, the raw data are truncated in the mass dimension within the range $[20.4,21.6] \cup [50,150]$ for individuals, and $[20.4,21.6] \cup [56.4,90.6]$ for mycobacteria.
 
+
 # Hands on
 
 ```{r package, message = FALSE, warning = FALSE}
@@ -90,7 +91,7 @@ To perform these steps and check the quality of the raw data, we first use the `
 
 * builds a default `sampleMetadata` table with the file names, date and possibly the subdirectories if it exists
 
-This function creates a unique `ptrSet` object for the whole study, which contains all necessary information about the files: calibration parameters, time limits, peak lists (as this step they are empty), and primary ion quantification.
+This function creates a unique `ptrSet` object for the whole study, which contains all necessary information about the files: calibration parameters, time limits, peak lists (as this step they are empty), and primary ion quantification. The two ptrSet of the examples datasets are included in this package, you can load them with `r data(exhaledPtrset)` and `r data(mycobacteriaSet)`. 
 
 Importantly, the `ptrSet` may be updated if new files are added or deleted from the directory, with the function `updatePtrSet` (see the *Updating the ptrSet* section).
 
@@ -290,7 +291,7 @@ peakList1<-peakList$`ind1-1.h5`
 X<-Biobase::exprs(peakList1)
 Y<-Biobase::fData(peakList1)
 mz<-Y[,"Mz"]
-plot(X[1,],ylab="cps",xlab="time",main=paste("Temporal evolution of ions ",mz[1]))
+plot(X[which.min(abs(mz-59.0498)),],ylab="cps",xlab="time",main=paste("Temporal evolution of acetone "))
 head(Y)
 ```
 
@@ -409,6 +410,23 @@ We then could plot the raw data around this masses to check the robustness of th
 plotFeatures(exhaledPtrset,mz = 53.0387,typePlot = "ggplot",colorBy = "individual")
 plotFeatures(exhaledPtrset,mz = 67.0539,typePlot = "ggplot",colorBy = "individual")
 ```
+
+## Mycobacteria dataset
+
+We demonstrate here the quick analysis of cell culture headspace. The headspace analysis acquisition period is detected as same as the expiration, here on the total ion traces.  
+
+```{r}
+data("mycobacteriaSet")
+plotTIC(mycobacteriaSet,type="ggplot",showLimits = TRUE,file="Specie-a2.h5")
+eSet <- alignSamples(mycobacteriaSet)
+eSet<-impute(eSet,ptrSet = mycobacteriaSet)
+X<-Biobase::exprs(eSet)
+pca<-ropls::opls(log2(t(X)),predI =2,crossvalI=5,info.txtC = "none",
+  fig.pdfC = "none")
+ropls::view(log2(X),printL=FALSE)
+plot(pca,type="x-score")
+```
+
 
 ## Processing a single raw file
 

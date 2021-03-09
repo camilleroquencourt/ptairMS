@@ -18,8 +18,8 @@ the ptrSet object in argument with the sampleMetadata modified
 set sampleMetadata in a ptrSet
 }
 \examples{
-data(mycobacteriaSet)
-SMD<-getSampleMetadata(mycobacteriaSet)
+data(exhaledPtrset )
+SMD<-getSampleMetadata(exhaledPtrset )
 colnames(SMD)[1]<-"species"
-mycobacteria<-setSampleMetadata(mycobacteriaSet,SMD)
+mycobacteria<-setSampleMetadata(exhaledPtrset ,SMD)
 }

@@ -394,12 +394,11 @@ formula2mass <- function(formula.vc,
 #' @param ppm presision for the mass matching
 #' @return an expresion with the column isotope added in teh features data
 #' @examples
-#' data(mycobacteriaSet)
-#' mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(59,60))
-#' bacteria.eset <- alignSamples(mycobacteriaSet,fracGroup=0.9,pValGreaterThres=0.05)
-#' bacteria.eset<- impute(bacteria.eset,mycobacteriaSet)
-#' bacteria.eset <-findIsotope(bacteria.eset)
-#' Biobase::fData(bacteria.eset)[,"isotope",drop=FALSE]
+#' data(exhaledPtrset)
+#' exhaled.eset <- alignSamples(exhaledPtrset ,fracGroup=0.9,pValGreaterThres=0.05)
+#' exhaled.eset<- impute(exhaled.eset,exhaledPtrset )
+#' exhaled.eset <-findIsotope(exhaled.eset)
+#' Biobase::fData(exhaled.eset)[,"isotope",drop=FALSE]
 #' @export
 findIsotope<-function(eSet,ppm=100){
   X<-Biobase::exprs(eSet)
@@ -468,14 +467,14 @@ validateGroup<-function(groupIso,X){
   if(anno[,"vocDB_ion_formula"] != ""){
     formula<-anno[,"vocDB_ion_formula"]
     isoDistrib<-enviPat::isopattern(isotopes,chemforms = formula,threshold = 1,verbose = FALSE)[[1]]
-    testRatio<- sapply(seq_len(nrow(ratio)),function(x){
+    testRatio<- vapply(seq_len(nrow(ratio)),function(x){
       index<-which(abs(isoDistrib[,"m/z"]-groupIso[x+1])*10^6/round(groupIso[x+1]) < 100)
       if(length(index)!=0){
         testRatio<- stats::median(ratio[x,],na.rm = TRUE)*100 <= max(isoDistrib[index,"abundance"]*1.02,50)
     }else {
       testRatio<- stats::median(ratio[x,],na.rm = TRUE) < 0.5
     }
-      }) 
+      },FUN.VALUE = TRUE) 
   }else {
     testRatio<- apply(ratio,1,function(x) stats::median(x,na.rm = TRUE)) < 0.5
   }

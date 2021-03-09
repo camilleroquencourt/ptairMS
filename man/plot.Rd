@@ -23,9 +23,9 @@ plot
 ptrSet object
 }
 \examples{
-data(mycobacteriaSet)
-plot(mycobacteriaSet)
-plot(mycobacteriaSet,typePlot="calibError")
-plot(mycobacteriaSet,typePlot="resolution")
-plot(mycobacteriaSet,typePlot="peakShape")
+data(exhaledPtrset )
+plot(exhaledPtrset )
+plot(exhaledPtrset ,typePlot="calibError")
+plot(exhaledPtrset ,typePlot="resolution")
+plot(exhaledPtrset ,typePlot="peakShape")
 }

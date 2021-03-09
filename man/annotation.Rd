@@ -72,18 +72,17 @@ Putatively annotate VOC mz by using the reference compilation from the literatur
 and detect isotope thanks to the \code{findIsotope} function.
 }
 \examples{
-data(mycobacteriaSet)
-mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal =c(59,79))
-bacteria.eset <-alignSamples(mycobacteriaSet,pValGreaterThres=0.05)
+data(exhaledPtrset )
+exhaled.eset <-alignSamples(exhaledPtrset ,pValGreaterThres=0.05)
 # Expression Set
-bacteria.eset <- annotateVOC(bacteria.eset)
-head(Biobase::fData(bacteria.eset)[, c("vocDB_ion_mass", "vocDB_ion_formula")])
+exhaled.eset <- annotateVOC(exhaled.eset)
+head(Biobase::fData(exhaled.eset)[, c("vocDB_ion_mass", "vocDB_ion_formula")])
 # Data frame
-bacteria_fdata.df <- Biobase::fData(bacteria.eset)
-bacteria_fdata.df <- annotateVOC(bacteria_fdata.df)
-head(bacteria_fdata.df[, c("vocDB_ion_mass", "vocDB_ion_formula")])
+exhaled_fdata.df <- Biobase::fData(exhaled.eset)
+exhaled_fdata.df <- annotateVOC(exhaled_fdata.df)
+head(exhaled_fdata.df[, c("vocDB_ion_mass", "vocDB_ion_formula")])
 # Numeric
-ionMass.vn <- as.numeric(Biobase::featureNames(bacteria.eset))
+ionMass.vn <- as.numeric(Biobase::featureNames(exhaled.eset))
 annotated_ions.df <- annotateVOC(ionMass.vn)
 head(annotated_ions.df[, c("vocDB_ion_mass", "vocDB_ion_formula")])
 }

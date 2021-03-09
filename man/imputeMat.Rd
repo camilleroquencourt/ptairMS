@@ -20,3 +20,9 @@ the same expression set as in input, with missing values imputing
 Imputing missing values by returning back to the raw data and fitting the 
 peak shape function on the noise / residuals
 }
+\examples{
+data(exhaledPtrset)
+eSet <- alignSamples(exhaledPtrset,pValGreaterThres=0.05,fracGroup=0)
+X <-Biobase::exprs(eSet)
+X <- imputeMat(X,exhaledPtrset,quantiUnit="ppb")
+}

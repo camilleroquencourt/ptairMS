@@ -16,6 +16,6 @@ a data.frame
 reset the default sampleMetadata
 }
 \examples{
-data(mycobacteriaSet)
-SMD<- resetSampleMetadata(mycobacteriaSet)
+data(exhaledPtrset )
+SMD<- resetSampleMetadata(exhaledPtrset )
 }

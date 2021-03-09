@@ -51,7 +51,7 @@ a plotly or ggplot2 object
 Plot the raw data spectrum for several files in a ptrSet object around the \code{mz} masses.
 }
 \examples{
-data(mycobacteriaSet)
-plotF<-plotFeatures(mycobacteriaSet,mz=59.049,type="ggplot")
+data(exhaledPtrset )
+plotF<-plotFeatures(exhaledPtrset ,mz=59.049,type="ggplot")
 print(plotF)
 }

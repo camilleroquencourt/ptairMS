@@ -28,10 +28,9 @@ export (e.g., the samples are written column wise in the 'dataMatrix.tsv'
 exported file).
 }
 \examples{
+data(exhaledPtrset )
+eset <- ptairMS::alignSamples(exhaledPtrset ) 
 \dontrun{
-data(mycobacteriaSet)
-mycobacteriaSet <- ptairMS::detectPeak(mycobacteriaSet)
-eset <- ptairMS::alignSamples(mycobacteriaSet)
 writeEset(eset, dirName = file.path(getwd(), "processed_dataset"))
 }
 }

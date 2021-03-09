@@ -18,6 +18,6 @@ peak function. First delete the peakLIst with \code{rmPeakList}, and apply \code
 with the new parameters.
 }
 \examples{
-data(mycobacteriaSet)
-mycobacteriaSet<-rmPeakList(mycobacteriaSet)
+data(exhaledPtrset )
+exhaledPtrset <-rmPeakList(exhaledPtrset )
 }

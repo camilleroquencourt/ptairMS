@@ -22,6 +22,6 @@ a vector of character that contains all file names
 get the file names containing in the directory of a ptrSet
 }
 \examples{
-data(mycobacteriaSet)
-getFileNames(mycobacteriaSet)
+data(exhaledPtrset )
+getFileNames(exhaledPtrset )
 }

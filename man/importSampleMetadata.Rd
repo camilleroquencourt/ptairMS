@@ -19,8 +19,9 @@ a ptrSet with th enew sample Metadata
 import a sampleMetadata from a tsv file to a ptrSet object
 }
 \examples{
-data(mycobacteriaSet)
+library(ptairData)
+data(exhaledPtrset )
 saveFile<-file.path(getwd(),"sampleMetadata.tsv")
-#exportSampleMetada(mycobacteriaSet,saveFile)
-#mycobacteria<-importSampleMetadata(mycobacteriaSet,saveFile)
+#exportSampleMetada(exhaledPtrset ,saveFile)
+#mycobacteria<-importSampleMetadata(exhaledPtrset ,saveFile)
 }

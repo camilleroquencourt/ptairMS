@@ -20,10 +20,9 @@ features data of the expressionSet (Biobase::fData()) the isotope m/z in the "is
 of the more intenisf peak of the clusters.
 }
 \examples{
-data(mycobacteriaSet)
-mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(59,60))
-bacteria.eset <- alignSamples(mycobacteriaSet,fracGroup=0.9,pValGreaterThres=0.05)
-bacteria.eset<- impute(bacteria.eset,mycobacteriaSet)
-bacteria.eset <-findIsotope(bacteria.eset)
-Biobase::fData(bacteria.eset)[,"isotope",drop=FALSE]
+data(exhaledPtrset)
+exhaled.eset <- alignSamples(exhaledPtrset ,fracGroup=0.9,pValGreaterThres=0.05)
+exhaled.eset<- impute(exhaled.eset,exhaledPtrset )
+exhaled.eset <-findIsotope(exhaled.eset)
+Biobase::fData(exhaled.eset)[,"isotope",drop=FALSE]
 }

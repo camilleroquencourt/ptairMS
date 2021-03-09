@@ -12,11 +12,11 @@ utils::globalVariables(c("error","name","out","intervalRef","signal","signal0","
 #' @rdname plot
 #' @export
 #' @examples 
-#' data(mycobacteriaSet)
-#' plot(mycobacteriaSet)
-#' plot(mycobacteriaSet,typePlot="calibError")
-#' plot(mycobacteriaSet,typePlot="resolution")
-#' plot(mycobacteriaSet,typePlot="peakShape")
+#' data(exhaledPtrset )
+#' plot(exhaledPtrset )
+#' plot(exhaledPtrset ,typePlot="calibError")
+#' plot(exhaledPtrset ,typePlot="resolution")
+#' plot(exhaledPtrset ,typePlot="peakShape")
 methods::setMethod(f = "plot",
           signature = "ptrSet",
           function(x, y, typePlot= ""){
@@ -98,7 +98,8 @@ plotResolution<-function(set){
             return(list(plot=g,table=info))
           }
         
-    
+
+#' @importFrom rlang .data    
 plotCalibError<- function(set){
             
   massCalib<-set@mzCalibRef
@@ -148,11 +149,11 @@ plotCalibError<- function(set){
             calibErrorMat<-calibErrorMat[,list(error,name,out=ifelse(is_outlier(error), error, as.numeric(NA))),by=Mz]
             
             # boxplot with labels 
-            p<-ggplot2::ggplot(subset(calibErrorMat, !is.na(error)), ggplot2::aes(y=error, x=Mz)) + 
+            p<-ggplot2::ggplot(subset(calibErrorMat, !is.na(error)), ggplot2::aes(y= .data$error, x=.data$Mz)) + 
               ggplot2::geom_boxplot() + 
               ggplot2::geom_text(data=calibErrorMat[!is.na(out),],
-                                 ggplot2::aes(x=Mz,y=error,
-                                              label = name),vjust = -.5,size=3.5) +
+                                 ggplot2::aes(x= .data$Mz, y=.data$error,
+                                              label = .data$name),vjust = -.5,size=3.5) +
               ggplot2::ggtitle("Calibration error") + ggplot2::ylab("ppm") + 
               ggplot2::theme_classic()
             
@@ -246,10 +247,11 @@ plotPeakShape<-function(set,showAverage=FALSE){
           if(showAverage){
             p<-ggplot2::ggplot() +
               ggplot2::geom_line(data=peakData,
-                                 ggplot2::aes(x=intervalRef,y=signal,group=Mz,colour=Mz),size=1) +
+                                 ggplot2::aes(x=.data$intervalRef,y=.data$signal,
+                                              group=.data$Mz,colour=.data$Mz),size=1) +
               ggplot2::geom_line(data=data.frame(x=interval.ref2,
                                                  y=apply(peaksMAT,which.max(dim(peaksMAT)),mean)),
-                                 ggplot2::aes(x,y,colour="average"),size=1.2)+
+                                 ggplot2::aes(x=.data$x, y=.data$y,colour="average"),size=1.2)+
               ggplot2::ggtitle("Average normalized peak shape of calibration peaks") +
               ggplot2::xlab('Mz interval normalized')+
               ggplot2::ylab("Intenisty normalized")+
@@ -258,7 +260,8 @@ plotPeakShape<-function(set,showAverage=FALSE){
           }else {
             p<-ggplot2::ggplot() +
               ggplot2::geom_line(data=peakData,
-                                 ggplot2::aes(x=intervalRef,y=signal,group=Mz,colour=Mz),size=1)+
+                                 ggplot2::aes(x=.data$intervalRef,y=.data$signal,
+                                              group=.data$Mz,colour=.data$Mz),size=1)+
               ggplot2::ggtitle("Average normalized peak shape of calibration peaks") +
               ggplot2::xlab('Mz interval normalized')+
               ggplot2::ylab("Intenisty normalized")+
@@ -293,9 +296,14 @@ plotPeakShape<-function(set,showAverage=FALSE){
                                  intervalRef=rep(interval.ref2,length(mzRef)))
             peakData<-peakData[!is.na(peakData$signal0),]
             p<-p +
-              ggplot2::geom_line(data=peakData,ggplot2::aes(x=intervalRef,y=signal0,group=Mz,colour=Mz),size=0.6,
+              ggplot2::geom_line(data=peakData,ggplot2::aes(x=.data$intervalRef,
+                                                            y=.data$signal0,
+                                                            group=.data$Mz,colour=.data$Mz),size=0.6,
                                  linetype = "dashed")+
-              ggplot2::geom_line(data=peakData,ggplot2::aes(x=intervalRef,y=signal1,group=Mz,colour=Mz),size=0.6,
+              ggplot2::geom_line(data=peakData,
+                                 mapping=ggplot2::aes(x=.data$intervalRef,
+                                                      y=.data$signal1,group=.data$Mz,
+                                                      colour=.data$Mz),size=0.6,
                                  linetype = "dashed") 
           }
           
@@ -448,25 +456,25 @@ plotPtrReaction<-function(pSet){
   })) 
   primaryIon<-Reduce(c,lapply(pSet@primaryIon,function(x) x$primaryIon))
   date <- Reduce(c,pSet@date)
-  date<-sapply(date,function(x) chron::chron(dates. = strsplit(x," ")[[1]][1],
-                     times. = strsplit(x," ")[[1]][2],format = c("d/m/y","h:m:s")))
+  date<-vapply(date,function(x) chron::chron(dates. = strsplit(x," ")[[1]][1],
+                     times. = strsplit(x," ")[[1]][2],format = c("d/m/y","h:m:s")),FUN.VALUE = chron::chron(1))
   
-  Udrift<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=date,y=U),
+  Udrift<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=.data$date,y=.data$U),
                         data=data.frame(date=as.Date(chron::as.dates(date)),U=U)) +
     ggplot2::ggtitle("Drift voltage")+  ggplot2::ylab("V") +
     ggplot2::theme_classic()+ ggplot2::theme(title = ggplot2::element_text(size=9))
   
-  Tdrift<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=date,y=TD),
+  Tdrift<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=.data$date,y=.data$TD),
                                          data=data.frame(date=as.Date(chron::as.dates(date)),TD=TD)) +
     ggplot2::ggtitle("Drift temperature")+  ggplot2::ylab("degree") +
     ggplot2::theme_classic() + ggplot2::theme(title = ggplot2::element_text(size=9))
   
-  Pdrift<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=date,y=PD),
+  Pdrift<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=.data$date,y=.data$PD),
                                          data=data.frame(date=as.Date(chron::as.dates(date)),PD=PD)) +
     ggplot2::ggtitle("Drift pressure")+  ggplot2::ylab("mbar") +
     ggplot2::theme_classic()+ ggplot2::theme(title = ggplot2::element_text(size=9))
   
-  primaryIonPlot<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=date,y=cps),
+  primaryIonPlot<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=.data$date,y=.data$cps),
                                          data=data.frame(date=as.Date(chron::as.dates(date)),
                                                          cps=primaryIon)) +
     ggplot2::ggtitle("Primary ion isotope intensity")+  ggplot2::xlab("Date")+
@@ -499,8 +507,8 @@ plotPtrReaction<-function(pSet){
 #' @export
 #' @rdname plotCalib
 #' @examples 
-#' data(mycobacteriaSet)
-#' plotCalib(mycobacteriaSet,fileNames=getFileNames(mycobacteriaSet)[1])
+#' data(exhaledPtrset )
+#' plotCalib(exhaledPtrset ,fileNames=getFileNames(exhaledPtrset )[1])
 #'
 #' ##ptrRaw 
 #' filePath<-system.file("extdata/exhaledAir/ind1/ind1-1.h5", package = "ptairData")
@@ -599,9 +607,9 @@ methods::setMethod(f="plotCalib",
 #' @rdname plotTIC
 #' @importFrom grDevices dev.off pdf
 #' @export
-#' @examples 
-#' data(mycobacteriaSet)
-#' plotTIC(mycobacteriaSet,type="ggplot")
+#' @examples
+#' data(exhaledPtrset )
+#' plotTIC(exhaledPtrset ,type="ggplot")
 methods::setMethod(f="plotTIC",
           signature = "ptrSet",
           function(object, type, baselineRm, showLimits, pdfFile=NULL, 
@@ -687,8 +695,8 @@ methods::setMethod(f="plotTIC",
                 
                 data <- data.frame(time=time,Sum_cps=ticPlot/(time[2]-time[1]),Legend=colour)
                  
-                p <- p + ggplot2::geom_point(mapping=ggplot2::aes(time,Sum_cps, color = Legend ),data=data) + 
-                  ggplot2::geom_line(mapping=ggplot2::aes (time,Sum_cps, color = Legend ),data=data,size=1)
+                p <- p + ggplot2::geom_point(mapping=ggplot2::aes(x=.data$time,y=.data$Sum_cps, color = .data$Legend ),data=data) + 
+                  ggplot2::geom_line(mapping=ggplot2::aes (x=.data$time,y=.data$Sum_cps, color = .data$Legend ),data=data,size=1)
                 }
                 if(!is.null(pdfFile)) dev.off()
                 
@@ -703,7 +711,8 @@ methods::setMethod(f="plotTIC",
                                   function(j) data.frame(x= as.numeric(names(set@TIC[[j]]))[c(set@timeLimit[[j]]$exp)],
                                                          Legend=rep(j,2)))
                   limitdf <- Reduce(rbind,limitdf) 
-                  p <- p + ggplot2::geom_vline(mapping=ggplot2::aes(xintercept =x,color=Legend),data=limitdf,
+                  p <- p + ggplot2::geom_vline(mapping=ggplot2::aes(xintercept =.data$x,
+                                                                    color=.data$Legend),data=limitdf,
                                                size=0.9)
                 } 
 
@@ -743,8 +752,8 @@ methods::setMethod(f="plotTIC",
 #' @param ... not used
 #' @rdname plotRaw
 #' @examples 
-#' data(mycobacteriaSet)
-#' ptairMS::plotRaw(mycobacteriaSet,mzRange=59,fileNames="Control1.h5")
+#' data(exhaledPtrset)
+#' ptairMS::plotRaw(exhaledPtrset ,mzRange=59,fileNames="ind1-1.h5")
 #'
 #' patientRaw <- ptairMS::readRaw(system.file("extdata/exhaledAir/ind1/ind1-1.h5",  
 #' package = "ptairData"),  mzCalibRef=c(21.022,59.049,75.05))
@@ -1127,8 +1136,10 @@ methods::setMethod(f="plotFeatures",
                                      cps=spectrum[indexSub] ,
                                     timePeriods=as.character(i))
                   plotFile <- plotFile + 
-                    ggplot2::geom_point(mapping = ggplot2::aes(x=mz, y=cps, color=timePeriods),data=data) + 
-                    ggplot2::geom_line(mapping = ggplot2::aes(x=mz, y=cps, color=timePeriods),data=data,size=1)
+                    ggplot2::geom_point(mapping = ggplot2::aes(x=.data$mz, y=.data$cps, 
+                                                               color=.data$timePeriods),data=data) + 
+                    ggplot2::geom_line(mapping = ggplot2::aes(x=.data$mz, y=.data$cps, 
+                                                              color=.data$timePeriods),data=data,size=1)
                    
                 }
                 
@@ -1139,8 +1150,8 @@ methods::setMethod(f="plotFeatures",
                   
                   #plot background to the file plot
                   plotFile <- plotFile + 
-                    ggplot2::geom_point(mapping = ggplot2::aes(x=mz, y=cps, color=timePeriods),data=data) + 
-                    ggplot2::geom_line(mapping = ggplot2::aes(x=mz, y=cps, color=timePeriods), data=data,
+                    ggplot2::geom_point(mapping = ggplot2::aes(x=.data$mz, y=.data$cps, color=.data$timePeriods),data=data) + 
+                    ggplot2::geom_line(mapping = ggplot2::aes(x=.data$mz, y=.data$cps, color=.data$timePeriods), data=data,
                                        linetype = "dashed")
                 }
                 
@@ -1163,8 +1174,8 @@ methods::setMethod(f="plotFeatures",
                 data=data.frame( mz = mzNew[indexSub], cps = spectrum[indexSub], 
                                  Legend = rep(colour,length(indexSub)))
                 plotAll <- plotAll +
-                  ggplot2::geom_point(ggplot2::aes(x=mz,y=cps,color=Legend),data=data) +
-                  ggplot2::stat_function(mapping=ggplot2::aes(x=mz,color=Legend),data=data, 
+                  ggplot2::geom_point(ggplot2::aes(x=.data$mz,y=.data$cps,color=.data$Legend),data=data) +
+                  ggplot2::stat_function(mapping=ggplot2::aes(x=.data$mz,color=.data$Legend),data=data, 
                                          fun=splineInterpol ,n = 1000,size=1)
                 
                 # spline interpolation for background
@@ -1175,7 +1186,7 @@ methods::setMethod(f="plotFeatures",
                   #plot background
                   data= data.frame(mz = mzNew[indexSub], Legend = rep(colour,length(indexSub)))
                   plotAll<-plotAll + 
-                    ggplot2::stat_function(mapping=ggplot2::aes(x=mz,color=Legend),data=data, 
+                    ggplot2::stat_function(mapping=ggplot2::aes(x=.data$mz,color=.data$Legend),data=data, 
                                          fun=splineInterpol ,n = 1000,linetype="dashed",size=1)
                 }
                 
@@ -1208,8 +1219,8 @@ methods::setMethod(f="plotFeatures",
 #' @return a data.frame 
 #' @export
 #' @examples 
-#' data(mycobacteriaSet)
-#' SMD<- resetSampleMetadata(mycobacteriaSet)
+#' data(exhaledPtrset )
+#' SMD<- resetSampleMetadata(exhaledPtrset )
 resetSampleMetadata<-function(ptrset){
   
   dir<-ptrset@parameter$dir
@@ -1257,8 +1268,8 @@ resetSampleMetadata<-function(ptrset){
 #' @return a data.frame 
 #' @export
 #' @examples 
-#' data(mycobacteriaSet)
-#' SMD<-getSampleMetadata(mycobacteriaSet)
+#' data(exhaledPtrset )
+#' SMD<-getSampleMetadata(exhaledPtrset )
 getSampleMetadata<- function(set){
   
   if(!methods::is(set,"ptrSet")) stop("set is not a ptrSet object")
@@ -1273,10 +1284,10 @@ getSampleMetadata<- function(set){
 #' @return the ptrSet object in argument with the sampleMetadata modified
 #' @export
 #' @examples 
-#' data(mycobacteriaSet)
-#' SMD<-getSampleMetadata(mycobacteriaSet)
+#' data(exhaledPtrset )
+#' SMD<-getSampleMetadata(exhaledPtrset )
 #' colnames(SMD)[1]<-"species"
-#' mycobacteria<-setSampleMetadata(mycobacteriaSet,SMD)
+#' mycobacteria<-setSampleMetadata(exhaledPtrset ,SMD)
 setSampleMetadata<- function(set, sampleMetadata){
   
   #check if set is ptrSet
@@ -1310,9 +1321,9 @@ setSampleMetadata<- function(set, sampleMetadata){
 #' @return nothing
 #' @export
 #' @examples 
-#' data(mycobacteriaSet)
+#' data(exhaledPtrset )
 #' saveFile<-file.path(getwd(),"sampleMetadata.tsv")
-#' #exportSampleMetada(mycobacteriaSet,saveFile)
+#' #exportSampleMetada(exhaledPtrset ,saveFile)
 exportSampleMetada<-function(set, saveFile){
   
   if(!methods::is(set,"ptrSet")) stop("set is not a ptrSet object")
@@ -1334,10 +1345,11 @@ exportSampleMetada<-function(set, saveFile){
 #' @return a ptrSet with th enew sample Metadata
 #' @export
 #' @examples 
-#' data(mycobacteriaSet)
+#' library(ptairData)
+#' data(exhaledPtrset )
 #' saveFile<-file.path(getwd(),"sampleMetadata.tsv")
-#' #exportSampleMetada(mycobacteriaSet,saveFile)
-#' #mycobacteria<-importSampleMetadata(mycobacteriaSet,saveFile)
+#' #exportSampleMetada(exhaledPtrset ,saveFile)
+#' #mycobacteria<-importSampleMetadata(exhaledPtrset ,saveFile)
 importSampleMetadata<-function(set,file){
   if(!methods::is(set,"ptrSet")) stop("set is not a ptrSet object")
             sampleMetadata <- try(utils::read.table(file = file, sep="\t",
@@ -1426,13 +1438,13 @@ methods::setMethod(f="timeLimits",
 #' @param knotsList a list of knot location for each files, with all base name file in name of the list element
 #' @return a list with numeric vector of knots for each file
 #' @examples 
-#' data(mycobacteriaSet)
+#' data(exhaledPtrset)
 #'
 #' #### placed knots every 2 times points
-#' mycobacteria <- defineKnots(mycobacteriaSet,knotsPeriod=2,method="uniform")
+#' mycobacteria <- defineKnots(exhaledPtrset ,knotsPeriod=2,method="uniform")
 #' 
 #' #### placed knots every 3 times points in the expiration (default)
-#' mycobacteria <- defineKnots(mycobacteriaSet,knotsPeriod=3,method="expiration")
+#' mycobacteria <- defineKnots(exhaledPtrset ,knotsPeriod=3,method="expiration")
 #' @rdname defineKnots
 #' @export
 methods::setMethod(f = "defineKnots",
@@ -1555,8 +1567,8 @@ methods::setMethod(f = "calibration",
 #' @param ptrSet ptrSte object 
 #' @return the directory in absolute path as character
 #' @examples 
-#' data(mycobacteriaSet)
-#' getDirectory(mycobacteriaSet)
+#' data(exhaledPtrset )
+#' getDirectory(exhaledPtrset )
 #' @export
 getDirectory<-function(ptrSet) {
   dir<-ptrSet@parameter$dir
@@ -1574,8 +1586,8 @@ getDirectory<-function(ptrSet) {
 #' @return a ptrSet
 #' @export
 #' @examples 
-#' data(mycobacteriaSet)
-#' mycobacteriaSet<-rmPeakList(mycobacteriaSet)
+#' data(exhaledPtrset )
+#' exhaledPtrset <-rmPeakList(exhaledPtrset )
 rmPeakList<-function(object){
   object@peakList<-list()
   object@parameter$detectPeakParam <- NULL
@@ -1619,9 +1631,9 @@ methods::setMethod("show","ptrSet",
 # 'in the \code{createPtrSet} function, then there is just one peak list per file 
 #' \item aligned: for each file the peak List after aligning between time periods and removing background threshold}
 #' @examples 
-#' data(mycobacteriaSet)
-#' mycobacteriaSet <- detectPeak(mycobacteriaSet , mzNominal=c(59,60))
-#' getPeakList(mycobacteriaSet)
+#' data(exhaledPtrset )
+#' exhaledPtrset  <- detectPeak(exhaledPtrset  , mzNominal=c(59,60))
+#' getPeakList(exhaledPtrset )
 #' @export
 getPeakList<-function(set){
             return(set@peakList)}
@@ -1633,8 +1645,8 @@ getPeakList<-function(set){
 #' prepended to the file names.
 #' @return a vector of character that contains all file names
 #' @examples 
-#' data(mycobacteriaSet)
-#' getFileNames(mycobacteriaSet)
+#' data(exhaledPtrset )
+#' getFileNames(exhaledPtrset )
 #' @rdname getFileNames
 #' @export
 methods::setMethod("getFileNames",signature = "ptrSet",

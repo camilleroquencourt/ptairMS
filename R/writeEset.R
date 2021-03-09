@@ -18,10 +18,9 @@
 #' @rdname writeEset
 #' @export
 #' @examples
+#' data(exhaledPtrset )
+#' eset <- ptairMS::alignSamples(exhaledPtrset ) 
 #'\dontrun{
-#' data(mycobacteriaSet)
-#' mycobacteriaSet <- ptairMS::detectPeak(mycobacteriaSet)
-#' eset <- ptairMS::alignSamples(mycobacteriaSet)
 #' writeEset(eset, dirName = file.path(getwd(), "processed_dataset"))
 #'}
 setMethod("writeEset", "ExpressionSet",

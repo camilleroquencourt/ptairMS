@@ -31,8 +31,8 @@ plot
 Plot the calibration peaks
 }
 \examples{
-data(mycobacteriaSet)
-plotCalib(mycobacteriaSet,fileNames=getFileNames(mycobacteriaSet)[1])
+data(exhaledPtrset )
+plotCalib(exhaledPtrset ,fileNames=getFileNames(exhaledPtrset )[1])
 
 ##ptrRaw 
 filePath<-system.file("extdata/exhaledAir/ind1/ind1-1.h5", package = "ptairData")

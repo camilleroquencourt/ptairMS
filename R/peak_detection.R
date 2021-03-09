@@ -4,7 +4,7 @@ utils::globalVariables("::<-")
 
 #' Detection and quantification of peaks for ptrSet object. 
 #' 
-#' \code{detectPeak} function calibrate and  detect peak on the average total spectrum of all file present in ptrSet who have not already 
+#' \code{detectPeak} function detect peak on the average total spectrum around nominal masses, for all file present in ptrSet who have not already 
 #' been processed. After that, it evaluate the temporal evolution of each peaks thanks to a two-dimensional 
 #' penalize spline regression. Finally, the expiration points (if there are defined in the ptrSet) are average, 
 #' and a t-test is performed to see the difference between expiration and ambient air. 
@@ -38,9 +38,14 @@ utils::globalVariables("::<-")
 #' @param ... parameter of processFun
 #' @return a S4 object ptrSet, that contains the input ptrset completed with the peakLists. 
 #' @examples 
-#' data(mycobacteriaSet)
-#' mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(59,60))
-#' getPeakList(mycobacteriaSet)
+#' library(ptairData)
+#' directory <- system.file("extdata/exhaledAir",  package = "ptairData")
+#' exhaledPtrset<-createPtrSet(dir=directory,setName="exhaledPtrset",mzCalibRef=c(21.022,59.049),
+#' fracMaxTIC=0.9,saveDir= NULL)
+#' exhaledPtrset  <- detectPeak(exhaledPtrset ,mzNominal=c(59,60))
+#' peakListEset<-getPeakList(exhaledPtrset)
+#' Biobase::fData(peakListEset[[1]])
+#' Biobase::exprs(peakListEset[[1]])
 #' @rdname detectPeak
 #' @import doParallel foreach parallel
 #' @export
@@ -167,7 +172,7 @@ setMethod(f="detectPeak",
             peakListsEset<-lapply(peakLists, function(x){
               infoPeak<- grep("parameter",colnames(x$raw))
               colnames(x$raw)[infoPeak]<-c("parameterPeak.delta1","parameterPeak.delta2",
-                                           "parameterPeak.heigh")
+                                           "parameterPeak.height")
               assayMatrix<- as.matrix(x$raw)[,-c(1,2,3,4,infoPeak),drop=FALSE]
               rownames(assayMatrix)<- round(x$raw$Mz,4)
               featuresMatrix<- data.frame(cbind((as.matrix(x$raw)[,c(1,2,3,4,infoPeak),drop=FALSE]),(x$aligned[,-1])))
@@ -1097,7 +1102,7 @@ GCV<-function(rawM,knots,t,timeLimit,stepSp=0.01,d=3){
   fit<- stats::lm(Y~Xa-1)
   diagA<-  stats::influence(fit)$hat
   fitted<-fit$fitted.values
-  gcv[as.character(sp)]<- n*sum((Y[1:n] - fitted[1:n])^2) / (n - sum(diagA[1:n]))^2
+  gcv[as.character(sp)]<- n*sum((Y[seq_len(n)] - fitted[seq_len(n)])^2) / (n - sum(diagA[seq_len(n)]))^2
   repeat{
     sp <- sp + stepSp
     Xa <- rbind(X,D*sqrt(sp) ) 
@@ -1105,7 +1110,7 @@ GCV<-function(rawM,knots,t,timeLimit,stepSp=0.01,d=3){
     diagA<- stats::influence(fit)$hat
     fitted<-fit$fitted.values
 
-    gcv[as.character(sp)]<- n*sum((Y[1:n] - fitted[1:n])^2) / (n - sum(diagA[1:n]))^2
+    gcv[as.character(sp)]<- n*sum((Y[seq_len(n)] - fitted[seq_len(n)])^2) / (n - sum(diagA[seq_len(n)]))^2
     
     if( utils::tail(diff(gcv),1)>0) break
   }
@@ -1186,119 +1191,6 @@ deconv2d2linearIndependant<-function(rawM,time,peak.detect,raw,fctFit,
 }
 
 
-
-#process<-deconv2d2NonlinearIndependant(rawM,t,peak,raw,listCalib)
-#apply(process$predPeak,2,plot)
-#plot(colSums(rawM))
-#lines(colSums(process$predRaw))
-#image(t(rawM))
-#image(t(process$predRaw))
-deconv2d2NonlinearIndependant<-function(rawM,time,peak.detect,raw,listCalib,fctFit,l.shape=NULL){
-  
-  shift<-calibShitEstimate(raw,peak.detect,listCalib)
-  
-  if(!is.null(listCalib)){
-    Indextime<-lapply(listCalib,function(x) {x$index})
-    Indextime<-Reduce(rbind,lapply(seq_len(length(listCalib)),function(i) cbind(Indextime[[i]],i)))
-    
-  }else {
-    Indextime<-cbind(seq_along(time),rep(1))
-  }
-  
-  
-  mzNom<-round(peak.detect$Mz)[1]
-  n.peak <- nrow(peak.detect)
-  matRaw<-matrix(0,nrow=nrow(rawM),ncol=ncol(rawM))
-  matPeak<-matrix(0,ncol=n.peak,nrow=ncol(rawM))
-  for (i in seq_along(time)){
-    
-    #base line correction 
-    mzlargeIndex<-which(raw@mz > mzNom-0.4 & raw@mz < mzNom+0.4)
-    spectrum.large<-raw@rawM[mzlargeIndex,i]
-    #spectrum.large <- spectrum.large - snipBase(spectrum.large)
-    
-    mzAxis<-as.numeric(row.names(rawM))
-    #first<-which( raw@mz[mzlargeIndex]>= mzAxis[1])[1]
-    #spectrum.m <-spectrum.large[first:(nrow(rawM)+first-1)]
-    spectrum.m<-rawM[,i]
-    plot(mzAxis,spectrum.m,type="l")
-    
-    #initialisation
-    mz<-peak.detect$Mz+ shift[,Indextime[i,2]]
-    deltal<-peak.detect$parameter.1
-    deltar<-peak.detect$parameter.2
-    h<- vapply(mz, function(m) max(max(spectrum.m[which(abs(mzAxis-m)<(m*50/10^6))]),0),0)
-    initMz <- matrix(c(mz, h),nrow=n.peak)
-    lf<-peak.detect$parameter.1
-    lr<-peak.detect$parameter.2
-    colnames(initMz)<-c("m","h")
-    
-    ppmCons<-30
-    #constrain
-    
-    lower.cons <- c(t(initMz * matrix(c(rep(1, n.peak),
-                                        rep(0, n.peak)),ncol = 2) 
-                      -
-                        matrix(c(initMz[,"m"]*ppmCons/10^6,
-                                 rep(0, n.peak)),ncol = 2)))
-    
-    upper.cons <- c(t( initMz * matrix(c(rep(1, n.peak),
-                                         rep(Inf, n.peak)),ncol = 2) 
-                       +
-                         matrix(c(initMz[,"m"]*ppmCons/10^6,
-                                  rep(0, n.peak)),ncol = 2)))
-    
-    #fit
-    fit_function_str<-fctFit
-    par_var_str<-c("m","h")
-    par_fix_str<-c("x")
-    formul.character <- ""
-    init.names<- ""
-    for (j in seq(1, n.peak)){
-      par_str.j<- paste(rep("par$",2),par_var_str,rep(j,2),sep = "")
-      
-      for(n in seq_along(par_var_str)){
-        init.names<-c(init.names,paste(par_var_str[n],j,sep=""))
-      }
-      formul.character <- paste(formul.character,fit_function_str,"(",
-                                par_str.j[1],",lf[",j,"],lr[",j,"],", par_str.j[2],",",par_fix_str,")+",sep="")
-      
-      if (j == n.peak){
-        formul.character <- substr(formul.character, start=1, stop=nchar(formul.character) - 1)
-      }
-    }
-    initMz.names<-init.names[-1]
-    func.eval <- parse(text = formul.character)
-    
-    function.char <- function(par, x, y){
-      eval(func.eval) - y
-    }
-    
-    initMz<-as.list(t(initMz))
-    names(initMz)<-initMz.names
-    
-    #Regression
-    fit<-suppressWarnings(minpack.lm::nls.lm(par=initMz, lower = lower.cons, upper = upper.cons,
-                                             fn =function.char,
-                                             x= mzAxis , y = spectrum.m))
-    
-    par_estimated<-matrix(unlist(fit$par),nrow=2)
-    fit.peak<- function.char(fit$par,mzAxis,rep(0,length(spectrum.m)))
-    
-    matRaw[,i]<-fit.peak
-    
-    #quantification 
-    quanti <- apply(rbind(par_estimated,lf,lr),2, function(x){
-      #lines(mzAxis,sech2(x[1],x[3],x[4],x[2],mzAxis))
-      return(sum(eval(parse(text=fctFit))(x[1],x[3],x[4],x[2],mzAxis)))})
-
-    
-    matPeak[i,]<-quanti
-    
-    
-  }
-  return(list(predRaw=matRaw,predPeak=matPeak))
-}
 
 
 
@@ -1631,11 +1523,11 @@ baselineEstimation2D<-function(rawM,dt=1,dm=2,p=0.1,smoothPenalty=0.1,quantil=0.
   a1<-lm$coefficients
   Z <- X %*% a1
   
-  # w[which(Y[1:n]>Z & Z > min(Y[1:n]))]<-p 
-  # w[which(Y[1:n]<=Z | Z <= min(Y[1:n]))]<-1-p 
+  # w[which(Y[seq_len(n)]>Z & Z > min(Y[seq_len(n)]))]<-p 
+  # w[which(Y[seq_len(n)]<=Z | Z <= min(Y[seq_len(n)]))]<-1-p 
   
-  w[which(Y[1:n]>Z & Z > min(Y[1:n]))]<- 0 
-  w[which(Y[1:n]<=Z | Z <= min(Y[1:n]))]<- exp((Y[1:n]-Z)[which(Y[1:n]<=Z | Z <= min(Y[1:n]))]/mean(abs((Y[1:n]-Z)[Y[1:n]-Z<0]))*c)
+  w[which(Y[seq_len(n)]>Z & Z > min(Y[seq_len(n)]))]<- 0 
+  w[which(Y[seq_len(n)]<=Z | Z <= min(Y[seq_len(n)]))]<- exp((Y[seq_len(n)]-Z)[which(Y[seq_len(n)]<=Z | Z <= min(Y[seq_len(n)]))]/mean(abs((Y[seq_len(n)]-Z)[Y[seq_len(n)]-Z<0]))*c)
   
   #second reg
   reg2<-stats::lm(Y~Xa-1,weights=w) 
@@ -1644,15 +1536,15 @@ baselineEstimation2D<-function(rawM,dt=1,dm=2,p=0.1,smoothPenalty=0.1,quantil=0.
   c=1
   # #(max(rawM)-min(rawM))*0.001
   #while( sqrt(mean((a1-a2)^2)) > 1e-10 & c < 20){
-  while( mean(abs((Y[1:n]-Z)[Y[1:n]-Z<0])) > 1e-3*mean(abs(c(rawM)))){
+  while( mean(abs((Y[seq_len(n)]-Z)[Y[seq_len(n)]-Z<0])) > 1e-3*mean(abs(c(rawM)))){
   # while( sqrt(mean((bl1D-rowSums(matrix(Z2,ncol=ncol(rawM),nrow=nrow(rawM))))^2)) >
   #        sqrt(mean(bl1D)^2)*0.0001 & c < 100){
     a1<-a2
     Z<-X %*% a1
-    # w[which(Y[1:n]>Z & Z > min(Y[1:n]))]<-p 
-    # w[which(Y[1:n]<=Z | Z <= min(Y[1:n]))]<-1-p 
-    w[which(Y[1:n]>Z & Z > min(Y[1:n]))]<- 0 
-    w[which(Y[1:n]<=Z | Z <= min(Y[1:n]))]<- exp((Y[1:n]-Z)[which(Y[1:n]<=Z | Z <= min(Y[1:n]))]/mean(abs((Y[1:n]-Z)[Y[1:n]-Z<0]))*c)
+    # w[which(Y[seq_len(n)]>Z & Z > min(Y[seq_len(n)]))]<-p 
+    # w[which(Y[seq_len(n)]<=Z | Z <= min(Y[seq_len(n)]))]<-1-p 
+    w[which(Y[seq_len(n)]>Z & Z > min(Y[seq_len(n)]))]<- 0 
+    w[which(Y[seq_len(n)]<=Z | Z <= min(Y[seq_len(n)]))]<- exp((Y[seq_len(n)]-Z)[which(Y[seq_len(n)]<=Z | Z <= min(Y[seq_len(n)]))]/mean(abs((Y[seq_len(n)]-Z)[Y[seq_len(n)]-Z<0]))*c)
     
     reg2<-stats::lm(Y~Xa-1,weights = w)
     a2<-reg2$coefficients

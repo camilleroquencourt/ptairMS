@@ -16,6 +16,6 @@ the directory in absolute path as character
 get the files diretory of a ptrSet
 }
 \examples{
-data(mycobacteriaSet)
-getDirectory(mycobacteriaSet)
+data(exhaledPtrset )
+getDirectory(exhaledPtrset )
 }

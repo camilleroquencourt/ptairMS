@@ -19,7 +19,7 @@ a list containing:
 get the peak list of a ptrSet object
 }
 \examples{
-data(mycobacteriaSet)
-mycobacteriaSet <- detectPeak(mycobacteriaSet , mzNominal=c(59,60))
-getPeakList(mycobacteriaSet)
+data(exhaledPtrset )
+exhaledPtrset  <- detectPeak(exhaledPtrset  , mzNominal=c(59,60))
+getPeakList(exhaledPtrset )
 }

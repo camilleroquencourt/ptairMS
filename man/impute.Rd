@@ -23,11 +23,10 @@ Imputing missing values by returning back to the raw data and fitting the
 peak shape function on the noise / residuals
 }
 \examples{
-data(mycobacteriaSet)
-mycobacteriaSet <- detectPeak(mycobacteriaSet,mzNominal=c(21,63))
-getSampleMetadata(mycobacteriaSet)
-eSet <- alignSamples(mycobacteriaSet,pValGreaterThres=0.05,fracGroup=0)
+data(exhaledPtrset)
+getSampleMetadata(exhaledPtrset)
+eSet <- alignSamples(exhaledPtrset,pValGreaterThres=0.05,fracGroup=0)
 Biobase::exprs(eSet)
-eSet <- impute(eSet,mycobacteriaSet)
+eSet <- impute(eSet,exhaledPtrset)
 Biobase::exprs(eSet)
 }
