@@ -1,13 +1,11 @@
 figures/temp/
-src-x64/
-src/
-src-i386/
 .Rproj.user
 *.Rhistory
 *.rproj
 *.html
 .Ruserdata
 *.o
+*.so
 *.dll
 
 
