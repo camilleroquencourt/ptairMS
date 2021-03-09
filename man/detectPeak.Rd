@@ -99,7 +99,7 @@ regression for each file. Should be provided by \code{\link[ptairMS]{defineKnots
 a S4 object ptrSet, that contains the input ptrset completed with the peakLists.
 }
 \description{
-\code{detectPeak} function calibrate and  detect peak on the average total spectrum of all file present in ptrSet who have not already 
+\code{detectPeak} function detect peak on the average total spectrum around nominal masses, for all file present in ptrSet who have not already 
 been processed. After that, it evaluate the temporal evolution of each peaks thanks to a two-dimensional 
 penalize spline regression. Finally, the expiration points (if there are defined in the ptrSet) are average, 
 and a t-test is performed to see the difference between expiration and ambient air. 
