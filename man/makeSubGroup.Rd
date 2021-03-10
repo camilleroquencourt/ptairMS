@@ -2,7 +2,8 @@
 % Please edit documentation in R/alignment.R
 \name{makeSubGroup}
 \alias{makeSubGroup}
-\title{Use in align function. return a peak group thanks to kernel gaussian density in a peak matrix.}
+\title{Use in align function. return a peak group thanks to kernel gaussian density 
+in a peak matrix.}
 \usage{
 makeSubGroup(subpeakl, den, plim)
 }
@@ -17,5 +18,6 @@ makeSubGroup(subpeakl, den, plim)
 the sub peakgroup
 }
 \description{
-Use in align function. return a peak group thanks to kernel gaussian density in a peak matrix.
+Use in align function. return a peak group thanks to kernel gaussian density 
+in a peak matrix.
 }

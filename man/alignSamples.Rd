@@ -3,19 +3,19 @@
 \name{alignSamples}
 \alias{alignSamples}
 \alias{alignSamples,ptrSet-method}
-\alias{alignSamples,data.frame-method}
-\title{Align mass tables of different samples}
+\title{Alignment between samples}
 \usage{
 alignSamples(
   X,
   ppmGroup = 70,
   fracGroup = 0.8,
   group = NULL,
-  pValGreaterThres = 0.005,
-  pValLessThres = 0,
   fracExp = 0.3,
-  dmzGroup = 0.001,
-  ...
+  pValGreaterThres = 0.001,
+  pValLessThres = 0,
+  quantiUnit = c("ppb", "ncps", "cps")[1],
+  bgCorrected = TRUE,
+  dmzGroup = 0.001
 )
 
 \S4method{alignSamples}{ptrSet}(
@@ -23,65 +23,65 @@ alignSamples(
   ppmGroup = 70,
   fracGroup = 0.8,
   group = NULL,
+  fracExp = 0.3,
   pValGreaterThres = 0.001,
   pValLessThres = 0,
-  fracExp = 0.3,
-  dmzGroup = 0.001,
   quantiUnit = c("ppb", "ncps", "cps")[1],
   bgCorrected = TRUE,
-  ...
-)
-
-\S4method{alignSamples}{data.frame}(
-  X,
-  ppmGroup = 70,
-  fracGroup = 0.8,
-  group = NULL,
-  pValGreaterThres = 0.005,
-  pValLessThres = 0,
-  fracExp = 0.3,
-  dmzGroup = 0.005,
-  quantiUnit = c("ppb", "ncps", "cps")[1],
-  bgCorrected = TRUE,
-  sampleMetadata
+  dmzGroup = 0.001
 )
 }
 \arguments{
-\item{X}{ptrSet or data.frame contains peakList with at least column mz, quanti and group}
+\item{X}{ptrSet already processed by \code{\link[ptairMS]{detectPeak}} function}
 
-\item{ppmGroup}{the ppm larger of a group}
+\item{ppmGroup}{the ppm larger of a mz group}
 
 \item{fracGroup}{We will keep variables only present in \code{fracGroup} 
 percent of at least one \code{group}, if 0 the filter is not applied}
 
-\item{group}{character. A sampleMetadata data colnames. If is \code{NULL},variables not presents
-in \code{fracGroup} percent of samples will be deleted. Else, variables not presents
-in \code{fracGroup} percent in each group will be deleted.}
+\item{group}{character. A sampleMetadata data column name. If is \code{NULL},
+variables not presents in \code{fracGroup} percent of samples will be deleted. 
+Else, variables not presents in \code{fracGroup} percent in each group will 
+be deleted.}
 
-\item{pValGreaterThres}{threshold of the he p-value of the unilateral t-test, who test that 
-quantidication (in cps) of expiration points are greater than the intenisty of the background.}
+\item{fracExp}{percentage of sample which must have their p-value less than 
+\code{pValGreaterThres} and \code{pValLessThres}}
 
-\item{pValLessThres}{threshold of the he p-value of the unilateral t-test, who test that 
-quantidication (in cps) of expiration points are greater than the intenisty of the background.}
+\item{pValGreaterThres}{threshold of the p-value of the unilateral t-test, 
+who test that quantification (in cps) of expiration points are greater than 
+the intensities of the background.}
 
-\item{fracExp}{percentage of sample which must have their pvalue less than \code{pValGreaterThres} 
-and \code{pValLessThres}}
-
-\item{dmzGroup}{difference of mz of a group for little mz}
-
-\item{...}{not used}
+\item{pValLessThres}{threshold of the p-value of the unilateral t-test, 
+who test that quantification (in cps) of expiration points are greater than 
+the intensities of the background.}
 
 \item{quantiUnit}{ppb, ncps or cps}
 
-\item{bgCorrected}{logical. If the value must be corrected to the background baseline or not.}
+\item{bgCorrected}{logical. Should the peak table must contained the background 
+corrected values.}
 
-\item{sampleMetadata}{if X is a ptrSet, not used, else a data.frame containing sample Metadata}
+\item{dmzGroup}{difference of mz of a group for little mz}
 }
 \value{
-an expressionSet (Biobase object), with annotaTion in features Data
+an \code{\link[Biobase]{ExpressionSet}} (Biobase object)
 }
 \description{
-Align mass tables of different samples
+\code{AlignSamples} performs alignment between samples (i.e. the matching of 
+variables between the peak lists within the \code{ptrSet} object) by using a 
+kernel gaussian density (delabriere et al, 2017).
+This function return an \code{\link[Biobase]{ExpressionSet}}, which contains 
+the peak table intensities, the sample meta data (borrowed from the
+input ptrSet) and the variable meta data which contains peak intensities in 
+the background. 
+It is possible to apply two filters:
+\itemize{
+\item  keep only variables which that the p-value of the t-test comparing expiration 
+and background is less than \code{pValGreaterThres} for \code{fracExp} % of the samples
+\item keep only variables which are detected in more 
+than \code{fracGroup} percent of samples (or \code{group})
+}
+If you do not want to apply those filters, set \code{fracGroup} to 0 and 
+\code{pValGreaterThres} to 1.
 }
 \examples{
 data(exhaledPtrset)
@@ -89,4 +89,7 @@ eset <- alignSamples(exhaledPtrset,pValGreaterThres=0.05)
 Biobase::exprs(eset)
 Biobase::fData(eset)
 Biobase::pData(eset)
+}
+\references{
+Delabriere et al.,2017
 }

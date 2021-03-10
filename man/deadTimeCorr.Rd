@@ -9,13 +9,13 @@ deadTimeCorr(raw, ve, vne, r, threshold = 0.1)
 \arguments{
 \item{raw}{ptrRaw object}
 
-\item{ve}{exenting dead time}
+\item{ve}{extending dead time}
 
 \item{vne}{non extending dead time}
 
 \item{r}{number of extraction}
 
-\item{threshold}{only bin of intenisty more then threshold*r which be corrected}
+\item{threshold}{only bin of intensity more then threshold*r which be corrected}
 }
 \value{
 a ptrRaw object with the raw matrix corrected

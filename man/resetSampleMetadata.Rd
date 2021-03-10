@@ -2,7 +2,8 @@
 % Please edit documentation in R/SetMethods.R
 \name{resetSampleMetadata}
 \alias{resetSampleMetadata}
-\title{reset the default sampleMetadata}
+\title{reset the default sampleMetadata, containing the suborders names and the 
+acquisition dates as columns.}
 \usage{
 resetSampleMetadata(ptrset)
 }
@@ -13,7 +14,8 @@ resetSampleMetadata(ptrset)
 a data.frame
 }
 \description{
-reset the default sampleMetadata
+reset the default sampleMetadata, containing the suborders names and the 
+acquisition dates as columns.
 }
 \examples{
 data(exhaledPtrset )

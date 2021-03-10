@@ -16,7 +16,8 @@ test_data<-function(){
 test_readRaw <- function() {
 
   library(ptairData)
-  file <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
+  file <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", 
+                      package = "ptairData")
 
   # No file
   testthat::expect_error(readRaw(NULL))
@@ -61,20 +62,27 @@ test_knots<- function(){
   knot2<-pSet@knots
   testthat::expect_equal(knot1,knot2)
   testthat::expect_equal(knot2[[1]],
-                         c(0.000000,  3.117667,  6.235335,  9.353002, 12.470669, 15.588337, 18.706004, 
+                         c(0.000000,  3.117667,  6.235335,  9.353002, 12.470669, 
+                           15.588337, 18.706004, 
                            21.823671, 24.941339, 28.059006, 31.176673, 34.294341,
-                           37.412008, 40.529675, 43.647343, 46.765010, 49.882677, 53.000345))
+                           37.412008, 40.529675, 43.647343, 46.765010, 49.882677,
+                           53.000345))
   
   pSeterror<-suppressWarnings(defineKnots(pSet,knotsPeriod = 0.5))
   testthat::expect_null(pSeterror@knots$Control1.h5)
   
   pSet2<-defineKnots(pSet,method = "uniform",knotsPeriod = 5)
-  testthat::expect_equal(pSet2@knots[[1]],c(0.000000,  5.300034, 10.600069, 15.900103, 21.200138,
-                                            26.500172, 31.800207, 37.100241, 42.400276, 47.700310, 53.000345))
+  testthat::expect_equal(pSet2@knots[[1]],c(0.000000,  5.300034, 10.600069, 
+                                            15.900103, 21.200138,
+                                            26.500172, 31.800207, 37.100241, 
+                                            42.400276, 47.700310, 53.000345))
   pSet3<-timeLimits(pSet,fracMaxTIC = 0,redefineKnots = TRUE)
-  testthat::expect_equal(pSet3@knots[[1]], c(0.000000,  3.117667,  6.235335,  9.353002, 12.470669, 15.588337, 
-                                             18.706004, 21.823671, 24.941339, 28.059006, 31.176673, 34.294341,
-                                             37.412008, 40.529675, 43.647343, 46.765010, 49.882677, 53.000345))
+  testthat::expect_equal(pSet3@knots[[1]], c(0.000000,  3.117667,  6.235335,  
+                                             9.353002, 12.470669, 15.588337, 
+                                             18.706004, 21.823671, 24.941339, 
+                                             28.059006, 31.176673, 34.294341,
+                                             37.412008, 40.529675, 43.647343, 
+                                             46.765010, 49.882677, 53.000345))
   
   
   }

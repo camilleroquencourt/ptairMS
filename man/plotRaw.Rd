@@ -44,7 +44,7 @@ plotRaw(
 )
 }
 \arguments{
-\item{object}{An S4 object of class \code{ptrRaw} or \code{ptrSet}}
+\item{object}{An S4 object of class \code{ptrRaw-class} or \code{ptrSet}}
 
 \item{mzRange}{Either a vector of 2 numerics indicating the m/z limits
 or an integer giving a nominal m/z}
@@ -68,7 +68,8 @@ of the figure to be saved (with the 'pdf' extension); only available for the
 
 \item{...}{not used}
 
-\item{fileNames}{vector of character. The file names of the ptrSer that you want to plot. Could be in 
+\item{fileNames}{vector of character. The file names of the ptrSer that you 
+want to plot. Could be in 
 basename or fullname.}
 }
 \value{

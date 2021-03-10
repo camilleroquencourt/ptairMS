@@ -1,3 +1,4 @@
 ^Makefile$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^.*\.yml$

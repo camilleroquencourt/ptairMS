@@ -11,7 +11,8 @@ a ptrSet object
 mycobacteriaSet
 }
 \description{
-a ptrSet object, created by the \code{ptairMS::createPtrSet} function, containing processed
-mycobacteria dataset (files present in the inst/extdata/mycobacteria) by applying \code{ptairMS::detectPeak} function
+a ptrSet object, created by the \code{ptairMS::createPtrSet} function, 
+containing processed mycobacteria dataset (files present in the 
+inst/extdata/mycobacteria) by applying \code{ptairMS::detectPeak} function
 }
 \keyword{datasets}

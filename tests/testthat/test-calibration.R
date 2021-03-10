@@ -5,11 +5,13 @@ test_calib<-function(){
   testthat::expect_error(calibration(NULL))
 
   library(ptairData)
-  filePath <-  system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
+  filePath <-  system.file("extdata/exhaledAir/ind1", "ind1-1.h5", 
+                           package = "ptairData")
   file <- readRaw(filePath,calib = FALSE)
 
   # Warning because mzRef Calib by default or out of the mass axis of example file
-  fileCalibrate <- calibration(file,mzCalibRef = c(21.022,59.049),calibrationPeriod=60)
+  fileCalibrate <- calibration(file,mzCalibRef = c(21.022,59.049),
+                               calibrationPeriod=60)
 
   # check class
   testthat::expect_is(fileCalibrate, 'ptrRaw')

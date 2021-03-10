@@ -2,16 +2,18 @@ utils::globalVariables(c("y","point"))
 
 
 
-#' Shinny app to modify expiration limits.
+#' Shinny appplication to modify and view expiration limits
 #'  
-#' This function run a shiny app, where you can check the automatic expirations/head spaces detection, and modify it.  
+#' This function run a shiny app, where you can check the automatic expiration
+#' detection, knots location, and modify it.  
 #'  
-#' @param ptrSet a ptrSet 
+#' @param ptrSet a ptrSet object
 #' @return the ptrSet object modified
 #' @examples
 #' library(ptairData)
 #' directory <- system.file("extdata/exhaledAir",  package = "ptairData")
-#' ptrSet <- createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049),fracMaxTIC=0.8)
+#' ptrSet <- createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049),
+#' fracMaxTIC=0.8)
 #' \dontrun{ptrSet <- changeTimeLimits(ptrSet)}
 #' @export
 changeTimeLimits<-function(ptrSet){
@@ -26,8 +28,10 @@ changeTimeLimits<-function(ptrSet){
       shiny::selectInput("fileName","File name:",as.list(names(ptrSet@TIC)),selectize=FALSE)
     ),
     
-    shiny::fluidRow(shiny::p("Select the periods (rows) that you want delete. It must stay at least one period.
-                      You can change parameters and Press 'Reset time limits' to re estimate time limits.")),
+    shiny::fluidRow(shiny::p("Select the periods (rows) that you want delete. 
+    It must stay at least one period.
+                      You can change parameters and Press 'Reset time limits' 
+                             to re estimate time limits.")),
     
     # TIC plot and timeLImit table
     shiny::sidebarLayout(
@@ -41,7 +45,8 @@ changeTimeLimits<-function(ptrSet){
     
     # delete or reset expirations
     shiny::fluidRow(
-      shiny::p(class='text-center', shiny::actionButton('delete', 'Delete selected rows'),
+      shiny::p(class='text-center', shiny::actionButton('delete', 
+                                                        'Delete selected rows'),
                shiny::actionButton('reset', 'apply for this file'),
                shiny::actionButton('resetAll', 'apply for all'))
     ),
@@ -49,22 +54,37 @@ changeTimeLimits<-function(ptrSet){
     
     # change parameter of timeLimit
     shiny::fluidRow(
-      shiny::column(width = 3,shiny::numericInput("fracMaxTIC", "FracMaxTIC", ptrSet@parameter$timeLimit$fracMaxTIC,0, 1, 0.05)),
-      shiny::column(width = 3,shiny::numericInput("fracMaxTICBg", "fracMaxTICBg",0.2,0, 1, 0.05)),
-      shiny::column(width = 3,shiny::numericInput("derivThresholdExp", "derivThresholdExp", 1, 0, 5, 0.05)),
-      shiny::column(width = 3,shiny::numericInput("derivThresholdBg", "derivThresholdBg",0.05,0, 2, 0.05)),
-      shiny::column(width = 3,shiny::numericInput("minPoints", "minPoints", 1, 1, 10, 1)),
-      shiny::column(width = 3,shiny::numericInput("degreeBaseline", "degreeBaseline", 1, 1, 30, 1)),
-      shiny::column(width = 3,shiny::numericInput("knotsPeriod", "knotsPeriod", 3, 1, 10, 1)),
-      shiny::column(width = 3,shiny::selectInput(inputId = "methodKnot", label = "method for knot location ", 
-                                                 choices = c("around expiration","uniform"),multiple = FALSE))
+      shiny::column(width = 3,shiny::numericInput("fracMaxTIC", "FracMaxTIC", 
+                                                  ptrSet@parameter$timeLimit$fracMaxTIC,0, 1, 0.05)),
+      shiny::column(width = 3,shiny::numericInput("fracMaxTICBg", 
+                                                  "fracMaxTICBg",0.2,0, 1, 0.05)),
+      shiny::column(width = 3,shiny::numericInput("derivThresholdExp", 
+                                                  "derivThresholdExp", 1, 0, 5, 
+                                                  0.05)),
+      shiny::column(width = 3,shiny::numericInput("derivThresholdBg", 
+                                                  "derivThresholdBg",0.05,0, 2,
+                                                  0.05)),
+      shiny::column(width = 3,shiny::numericInput("minPoints", "minPoints", 1, 1, 
+                                                  10, 1)),
+      shiny::column(width = 3,shiny::numericInput("degreeBaseline", 
+                                                  "degreeBaseline", 1, 1, 30, 1)),
+      shiny::column(width = 3,shiny::numericInput("knotsPeriod", "knotsPeriod", 
+                                                  3, 1, 10, 1)),
+      shiny::column(width = 3,shiny::selectInput(inputId = "methodKnot", 
+                                                 label = "method for knot location ", 
+                                                 choices = c("around expiration",
+                                                             "uniform"),
+                                                 multiple = FALSE))
     ),
     
-    shiny::fluidRow(shiny::p("When you have done all file, save the changes and the new ptrSet will be return, 
-                      and save in saveDir (parameter of createPtrSet function) if it is not NULL.")),
+    shiny::fluidRow(shiny::p("When you have done all file, save the changes and 
+    the new ptrSet will be return,and save in saveDir (parameter of createPtrSet 
+                             function) if it is not NULL.")),
     # save the ptrSet
     shiny::fluidRow(
-      shiny::p(class = 'text-center', shiny::actionButton('download', 'Save changed and exit app'))
+      shiny::p(class = 'text-center', shiny::actionButton('download', 
+                                                          'Save changed and 
+                                                          exit app'))
     )
     
   )
@@ -86,13 +106,15 @@ changeTimeLimits<-function(ptrSet){
     shiny::observeEvent(input$delete, {
         rowNum <- input$table_rows_selected
         if(length(rowNum) == nrow(rv$data)){
-          shiny::showNotification(warning("At least one period must be selected"),duration = NULL,id="warnings" )
+          shiny::showNotification(warning("At least one period must be selected"),
+                                  duration = NULL,id="warnings" )
         }else {
           shiny::removeNotification("warnings")
           expirationTodelete<-rv$data[rowNum,,drop=FALSE]
           knots<-rv$knots
           knotTodelete<-Reduce(c,apply(expirationTodelete,1,
-                                       function(x) which(x[1] <= knots & knots <= x[2])))
+                                       function(x) which(x[1] <= knots & 
+                                                           knots <= x[2])))
           rv$data <- rv$data[-rowNum,,drop=FALSE]
           rv$knots<-knots[-knotTodelete]
           ptrSet<-ptrSetNew()
@@ -115,12 +137,16 @@ changeTimeLimits<-function(ptrSet){
       degreeBaselineNew <- input$degreeBaseline
       
       timeLimit<-timeLimitFun(TIC = ptrSet@breathTracer[[input$fileName]],
-                                        fracMaxTIC =fracMaxTICNew ,fracMaxTICBg = fracMaxTICBgNew,
-                                        derivThresholdExp = derivThresholdExpNew,derivThresholdBg = derivThresholdBgNew,
-                                        minPoints =minPointsNew ,degreeBaseline = degreeBaselineNew)
+                              fracMaxTIC =fracMaxTICNew ,
+                              fracMaxTICBg = fracMaxTICBgNew,
+                              derivThresholdExp = derivThresholdExpNew,
+                              derivThresholdBg = derivThresholdBgNew,
+                              minPoints =minPointsNew ,
+                              degreeBaseline = degreeBaselineNew)
       t<-as.numeric(names( ptrSet@TIC[[input$fileName]]))
       background<-timeLimit$backGround
-      if(input$methodKnot ==  "around expiration") method<-"expiration" else method<- "uniform"
+      if(input$methodKnot ==  "around expiration") 
+        method<-"expiration" else method<- "uniform"
       knots<-try(defineKnotsFunc(t,background,input$knotsPeriod,method))
 
       rv$data <- t(timeLimit$exp)
@@ -159,9 +185,11 @@ changeTimeLimits<-function(ptrSet){
       
       timeLimit<-lapply(names(ptrSet@TIC),function(fileName) {
        timeLimitFun(TIC = ptrSet@breathTracer[[fileName]],
-                                        fracMaxTIC =fracMaxTICNew ,fracMaxTICBg = fracMaxTICBgNew,
-                                        derivThresholdExp = derivThresholdExpNew,derivThresholdBg = derivThresholdBgNew,
-                                        minPoints =minPointsNew ,degreeBaseline = degreeBaselineNew)
+                    fracMaxTIC =fracMaxTICNew ,
+                    fracMaxTICBg = fracMaxTICBgNew,
+                    derivThresholdExp = derivThresholdExpNew,
+                    derivThresholdBg = derivThresholdBgNew,
+                    minPoints =minPointsNew ,degreeBaseline = degreeBaselineNew)
         })
       
       names(timeLimit) <- names(ptrSet@TIC)
@@ -175,7 +203,6 @@ changeTimeLimits<-function(ptrSet){
         } else {
           unique(c(t[1],
                            seq(t[1],utils::tail(t,1),by=input$knotsPeriod),
-                           #stats::quantile(t,probs = seq(0,1,length=(round(length(t)/input$knotsPeriod)))),
                            utils::tail(t,1)))
         }
        
@@ -212,7 +239,8 @@ changeTimeLimits<-function(ptrSet){
     
     shiny::observeEvent(input$table_cell_edit,
       {
-        rv$data[ input$table_cell_edit$row , input$table_cell_edit$col] <- input$table_cell_edit$value
+        rv$data[ input$table_cell_edit$row , 
+                 input$table_cell_edit$col] <- input$table_cell_edit$value
         ptrSet <- ptrSetNew()
         ptrSet@timeLimit[[input$fileName]]$exp <- t(rv$data)
         ptrSetNew(ptrSet)
@@ -230,29 +258,39 @@ changeTimeLimits<-function(ptrSet){
       bgPoint<-rv$bgPoints
       knots<-rv$knots
       p <- ggplot2::qplot(x=time,y=TIC,
-                          xlab="time",ylab="intensity",main=paste("Trace of",input$fileName))
+                          xlab="time",ylab="intensity",
+                          main=paste("Trace of",input$fileName))
       if(!is.null(expPoint))
         p<-p+ggplot2::geom_point(mapping=ggplot2::aes(time ,y,colour=point),
-                             data=data.frame(time= time[expPoint],y=TIC[expPoint],point="Expiration"))
+                             data=data.frame(time= time[expPoint],
+                                             y=TIC[expPoint],point="Expiration"))
       if(!is.null(bgPoint)) 
         p<-p + ggplot2::geom_point(mapping=ggplot2::aes(time ,y,colour=point),
-                             data=data.frame(time= time[bgPoint],y=TIC[bgPoint],point="Background"))
+                             data=data.frame(time= time[bgPoint],
+                                             y=TIC[bgPoint],
+                                             point="Background"))
       
       p <- p + ggplot2::theme_classic() 
       
       if(!is.null(knots)){
         p<- p + ggplot2::geom_point(mapping=ggplot2::aes(time ,y,colour=point),
-                                    data=data.frame(time= knots,y=rep(0,length(knots)),point="knots"),shape=4) +
+                                    data=data.frame(time= knots,
+                                                    y=rep(0,length(knots)),
+                                                    point="knots"),shape=4) +
           ggplot2::ggtitle(paste("Trace of",input$fileName,length(knots)))
       }
         
        if( length(s) ){
         s <- s[s<=ncol(indexTimeLimit)] #to avoid warnings
         expirationSelect<-Reduce(c,apply(indexTimeLimit[,s,drop=FALSE],2,function(x) seq(x[1],x[2])))
-        if(length(s)) p <- p + ggplot2::geom_point(mapping=ggplot2::aes(time ,y,colour=point),
-                                                   data=data.frame(time= time[expirationSelect],y=TIC[expirationSelect],point="Expiration selected"))
+        if(length(s)) p <- p + 
+          ggplot2::geom_point(mapping=ggplot2::aes(time ,y,colour=point),
+                              data=data.frame(time= time[expirationSelect],
+                                              y=TIC[expirationSelect],
+                                              point="Expiration selected"))
         
-        p<- p  + ggplot2::scale_colour_manual(values = c("#F8766D","#7CAE00","#C77CFF","#00BFC4")) 
+        p<- p  + ggplot2::scale_colour_manual(values = c("#F8766D","#7CAE00",
+                                                         "#C77CFF","#00BFC4")) 
        }
       
       plotly::ggplotly(p)

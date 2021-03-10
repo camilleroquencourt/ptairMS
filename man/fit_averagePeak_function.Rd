@@ -13,7 +13,7 @@ fit_averagePeak_function(t, delta, h, intervRef, peakShape, bin)
 
 \item{h}{peak height}
 
-\item{intervRef}{reference intreval for peak shape}
+\item{intervRef}{reference interval for peak shape}
 
 \item{peakShape}{peak shape estimated on \code{intervalRef}}
 

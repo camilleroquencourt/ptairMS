@@ -9,13 +9,15 @@ setSampleMetadata(set, sampleMetadata)
 \arguments{
 \item{set}{a ptrSet object}
 
-\item{sampleMetadata}{a data.frame with all file names of the ptrSet in row names}
+\item{sampleMetadata}{a data.frame with all file names of the ptrSet in 
+row names}
 }
 \value{
 the ptrSet object in argument with the sampleMetadata modified
 }
 \description{
-set sampleMetadata in a ptrSet
+Insert a samplemetada data.frame in a ptrSet object. The dataframe must have all 
+file names in rownames.
 }
 \examples{
 data(exhaledPtrset )

@@ -11,7 +11,8 @@ ptrSet object
 exhaledPtrset
 }
 \description{
-a ptrSet object, created by the \code{ptairMS::createPtrSet} function, containing processed
-exhaled air dataset (files present in the inst/extdata/exhaledAir) by applying \code{ptairMS::detectPeak} function
+a ptrSet object, created by the \code{ptairMS::createPtrSet} function, 
+containing processed exhaled air dataset (files present in the 
+inst/extdata/exhaledAir) by applying \code{ptairMS::detectPeak} function
 }
 \keyword{datasets}

@@ -2,18 +2,18 @@
 % Please edit documentation in R/SetMethods.R
 \name{getDirectory}
 \alias{getDirectory}
-\title{get the files diretory of a ptrSet}
+\title{get the files directory of a ptrSet}
 \usage{
 getDirectory(ptrSet)
 }
 \arguments{
-\item{ptrSet}{ptrSte object}
+\item{ptrSet}{ptrSet object}
 }
 \value{
 the directory in absolute path as character
 }
 \description{
-get the files diretory of a ptrSet
+get the files directory of a ptrSet
 }
 \examples{
 data(exhaledPtrset )

@@ -32,30 +32,36 @@ defineKnots(
 \arguments{
 \item{object}{ptrSet object}
 
-\item{knotsPeriod}{the period in second (times scale) between two knots for the two dimensional modelization}
+\item{knotsPeriod}{the period in second (times scale) between two knots for 
+the two dimensional modelization}
 
 \item{method}{expiration or uniform}
 
-\item{knotsList}{a list of knot location for each files, with all base name file in name of the list element}
+\item{knotsList}{a list of knot location for each files, with all base name 
+file in name of the list element}
 
 \item{...}{not used}
 
 \item{timeLimit}{index time of the expiration limits and background}
 }
 \value{
-umeric vector of knots
+numeric vector of knots
 
 a list with numeric vector of knots for each file
 }
 \description{
-\code{defineKnots} function determine the knots location for a ptrSet or ptrRaw object.
+\code{defineKnots} function determine the knots location for a ptrSet or 
+ptrRaw object.
 There is three possibilities :  
 \itemize{
-\item \code{method = expiration} in the expiration periods, a knots is placed every \code{knotsPeriod}
-seconds, and 1 knots in the middle of two expiration, one at begin and at the end
-\item \code{method= uniforme}, the knots are placed uniformly every \code{knotsPeriod} time points
-\item give in \code{knotsList} a list of knot, with all base name file in name of the list element. 
-All file must be informed. The knots location must be contained in the time axis
+\item \code{method = expiration} in the expiration periods, a knots is 
+placed every \code{knotsPeriod} seconds, and 1 knots in the middle of two 
+expiration, one at begin and at the end
+\item \code{method= uniforme}, the knots are placed uniformly every 
+\code{knotsPeriod} time points
+\item give in \code{knotsList} a list of knot, with all base name file in 
+name of the list element.  All file must be informed. The knots location 
+must be contained in the time axis
 }
 }
 \examples{

@@ -36,9 +36,12 @@ setMethod("writeEset", "ExpressionSet",
                            showWarnings = verbose)
               }
               
-            tableFilesVc <- c(dataMatrix = file.path(dirName, "dataMatrix.tsv"),
-                              sampleMetadata = file.path(dirName, "sampleMetadata.tsv"),
-                              variableMetadata = file.path(dirName, "variableMetadata.tsv"))
+            tableFilesVc <- c(dataMatrix = file.path(dirName, 
+                                                     "dataMatrix.tsv"),
+                              sampleMetadata = file.path(dirName, 
+                                                         "sampleMetadata.tsv"),
+                              variableMetadata = file.path(dirName, 
+                                                           "variableMetadata.tsv"))
 
             for (tableC in names(tableFilesVc)) {
               
@@ -58,7 +61,8 @@ setMethod("writeEset", "ExpressionSet",
             chkLs <- .checkTableFormat(t(tdatMN), samDF, varDF)
             
             if (!chkLs[["chkL"]]) {
-              stop("Sample and/or variable names do not match between your tables.")
+              stop("Sample and/or variable names do not match 
+                   between your tables.")
             } else if (chkLs[["ordL"]]) {
               tdatMN <- t(chkLs[["datMN"]])
             }
@@ -90,7 +94,8 @@ setMethod("writeEset", "ExpressionSet",
  
             if (verbose)
               message("The following file(s) have been written:\n",
-                  paste(tableFilesVc[!is.na(basename(tableFilesVc))], collapse = "\n"),
+                  paste(tableFilesVc[!is.na(basename(tableFilesVc))], 
+                        collapse = "\n"),
                   "\n")
             
           })
@@ -113,9 +118,11 @@ setMethod("writeEset", "ExpressionSet",
     
     if (length(datSamDifVc)) {
       if (infCw != "none")
-        cat("The following samples were found in the dataMatrix column names but not in the sampleMetadata row names:\n", sep = "")
+        cat("The following samples were found in the dataMatrix column names 
+            but not in the sampleMetadata row names:\n", sep = "")
       print(cbind.data.frame(col = as.numeric(vapply(datSamDifVc,
-                                                     function(samC) which(rownames(datMNw) == samC),
+                                                     function(samC) 
+                                                       which(rownames(datMNw) == samC),
                                                      FUN.VALUE = 1)),
                              name = datSamDifVc))
       chkL <- FALSE
@@ -125,7 +132,8 @@ setMethod("writeEset", "ExpressionSet",
     
     if (length(samDatDifVc)) {
       if (infCw != "none")
-        cat("The following samples were found in the sampleMetadata row names but not in the dataMatrix column names:\n",
+        cat("The following samples were found in the sampleMetadata row names 
+            but not in the dataMatrix column names:\n",
             sep = "")
       print(cbind.data.frame(row = as.numeric(vapply(samDatDifVc, 
                                                      function(samC) which(rownames(samDFw) == samC),
@@ -136,26 +144,31 @@ setMethod("writeEset", "ExpressionSet",
     
     if (nrow(datMNw) != nrow(samDFw)) {
       if (infCw != "none")
-        cat("The dataMatrix has ", nrow(datMNw), " columns (ie samples) whereas the sampleMetadata has ", nrow(samDFw), " rows\n",
+        cat("The dataMatrix has ", nrow(datMNw), " columns (ie samples) whereas 
+            the sampleMetadata has ", nrow(samDFw), " rows\n",
             sep = "")
       chkL <- FALSE
     } else if (identical(gsub("^X", "", rownames(datMNw)), rownames(samDFw))) {
       if (infCw != "none")
-        cat("The dataMatrix column names start with an 'X' but not the sampleMetadata row names\n", sep = "")
+        cat("The dataMatrix column names start with an 'X' but not the 
+            sampleMetadata row names\n", sep = "")
       chkL <- FALSE
     } else if (identical(gsub("^X", "", rownames(samDFw)), rownames(datMNw))) {
       if (infCw != "none")
-        cat("The sampleMetadata row names start with an 'X' but not the dataMatrix column names\n", sep = "")
+        cat("The sampleMetadata row names start with an 'X' but not the 
+            dataMatrix column names\n", sep = "")
       chkL <- FALSE
     } else if (identical(sort(rownames(datMNw)), sort(rownames(samDFw)))) {
       if (infCw != "none")
-        cat("Message: Re-ordering dataMatrix sample names to match sampleMetadata\n")
+        cat("Message: Re-ordering dataMatrix sample names to match 
+            sampleMetadata\n")
       datMNw <- datMNw[rownames(samDFw), , drop = FALSE]
       stopifnot(identical(sort(rownames(datMNw)), sort(rownames(samDFw))))
       ordL <- TRUE
     } else {
       if (infCw != "none")
-        cat("The dataMatrix column names and the sampleMetadata row names are not identical:\n", sep = "")
+        cat("The dataMatrix column names and the sampleMetadata row names are 
+            not identical:\n", sep = "")
       print(cbind.data.frame(indice = seq_len(nrow(datMNw)),
                              dataMatrix_columnnames = rownames(datMNw),
                              sampleMetadata_rownames = rownames(samDFw))[rownames(datMNw) != rownames(samDFw), , drop = FALSE])
@@ -171,7 +184,8 @@ setMethod("writeEset", "ExpressionSet",
     
     if (length(datVarDifVc)) {
       if (infCw != "none")
-        cat("The following variables were found in the dataMatrix row names but not in the variableMetadata row names:\n", sep = "")
+        cat("The following variables were found in the dataMatrix row names but 
+            not in the variableMetadata row names:\n", sep = "")
       print(cbind.data.frame(row = as.numeric(vapply(datVarDifVc, 
                                                      function(varC) which(colnames(datMNw) == varC),
                                                      FUN.VALUE =1 )),
@@ -183,7 +197,8 @@ setMethod("writeEset", "ExpressionSet",
     
     if (length(varDatDifVc)) {
       if (infCw != "none")
-        cat("The following variables were found in the variableMetadata row names but not in the dataMatrix row names:\n", sep = "")
+        cat("The following variables were found in the variableMetadata row names 
+            but not in the dataMatrix row names:\n", sep = "")
       print(cbind.data.frame(row = as.numeric(vapply(varDatDifVc, 
                                                      function(varC) which(rownames(varDFw) == varC),
                                                      FUN.VALUE = )),
@@ -202,13 +217,15 @@ setMethod("writeEset", "ExpressionSet",
       chkL <- FALSE
     } else if (identical(sort(colnames(datMNw)), sort(rownames(varDFw)))) {
       if (infCw != "none")
-        cat("Message: Re-ordering dataMatrix variable names to match variableMetadata\n")
+        cat("Message: Re-ordering dataMatrix variable names to match 
+            variableMetadata\n")
       datMNw <- datMNw[, rownames(varDFw), drop = FALSE]
       stopifnot(identical(sort(colnames(datMNw)), sort(rownames(varDFw))))
       ordL <- TRUE
     } else {
       if (infCw != "none")
-        cat("\n\nThe dataMatrix row names and the variableMetadata row names are not identical:\n",
+        cat("\n\nThe dataMatrix row names and the variableMetadata row names 
+            are not identical:\n",
             sep = "")
       print(cbind.data.frame(row = seq_len(ncol(datMNw)),
                              dataMatrix_rownames = colnames(datMNw),

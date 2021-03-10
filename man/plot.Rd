@@ -4,7 +4,7 @@
 \alias{plot,ptrSet,ANY-method}
 \alias{plot.ptrSet}
 \alias{plot,ptrSet-method}
-\title{ptrSet object}
+\title{Plot a ptrSet object}
 \usage{
 \S4method{plot}{ptrSet,ANY}(x, y, typePlot = "")
 }
@@ -13,14 +13,15 @@
 
 \item{y}{not use}
 
-\item{typePlot}{could be : \code{calibError}, \code{resolution},  \code{peakShape}, or 
+\item{typePlot}{could be : \code{calibError}, \code{resolution},
+\code{peakShape}, or 
 a empty character if you want all.}
 }
 \value{
 plot
 }
 \description{
-ptrSet object
+plot a ptrSet object
 }
 \examples{
 data(exhaledPtrset )

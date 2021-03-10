@@ -4,7 +4,7 @@
 \alias{timeLimits}
 \alias{timeLimits,ptrRaw-method}
 \alias{timeLimits,ptrSet-method}
-\title{Calculate time limits on the Chromatogram}
+\title{Calculates time limits on the breath tracer}
 \usage{
 timeLimits(
   object,
@@ -50,17 +50,23 @@ timeLimits(
 \arguments{
 \item{object}{a ptrRaw or ptrSet object}
 
-\item{fracMaxTIC}{between 0 and 1. Percentage of the maximum of the Chromatogram amplitude with baseline 
-removal. If you want a finer limitation, increase \code{fracMaxTIC}, indeed decrease}
+\item{fracMaxTIC}{between 0 and 1. Percentage of the maximum of the tracer 
+amplitude with baseline removal. If you want a finer limitation, increase 
+\code{fracMaxTIC}, indeed decrease}
 
-\item{fracMaxTICBg}{same as fracMaxTIC but for backgroud dettcion (lower than fracMaxTIC*max(TIC))}
+\item{fracMaxTICBg}{same as fracMaxTIC but for background detection (lower than 
+fracMaxTIC*max(TIC))}
 
-\item{derivThresholdExp}{the tresphold of the difference between two succesive points of the expiration}
+\item{derivThresholdExp}{the threshold of the difference between two
+successive points of the expiration}
 
-\item{derivThresholdBg}{the tresphold of the difference between two succesive points of the background}
+\item{derivThresholdBg}{the threshold of the difference between two
+successive points of the background}
 
-\item{mzBreathTracer}{NULL or a integer. Correspond to a nominal masses of Extract Ion Chromatogram (EIC)
-whose limits you want to compute. If NULL, the limits are calculated on the Total Ion Chromatogram (TIC).}
+\item{mzBreathTracer}{NULL or a integer. Correspond to a nominal masses of 
+Extract Ion Current (EIC)
+ whose limits you want to compute. If NULL, the limits are calculated on the 
+ Total Ion Current (TIC).}
 
 \item{minPoints}{minimum duration of an expiration (in index).}
 
@@ -68,27 +74,35 @@ whose limits you want to compute. If NULL, the limits are calculated on the Tota
 
 \item{baseline}{logical, should the trace be baseline corrected?}
 
-\item{redefineKnots}{logical, should teh knot location must be redefined with the new times limits ?}
+\item{redefineKnots}{logical, should the knot location must be redefined with 
+the new times limits ?}
 
-\item{plotDel}{boolean. If TRUE, the Chormatogram is ploted with limits and threshold.}
+\item{plotDel}{boolean. If TRUE, the trace is plotted with limits and 
+threshold.}
 }
 \value{
-a list with expirations limits (a matrix of index, where each colomn correspond to one expriration, the first row 
-it is the beginning and the seconde the end, or NA if no limits are detected) and index of the background.
+a list with expiration limits (a matrix of index, where each column 
+correspond to one expiration, the first row it is the beginning and the second
+the end, or NA if no limits are detected) and index of the background.
 }
 \description{
-This function derives limits on the Total Ion Chromatogram TIC, where the intenisty is greater than \code{fracMaxTIC*max(TIC)}, 
-where max(TIC)  is the maximum of teh TIC with baseline removal.
-In this way,  the expiration limits, or headsapce analysis limits can be detected. So, by setting 
-\code{fracMaxTIC} close to 1, the size of teh limits will be restricted. This function also detemine 
-the index corresponding to the backgound, where variation between two succesive point can be control with 
-derivThreshold paramter.
+This function derives limits on the breath tracer indicated, where the 
+intensity is greater than \code{fracMaxTIC*max(tracer)}. By setting
+\code{fracMaxTIC} close to 1, the size of the limits will be restricted.
+This function also determine the index corresponding to the background, where 
+variation between two successive point can be control with \code{derivThreshold} 
+parameter.
 }
 \examples{
+
+## ptrRaw object
+
 library(ptairData)
-filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
+filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5",
+package = "ptairData")
 raw <- readRaw(filePath)
 
 timLim <- timeLimits(raw, fracMaxTIC=0.9, plotDel=TRUE)
-timLim_acetone <- timeLimits(raw, fracMaxTIC=0.5, mzBreathTracer = 59,plotDel=TRUE)
+timLim_acetone <- timeLimits(raw, fracMaxTIC=0.5, mzBreathTracer = 59,
+plotDel=TRUE)
 }

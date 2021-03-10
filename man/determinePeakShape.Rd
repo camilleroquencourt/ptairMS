@@ -9,14 +9,17 @@ determinePeakShape(raw, plotShape = FALSE)
 \arguments{
 \item{raw}{a \code{\link[ptairMS]{ptrRaw-class}} object}
 
-\item{plotShape}{if true plot each reference peak and the average peak (the peak shape)}
+\item{plotShape}{if true plot each reference peak and the average peak 
+(the peak shape)}
 }
 \value{
-A list of two vectors which are the reference peak normalized tof and intensity.
+A list of two vectors which are the reference peak normalized tof 
+and intensity.
 }
 \description{
-This function use the method descibe by average and al 2013, for determine a peak 
-shape from the raw data : \cr 
+This function use the method descibe by average and al 2013, for determine a 
+peak shape from the raw data : \cr 
 $peak_i(Delta_i,A_i,t_i) = interpolation(x= tof.ref * Delta_i + t_i,y = A_i * 
-peak.ref, xout= TOF_i )$ where peak.ref and tof.ref are peaks reference use for mass calibration.
+peak.ref, xout= TOF_i )$ where peak.ref and tof.ref are peaks reference use 
+for mass calibration.
 }

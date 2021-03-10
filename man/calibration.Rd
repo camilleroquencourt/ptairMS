@@ -4,7 +4,7 @@
 \alias{calibration}
 \alias{calibration,ptrRaw-method}
 \alias{calibration,ptrSet-method}
-\title{Calibrate the mass axis with references masses}
+\title{Calibrates the mass axis with references masses}
 \usage{
 calibration(
   x,
@@ -28,36 +28,44 @@ calibration(
 )
 }
 \arguments{
-\item{x}{a prtRaw or ptrSet object}
+\item{x}{a \code{\link[ptairMS]{ptrRaw-class}} or 
+\code{\link[ptairMS]{ptrSet-class}} object}
 
-\item{mzCalibRef}{Vector of accurate mass values of intensive peaks and 'unique' in a 
-nominal mass interval (without overlapping)}
+\item{mzCalibRef}{Vector of accurate mass values of intensive peaks and 
+'unique' in a nominal mass interval (without overlapping)}
 
-\item{calibrationPeriod}{in second, coreficient calibration are estimated for each sum spectrum of 
-\code{calibrationPeriod} seconds}
+\item{calibrationPeriod}{in second, coefficient calibration are estimated for 
+each sum spectrum of \code{calibrationPeriod} seconds}
 
-\item{tol}{the maximum error tolerated in ppm. If more than \code{tol} warnings.}
+\item{tol}{the maximum error tolerated in ppm. If more than \code{tol} 
+warnings.}
 }
 \value{
-the same ptrRaw or ptrSet as in input, with the following modified element:
+the same ptrRaw or ptrSet as in input, with the following modified 
+element:
 \itemize{
-\item mz: the new mz axiscalibrated
-\item ramM: same raw matrix with the new mz axis in rownames
+\item mz: the new mz axis calibrated
+\item rawM: same raw matrix with the new mz axis in rownames
 \item calibMassRef: reference masses used for the calibration
 \item calibMzToTof and calibTofToMz: function to convert TOF to mz
 \item calibError: the calibration error to the reference masses in ppm
+\item calibrationIndex: index time of each calibration period
 }
 }
 \description{
-To convert Time Of Flight (TOF) axis to mass axis, different formula are proposes in the 
-literature (average and al. 2013, Cappelin and al. 2010) mz = ((tof-b)/a )^2 and 
-mz = a + b (tof) +c  (tof)^2. To estimate those parameters, references peaks with accurate know 
-masses and without overlapping peak are needed. The best is that the references masses 
-covers a maximum of the mass range.
+To convert Time Of Flight (TOF) axis to mass axis, we use the formula:
+mz = ((tof-b)/a )^2 (Muller et al. 2013) To estimate those 
+parameters, references peaks with accurate know  masses and without 
+overlapping peak are needed. The best is that the references masses covers a 
+maximum of the mass range.
 }
 \examples{
+
+### ptrRaw object 
+
 library(ptairData)
-filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
+filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", 
+package = "ptairData")
 raw <- readRaw(filePath, calib = FALSE)
 rawCalibrated <- calibration(raw)
 }

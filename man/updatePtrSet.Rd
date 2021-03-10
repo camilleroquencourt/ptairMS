@@ -10,12 +10,14 @@ updatePtrSet(ptrset)
 \item{ptrset}{a ptrset object}
 }
 \value{
-teh same ptrset object than ininput, but completed with new files and without deleted files in the directory
+teh same ptrset object than ininput, but completed with new files 
+and without deleted files in the directory
 }
 \description{
-When new files are added to a directory which has already a ptrSet object associated, run \code{updatePtrSet}
-for add the new files to the object. The information on the new files are added to
-object with the same parameter used for the function \code{createPtrSet} who has created the object.
+When new files are added to a directory which has already a ptrSet object 
+associated, run \code{updatePtrSet} to add the new files in the object. 
+The information on the new files are added to object with the same parameter 
+used for the function \code{createPtrSet} who has created the object.
 \code{updatePtrSet} also delete from the ptrSet deleted files in the directory.
 }
 \examples{

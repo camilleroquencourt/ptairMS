@@ -1,12 +1,15 @@
-utils::globalVariables(c("error","name","out","intervalRef","signal","signal0","signal1","Mz"))
-
+utils::globalVariables(c("error","name","out","intervalRef","signal","signal0",
+                         "signal1","Mz"))
 ### plot ----
-#' ptrSet object
-#'
+
+#' Plot a ptrSet object
+#' 
+#' plot a ptrSet object
 #' @aliases plot.ptrSet plot,ptrSet-method
 #' @param x a ptrSet object 
 #' @param y not use
-#' @param typePlot could be : \code{calibError}, \code{resolution},  \code{peakShape}, or 
+#' @param typePlot could be : \code{calibError}, \code{resolution},  
+#' \code{peakShape}, or 
 #' a empty character if you want all. 
 #' @return plot 
 #' @rdname plot
@@ -76,23 +79,30 @@ plotResolution<-function(set){
             resolMat <- data.table::as.data.table(resolMat)
             `:=` <- data.table::`:=`
             resolMat[,Mz := factor(Mz)]
-            resolMat <- cbind(resolMat,name=rep(names(resolution),each=nlevels(resolMat$Mz)))
+            resolMat <- cbind(resolMat,name=rep(names(resolution),
+                                                each=nlevels(resolMat$Mz)))
             
             #identify outliers 
             resolMat<-resolMat[!is.na(resolMat$resolution),]
-            resolMat<-resolMat[,list(resolution,name,out=ifelse(is_outlier(resolution), resolution, as.numeric(NA))),by=Mz]
+            resolMat<-resolMat[,list(resolution,name,
+                                     out=ifelse(is_outlier(resolution), 
+                                                resolution, as.numeric(NA))),
+                               by=Mz]
 
             # boxplot with outlier labels 
-            g <- ggplot2::ggplot(subset(resolMat, !is.na(resolution)), ggplot2::aes(y=resolution, x=Mz)) + 
+            g <- ggplot2::ggplot(subset(resolMat, !is.na(resolution)), 
+                                 ggplot2::aes(y=resolution, x=Mz)) + 
               ggplot2::geom_boxplot() +
               ggplot2::geom_text(data=resolMat[!is.na(out),],
-                                 ggplot2::aes(x=Mz,y=resolution,label = name),vjust = -.5,size=3) +
+                                 ggplot2::aes(x=Mz,y=resolution,label = name),
+                                 vjust = -.5,size=3) +
               ggplot2::ggtitle(label = expression("Resolution m/" ~ Delta ~ "(m)"))+
               ggplot2::ylab("m/delta(m)") + ggplot2::theme_classic()
             resolutionEstimated<-Reduce(c,set@resolution)
-            info <-gridExtra::tableGrob(t(data.frame(resolution=c(min=floor(min(resolutionEstimated)/1000)*1000,
-                                              mean=round(mean(resolutionEstimated)/1000)*1000,
-                                              max=ceiling(max(resolutionEstimated)/1000)*1000))),
+            info <-gridExtra::tableGrob(t(data.frame(
+              resolution=c(min=floor(min(resolutionEstimated)/1000)*1000,
+                           mean=round(mean(resolutionEstimated)/1000)*1000,
+                           max=ceiling(max(resolutionEstimated)/1000)*1000))),
               theme = gridExtra::ttheme_minimal(base_size = 12))
             
             return(list(plot=g,table=info))
@@ -104,7 +114,8 @@ plotCalibError<- function(set){
             
   massCalib<-set@mzCalibRef
             errorList<- set@errorCalibPpm
-            names(errorList)<-paste(seq(1,length(errorList)),names(errorList),sep="-")
+            names(errorList)<-paste(seq(1,length(errorList)),names(errorList),
+                                    sep="-")
             
             #get list files
             listFiles <- set@parameter$listFile
@@ -142,18 +153,25 @@ plotCalibError<- function(set){
             calibErrorMat<-data.table::as.data.table(calibErrorMat)
             `:=` <- data.table::`:=`
             calibErrorMat[,Mz:=factor(Mz)]
-            calibErrorMat<-cbind(calibErrorMat,name=rep(names(errorList),each=nlevels(calibErrorMat$Mz)))
+            calibErrorMat<-cbind(calibErrorMat,
+                                 name=rep(names(errorList),
+                                          each=nlevels(calibErrorMat$Mz)))
 
             #identify outliers   
             calibErrorMat<-calibErrorMat[!is.na(calibErrorMat$error),]
-            calibErrorMat<-calibErrorMat[,list(error,name,out=ifelse(is_outlier(error), error, as.numeric(NA))),by=Mz]
+            calibErrorMat<-calibErrorMat[,list(error,name,
+                                               out=ifelse(is_outlier(error), 
+                                                          error, 
+                                                          as.numeric(NA))),by=Mz]
             
             # boxplot with labels 
-            p<-ggplot2::ggplot(subset(calibErrorMat, !is.na(error)), ggplot2::aes(y= .data$error, x=.data$Mz)) + 
+            p<-ggplot2::ggplot(subset(calibErrorMat, !is.na(error)), 
+                               ggplot2::aes(y= .data$error, x=.data$Mz)) + 
               ggplot2::geom_boxplot() + 
               ggplot2::geom_text(data=calibErrorMat[!is.na(out),],
                                  ggplot2::aes(x= .data$Mz, y=.data$error,
-                                              label = .data$name),vjust = -.5,size=3.5) +
+                                              label = .data$name),vjust = -.5,
+                                 size=3.5) +
               ggplot2::ggtitle("Calibration error") + ggplot2::ylab("ppm") + 
               ggplot2::theme_classic()
             
@@ -162,7 +180,10 @@ plotCalibError<- function(set){
 
 
 is_outlier <- function(x) {
-  return(x < stats::quantile(x, 0.25,na.rm=TRUE) - 1.5 *  stats::IQR(x,na.rm=TRUE) | x > stats::quantile(x, 0.75,na.rm = TRUE) + 1.5 * stats::IQR(x,na.rm=TRUE))
+  return(x < stats::quantile(x, 0.25,na.rm=TRUE) - 1.5 *  
+           stats::IQR(x,na.rm=TRUE) | 
+           x > stats::quantile(x, 0.75,na.rm = TRUE) + 
+           1.5 * stats::IQR(x,na.rm=TRUE))
 }
 
 #' plot the average peak shape of reference calibration masses for a ptrSet
@@ -182,7 +203,8 @@ plotPeakShape<-function(set,showAverage=FALSE){
          
           for (n.file in seq_len(n.files) ){
               massRef <- set@mzCalibRef[[n.file]]
-              #interval<- alignCalibrationPeak( set@signalCalibRef[[n.file]],massRef,length(set@TIC[[n.files]]))
+              #interval<- alignCalibrationPeak( set@signalCalibRef[[n.file]],
+              #massRef,length(set@TIC[[n.files]]))
               interval<- set@signalCalibRef[[n.file]]
               names(interval)<-massRef
               n.mass<-length(interval)
@@ -193,7 +215,8 @@ plotPeakShape<-function(set,showAverage=FALSE){
                 sp<-interval[[as.character(x)]]$signal
                 mz<-interval[[as.character(x)]]$mz
                 localMax<-LocalMaximaSG(sp = sp,minPeakHeight = max(sp)*0.2)
-                interpol<- stats::spline( mz[(localMax-4):(localMax+4)], sp[(localMax-4):(localMax+4)], n=1000 )
+                interpol<- stats::spline( mz[(localMax-4):(localMax+4)], 
+                                          sp[(localMax-4):(localMax+4)], n=1000 )
                 sg<-signal::sgolayfilt(interpol$y,n=501,p=3) #n/2
                 center<-interpol$x[which.max(sg)]
                 return(center)
@@ -212,14 +235,18 @@ plotPeakShape<-function(set,showAverage=FALSE){
               for (i in seq_len(n.mass)){
                
                 #interpolation 
-                interpolation<-stats::spline(interval.n[[i]],interval[[i]]$signal,xout = interval.ref)
+                interpolation<-stats::spline(interval.n[[i]],
+                                             interval[[i]]$signal,
+                                             xout = interval.ref)
                 
                 #baseline correction 
-                interpolation$y <- interpolation$y - snipBase(interpolation$y,widthI = 4)
+                interpolation$y <- interpolation$y - snipBase(interpolation$y,
+                                                              widthI = 4)
                 
                 #normalization
                 indexPeakRef<-which(massRef==massRef[i])
-                peak_ref[indexPeakRef,n.file,]<-interpolation$y/stats::spline(interval.ref,interpolation$y,xout = 0)$y
+                peak_ref[indexPeakRef,n.file,]<-interpolation$y/
+                  stats::spline(interval.ref,interpolation$y,xout = 0)$y
                 #cumsum(interpolation$y)/sum(interpolation$y)
               }
               
@@ -248,10 +275,14 @@ plotPeakShape<-function(set,showAverage=FALSE){
             p<-ggplot2::ggplot() +
               ggplot2::geom_line(data=peakData,
                                  ggplot2::aes(x=.data$intervalRef,y=.data$signal,
-                                              group=.data$Mz,colour=.data$Mz),size=1) +
+                                              group=.data$Mz,colour=.data$Mz),
+                                 size=1) +
               ggplot2::geom_line(data=data.frame(x=interval.ref2,
-                                                 y=apply(peaksMAT,which.max(dim(peaksMAT)),mean)),
-                                 ggplot2::aes(x=.data$x, y=.data$y,colour="average"),size=1.2)+
+                                                 y=apply(peaksMAT,
+                                                         which.max(dim(peaksMAT)),
+                                                         mean)),
+                                 ggplot2::aes(x=.data$x, y=.data$y,colour="average"),
+                                 size=1.2)+
               ggplot2::ggtitle("Average normalized peak shape of calibration peaks") +
               ggplot2::xlab('Mz interval normalized')+
               ggplot2::ylab("Intenisty normalized")+
@@ -261,7 +292,8 @@ plotPeakShape<-function(set,showAverage=FALSE){
             p<-ggplot2::ggplot() +
               ggplot2::geom_line(data=peakData,
                                  ggplot2::aes(x=.data$intervalRef,y=.data$signal,
-                                              group=.data$Mz,colour=.data$Mz),size=1)+
+                                              group=.data$Mz,colour=.data$Mz),
+                                 size=1)+
               ggplot2::ggtitle("Average normalized peak shape of calibration peaks") +
               ggplot2::xlab('Mz interval normalized')+
               ggplot2::ylab("Intenisty normalized")+
@@ -276,14 +308,17 @@ plotPeakShape<-function(set,showAverage=FALSE){
             peaksUp<-apply(peak_ref,1,function(x){
               if(all(is.na(x))) return(rep(NA,4*npoints))
               peak<-apply(x,2,function(y) mean(y,na.rm=TRUE)+
-                            stats::qnorm(0.975)*stats::sd(y,na.rm=TRUE)/sqrt(length(y)))
+                            stats::qnorm(0.975)*stats::sd(y,na.rm=TRUE)/
+                            sqrt(length(y)))
               peak<-stats::spline(interval.ref,peak,n=4*npoints)
               return(peak$y)
             }) 
             
             peaksDown<-apply(peak_ref,1,function(x){
               if(all(is.na(x))) return(rep(NA,4*npoints))
-              peak<-apply(x,2,function(y) mean(y,na.rm=TRUE)-stats::qnorm(0.975)*stats::sd(y,na.rm=TRUE)/sqrt(length(y)))
+              peak<-apply(x,2,function(y) mean(y,na.rm=TRUE)-
+                            stats::qnorm(0.975)*stats::sd(y,na.rm=TRUE)/
+                            sqrt(length(y)))
               peak<-stats::spline(interval.ref,peak,n=4*npoints)
               return(peak$y)
             }) 
@@ -298,11 +333,14 @@ plotPeakShape<-function(set,showAverage=FALSE){
             p<-p +
               ggplot2::geom_line(data=peakData,ggplot2::aes(x=.data$intervalRef,
                                                             y=.data$signal0,
-                                                            group=.data$Mz,colour=.data$Mz),size=0.6,
+                                                            group=.data$Mz,
+                                                            colour=.data$Mz),
+                                 size=0.6,
                                  linetype = "dashed")+
               ggplot2::geom_line(data=peakData,
                                  mapping=ggplot2::aes(x=.data$intervalRef,
-                                                      y=.data$signal1,group=.data$Mz,
+                                                      y=.data$signal1,
+                                                      group=.data$Mz,
                                                       colour=.data$Mz),size=0.6,
                                  linetype = "dashed") 
           }
@@ -325,12 +363,14 @@ plotPeakShapeTof<-function(set){
   
   for (n.file in seq_len(n.files) ){
     massRef <- set@mzCalibRef[[n.file]]
-    interval<- alignCalibrationPeak( set@signalCalibRef[[n.file]],massRef,length(set@TIC[[n.files]]))
+    interval<- alignCalibrationPeak( set@signalCalibRef[[n.file]],massRef,
+                                     length(set@TIC[[n.files]]))
     names(interval)<-massRef
     n.mass<-length(interval)
     coefs <-set@coefCalib[[n.file]]
     # delta <- vapply(interval, 
-    #                function(x) width(tof = sqrt(x$mz)*coefs["a",]+coefs["b",],peak = x$signal)$delta,
+    #                function(x) width(tof = sqrt(x$mz)*coefs["a",]+coefs["b",],
+    #peak = x$signal)$delta,
     #                FUN.VALUE = 1.1)
     delta <- vapply(interval,
                    function(x) width(tof = x$mz,peak = x$signal)$delta,
@@ -341,7 +381,8 @@ plotPeakShapeTof<-function(set){
       sp<-interval[[as.character(x)]]$signal
       mz<-interval[[as.character(x)]]$mz
       localMax<-LocalMaximaSG(sp = sp,minPeakHeight = max(sp)*0.2)
-      interpol<- stats::spline( mz[(localMax-4):(localMax+4)], sp[(localMax-4):(localMax+4)], n=1000 )
+      interpol<- stats::spline( mz[(localMax-4):(localMax+4)], 
+                                sp[(localMax-4):(localMax+4)], n=1000 )
       sg<-signal::sgolayfilt(interpol$y,n=501,p=3)
       tofMax<-interpol$x[which.max(sg)]
       return(tofMax)
@@ -353,7 +394,8 @@ plotPeakShapeTof<-function(set){
     #normalization of intreval
     interval.n<-list()
     for (j in seq_len(n.mass)){
-      #interval.n[[j]]<-(sqrt(interval[[j]]$mz)*coefs["a",]+coefs["b",]-t_centre[j])/delta[j]
+      #interval.n[[j]]<-(sqrt(interval[[j]]$mz)*coefs["a",]+coefs["b",]-
+      #t_centre[j])/delta[j]
       interval.n[[j]]<-(interval[[j]]$mz-t_centre[j])/delta[j]
     }
     names(interval.n)<-massRef
@@ -364,14 +406,16 @@ plotPeakShapeTof<-function(set){
     for (i in seq_len(n.mass)){
       
       #interpolation 
-      interpolation<-stats::spline(interval.n[[i]],interval[[i]]$signal,xout = interval.ref)
+      interpolation<-stats::spline(interval.n[[i]],interval[[i]]$signal,
+                                   xout = interval.ref)
       
       #baseline correction 
       interpolation$y <- interpolation$y - snipBase(interpolation$y,widthI = 4)
       
       #normalization
       indexPeakRef<-which(massRef==massRef[i])
-      peak_ref[indexPeakRef,n.file,]<-interpolation$y/stats::spline(interval.ref,interpolation$y,xout = 0)$y
+      peak_ref[indexPeakRef,n.file,]<-interpolation$y/
+        stats::spline(interval.ref,interpolation$y,xout = 0)$y
       #cumsum(interpolation$y)/sum(interpolation$y)
     }
     
@@ -397,7 +441,8 @@ plotPeakShapeTof<-function(set){
   
   #plot
   p<-ggplot2::ggplot(data=peakData) + 
-    ggplot2::geom_line(ggplot2::aes(x=intervalRef,y=signal,group=Mz,colour=Mz),size=1) +
+    ggplot2::geom_line(ggplot2::aes(x=intervalRef,y=signal,group=Mz,colour=Mz),
+                       size=1) +
     ggplot2::ggtitle("Average normalized peak shape") +
     ggplot2::xlab('Mz interval normalized')+
     ggplot2::ylab("Intenisty normalized")
@@ -407,14 +452,16 @@ plotPeakShapeTof<-function(set){
     #confidence interval 
     peaksUp<-apply(peak_ref,1,function(x){
       if(all(is.na(x))) return(rep(NA,4*npoints))
-      peak<-apply(x,2,function(y) mean(y,na.rm=TRUE)+stats::qnorm(0.975)*stats::sd(y,na.rm=TRUE)/sqrt(length(y)))
+      peak<-apply(x,2,function(y) mean(y,na.rm=TRUE)+
+                    stats::qnorm(0.975)*stats::sd(y,na.rm=TRUE)/sqrt(length(y)))
       peak<-stats::spline(interval.ref,peak,n=4*npoints)
       return(peak$y)
     }) 
     
     peaksDown<-apply(peak_ref,1,function(x){
       if(all(is.na(x))) return(rep(NA,4*npoints))
-      peak<-apply(x,2,function(y) mean(y,na.rm=TRUE)-stats::qnorm(0.975)*stats::sd(y,na.rm=TRUE)/sqrt(length(y)))
+      peak<-apply(x,2,function(y) mean(y,na.rm=TRUE)-
+                    stats::qnorm(0.975)*stats::sd(y,na.rm=TRUE)/sqrt(length(y)))
       peak<-stats::spline(interval.ref,peak,n=4*npoints)
       return(peak$y)
     }) 
@@ -427,9 +474,13 @@ plotPeakShapeTof<-function(set){
                          intervalRef=rep(interval.ref2,length(mzRef)))
     peakData<-peakData[!is.na(peakData$signal0),]
     p<-p +
-      ggplot2::geom_line(data=peakData,ggplot2::aes(x=intervalRef,y=signal0,group=Mz,colour=Mz),size=0.6,
+      ggplot2::geom_line(data=peakData,ggplot2::aes(x=intervalRef,
+                                                    y=signal0,group=Mz,colour=Mz),
+                         size=0.6,
                          linetype = "dashed")+
-      ggplot2::geom_line(data=peakData,ggplot2::aes(x=intervalRef,y=signal1,group=Mz,colour=Mz),size=0.6,
+      ggplot2::geom_line(data=peakData,ggplot2::aes(x=intervalRef,
+                                                    y=signal1,group=Mz,colour=Mz),
+                         size=0.6,
                          linetype = "dashed")
   }
   
@@ -457,61 +508,76 @@ plotPtrReaction<-function(pSet){
   primaryIon<-Reduce(c,lapply(pSet@primaryIon,function(x) x$primaryIon))
   date <- Reduce(c,pSet@date)
   date<-vapply(date,function(x) chron::chron(dates. = strsplit(x," ")[[1]][1],
-                     times. = strsplit(x," ")[[1]][2],format = c("d/m/y","h:m:s")),FUN.VALUE = chron::chron(1))
+                     times. = strsplit(x," ")[[1]][2],
+                     format = c("d/m/y","h:m:s")),FUN.VALUE = chron::chron(1))
   
-  Udrift<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=.data$date,y=.data$U),
-                        data=data.frame(date=as.Date(chron::as.dates(date)),U=U)) +
+  Udrift<-ggplot2::ggplot()+
+    ggplot2::geom_point(mapping = ggplot2::aes(x=.data$date,y=.data$U),
+                        data=data.frame(date=as.Date(chron::as.dates(date)),
+                                        U=U)) +
     ggplot2::ggtitle("Drift voltage")+  ggplot2::ylab("V") +
-    ggplot2::theme_classic()+ ggplot2::theme(title = ggplot2::element_text(size=9))
+    ggplot2::theme_classic()+ 
+    ggplot2::theme(title = ggplot2::element_text(size=9))
   
-  Tdrift<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=.data$date,y=.data$TD),
+  Tdrift<-ggplot2::ggplot()+
+    ggplot2::geom_point(mapping = ggplot2::aes(x=.data$date,y=.data$TD),
                                          data=data.frame(date=as.Date(chron::as.dates(date)),TD=TD)) +
     ggplot2::ggtitle("Drift temperature")+  ggplot2::ylab("degree") +
-    ggplot2::theme_classic() + ggplot2::theme(title = ggplot2::element_text(size=9))
+    ggplot2::theme_classic() + 
+    ggplot2::theme(title = ggplot2::element_text(size=9))
   
-  Pdrift<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=.data$date,y=.data$PD),
+  Pdrift<-ggplot2::ggplot()+
+    ggplot2::geom_point(mapping = ggplot2::aes(x=.data$date,y=.data$PD),
                                          data=data.frame(date=as.Date(chron::as.dates(date)),PD=PD)) +
     ggplot2::ggtitle("Drift pressure")+  ggplot2::ylab("mbar") +
-    ggplot2::theme_classic()+ ggplot2::theme(title = ggplot2::element_text(size=9))
+    ggplot2::theme_classic()+ 
+    ggplot2::theme(title = ggplot2::element_text(size=9))
   
-  primaryIonPlot<-ggplot2::ggplot()+ggplot2::geom_point(mapping = ggplot2::aes(x=.data$date,y=.data$cps),
+  primaryIonPlot<-ggplot2::ggplot()+
+    ggplot2::geom_point(mapping = ggplot2::aes(x=.data$date,y=.data$cps),
                                          data=data.frame(date=as.Date(chron::as.dates(date)),
                                                          cps=primaryIon)) +
-    ggplot2::ggtitle("Primary ion isotope intensity")+  ggplot2::xlab("Date")+
+    ggplot2::ggtitle("Primary ion isotope intensity")+  
+    ggplot2::xlab("Date")+
     ggplot2::theme_classic()+ ggplot2::theme(title = ggplot2::element_text(size=9))
   
   reaction<-ggpubr::ggarrange(Udrift + ggplot2::theme(axis.ticks.x = ggplot2::element_blank(),
-                                            axis.text.x = ggplot2::element_blank(),
-                                            axis.title.x = ggplot2::element_blank()),
-                    Tdrift+ ggplot2::theme(axis.ticks.x = ggplot2::element_blank(),
-                                           axis.text.x = ggplot2::element_blank(),
-                                           axis.title.x = ggplot2::element_blank()),
-                    Pdrift+ ggplot2::theme(axis.ticks.x = ggplot2::element_blank(),
-                                           axis.text.x = ggplot2::element_blank(),
-                                           axis.title.x = ggplot2::element_blank()),
-                    primaryIonPlot,ncol=1,heights = c(0.23,0.23,0.23,0.31),align = "v")
+                                            axis.text.x=ggplot2::element_blank(),
+                                            axis.title.x=ggplot2::element_blank()),
+                    Tdrift+ ggplot2::theme(axis.ticks.x=ggplot2::element_blank(),
+                                           axis.text.x=ggplot2::element_blank(),
+                                           axis.title.x=ggplot2::element_blank()),
+                    Pdrift+ ggplot2::theme(axis.ticks.x=ggplot2::element_blank(),
+                                           axis.text.x=ggplot2::element_blank(),
+                                           axis.title.x=ggplot2::element_blank()),
+                    primaryIonPlot,ncol=1,heights = c(0.23,0.23,0.23,0.31),
+                    align = "v")
   
   return(primaryIonPlot)
 }
 
 ### plotFiles----
-#' Plot the calibration peaks
+#' Plot the calibration peaks after calibration
 #' 
 #' @param object a ptrSet or ptrRaw object 
 #' @param ppm the width of plot windows
-#' @param pdfFile is different of \code{NULL}, the file path to save the plots in pdf
-#' @param fileNames the name of the files in the ptrSet object to plot. If \code{NULL}, all files will be
+#' @param pdfFile is different of \code{NULL}, the file path to save the 
+#' plots in pdf
+#' @param fileNames the name of the files in the ptrSet object to plot. 
+#' If \code{NULL}, all files will be
 #' plotted
 #' @param ... not used
 #' @return plot 
 #' @export
 #' @rdname plotCalib
 #' @examples 
+#' ## ptrSet
 #' data(exhaledPtrset )
 #' plotCalib(exhaledPtrset ,fileNames=getFileNames(exhaledPtrset )[1])
 #'
-#' ##ptrRaw 
-#' filePath<-system.file("extdata/exhaledAir/ind1/ind1-1.h5", package = "ptairData")
+#' ## ptrRaw 
+#' filePath<-system.file("extdata/exhaledAir/ind1/ind1-1.h5", 
+#' package = "ptairData")
 #' raw <- readRaw(filePath,mzCalibRef=c(21.022,59.049))
 #' plotCalib(raw)
 methods::setMethod(f="plotCalib",
@@ -519,7 +585,8 @@ methods::setMethod(f="plotCalib",
           function(object,ppm=2000, pdfFile=NULL, fileNames=NULL,...){
             
             fileNamesObject<-object@parameter$listFile
-            if(methods::is(fileNamesObject,"expression")) fileNamesObject<-eval(fileNamesObject)
+            if(methods::is(fileNamesObject,"expression")) 
+              fileNamesObject<-eval(fileNamesObject)
             set<-object
             # get list files
             if(is.null(fileNames)) {
@@ -531,15 +598,16 @@ methods::setMethod(f="plotCalib",
               
               if(methods::is(fileNames,"expression")) fileNames<-eval(fileNames)
               test<-fileNames %in% basename(fileNamesObject)
-              if(!all(test)) stop( "This file(s) names are not in the directory: \n" ,
+              if(!all(test)) stop( "This file(s) names are not in 
+                                   the directory: \n" ,
                                    paste(! fileNames[test],collapse="\n"))
               }
            
             # get information for plot 
             massCalib<-set@mzCalibRef[fileNames]
-            # spectrCalib<-lapply(fileNames,function(x) alignCalibrationPeak(set@signalCalibRef[[x]],
-            #                                                                set@mzCalibRef[[x]],
-            #                                                                length(set@TIC[[x]])))
+            # spectrCalib<-lapply(fileNames,
+            # function(x) alignCalibrationPeak(set@signalCalibRef[[x]],
+            #length(set@TIC[[x]])))
             # names(spectrCalib)<-fileNames
             spectrCalib<-set@signalCalibRef
             errorList<- set@errorCalibPpm[fileNames]
@@ -567,7 +635,8 @@ methods::setMethod(f="plotCalib",
                 nb_row <- ceiling(nb_plot/nb_col)
                 
                 graphics::par(oma = c(0, 0, 3, 0))
-                layout(matrix(seq(1,nb_row*nb_col), nrow = nb_row, ncol = nb_col, byrow = TRUE))
+                layout(matrix(seq(1,nb_row*nb_col), nrow = nb_row, 
+                              ncol = nb_col, byrow = TRUE))
               
                 for (j in seq_along(massCalib[[i]])){
                   m <- massCalib[[i]][j]
@@ -581,7 +650,8 @@ methods::setMethod(f="plotCalib",
                         main  = c(m,paste("error:", round(error[j],2),"ppm")))
                   abline(v=m, col="red", lwd=2)
                 }#end loop masses
-                title(main=paste(i,"-",names(spectrCalib)[i]),outer = TRUE,line =0.5,cex.main=2)
+                title(main=paste(i,"-",names(spectrCalib)[i]),outer = TRUE,
+                      line =0.5,cex.main=2)
               } #end loop files
               
               if(!is.null(pdfFile)) dev.off()
@@ -591,16 +661,20 @@ methods::setMethod(f="plotCalib",
 
 #' plot the Total Ion sptectrum (TIC) for one or several files.
 #' @param object ptrSet or ptrRaw S4 object
-#' @param type set "plotly" to get an interactive plot, and "ggplot" for classical plot.  
+#' @param type set "plotly" to get an interactive plot, and "ggplot" for 
+#' classical plot.  
 #' @param baselineRm logical. If \code{TRUE}, remove the baseline of the TIC
 #' @param showLimits logical. If \code{TRUE}, add the time limits to the plot 
 #' (obtain with the `fracMaxTIC` argument or `createPtrSet` function)
 #' @return a plotly of ggplot2 object. 
-#' @param pdfFile a absolute file path. A pdf will be generated with a plot for each file, caints TIC and 
+#' @param pdfFile a absolute file path. A pdf will be generated with a plot 
+#' for each file, caints TIC and 
 #'time limits.
-#' @param fileNames vector of character. The file names of the ptrSer that you want to plot. Could be in 
+#' @param fileNames vector of character. The file names of the ptrSer that 
+#' you want to plot. Could be in 
 #' basename or fullname.
-#' @param colorBy character. A name of the ptrSet's sampleMetaData column, to display with
+#' @param colorBy character. A name of the ptrSet's sampleMetaData column, 
+#' to display with
 #' the same color files of same attributes. 
 #' @param normalizePrimariIon should the TIC be normalized by the primary ion
 #' @param ... not used
@@ -613,11 +687,13 @@ methods::setMethod(f="plotCalib",
 methods::setMethod(f="plotTIC",
           signature = "ptrSet",
           function(object, type, baselineRm, showLimits, pdfFile=NULL, 
-                   fileNames = NULL,colorBy="rownames",normalizePrimariIon=FALSE,...){
+                   fileNames = NULL,colorBy="rownames",
+                   normalizePrimariIon=FALSE,...){
             
             
             fileNamesObject<- object@parameter$listFile
-            if(methods::is(fileNamesObject,"expression")) fileNamesObject<-eval(fileNamesObject)
+            if(methods::is(fileNamesObject,"expression")) 
+              fileNamesObject<-eval(fileNamesObject)
             
             set<- object 
             # get list files
@@ -627,7 +703,8 @@ methods::setMethod(f="plotTIC",
               # check if fileNames are in the ptrset object
               test <- basename(fileNames) %in% basename(fileNamesObject)
               if(!all(test)) stop( "This file(s) are not in the directory: \n" ,
-                                   paste(basename(fileNames)[which(! test)],collapse="\n"))
+                                   paste(basename(fileNames)[which(! test)],
+                                         collapse="\n"))
               # put in full name
               if(any(dirname(fileNames)==".")) {
                 fileNames <- fileNamesObject[basename(fileNamesObject) 
@@ -653,7 +730,8 @@ methods::setMethod(f="plotTIC",
             if(baselineRm) {
               TIC <- lapply(TIC,function(x) {
                 bl <- try(baselineEstimation(x,d=1))
-                if(is.null(attr(bl,"condition"))) TIC.blrm <-x - bl else TIC.blrm<- x - x[1]
+                if(is.null(attr(bl,"condition"))) 
+                  TIC.blrm <-x - bl else TIC.blrm<- x - x[1]
                 TIC.blrm
               } )
             }
@@ -675,12 +753,16 @@ methods::setMethod(f="plotTIC",
                 if(normalizePrimariIon) ticPlot<-ticPlot/set@primaryIon[[j]]
                 if(!is.null(pdfFile)) {
                   plot<- ggplot2::qplot(x=time,y=ticPlot/(time[2]-time[1]),
-                        xlab="time",ylab="Sum cps",main=paste(j,names(TIC)[j],sep=" - "),size=0.8) 
+                        xlab="time",ylab="Sum cps",
+                        main=paste(j,names(TIC)[j],sep=" - "),size=0.8) 
                     if(ncol(indLim[[j]])>0) plot <- plot + 
-                        ggplot2::geom_vline(ggplot2::aes(xintercept = as.numeric(names(TIC[[j]]))[c(indLim[[j]])],
-                                                         color="time limits")) +ggplot2:: scale_fill_manual("Legend") +
+                        ggplot2::geom_vline(
+                          ggplot2::aes(xintercept = as.numeric(names(TIC[[j]]))[c(indLim[[j]])],
+                                       color="time limits")) +
+                        ggplot2:: scale_fill_manual("Legend") +
                         ggplot2::theme(
-                          plot.title = ggplot2::element_text(size=20, face="bold"),
+                          plot.title = ggplot2::element_text(size=20, 
+                                                             face="bold"),
                           axis.title = ggplot2::element_text(size=16),
                           axis.text = ggplot2::element_text(size=14),
                           legend.text =  ggplot2::element_text(size=14),
@@ -693,10 +775,17 @@ methods::setMethod(f="plotTIC",
                   colour<- as.factor(SMD[names(TIC)[j],colorBy])
                 }
                 
-                data <- data.frame(time=time,Sum_cps=ticPlot/(time[2]-time[1]),Legend=colour)
+                data <- data.frame(time=time,Sum_cps=ticPlot/(time[2]-time[1]),
+                                   Legend=colour)
                  
-                p <- p + ggplot2::geom_point(mapping=ggplot2::aes(x=.data$time,y=.data$Sum_cps, color = .data$Legend ),data=data) + 
-                  ggplot2::geom_line(mapping=ggplot2::aes (x=.data$time,y=.data$Sum_cps, color = .data$Legend ),data=data,size=1)
+                p <- p + ggplot2::geom_point(mapping=ggplot2::aes(x=.data$time,
+                                                                  y=.data$Sum_cps, 
+                                                                  color = .data$Legend ),
+                                             data=data) + 
+                  ggplot2::geom_line(mapping=ggplot2::aes (x=.data$time,
+                                                           y=.data$Sum_cps, 
+                                                           color = .data$Legend ),
+                                     data=data,size=1)
                 }
                 if(!is.null(pdfFile)) dev.off()
                 
@@ -717,7 +806,8 @@ methods::setMethod(f="plotTIC",
                 } 
 
                 #set title and legend
-                p<-p + ggplot2::ggtitle(paste("TIC of",set@parameter$name)) + ggplot2::theme_classic()
+                p<-p + ggplot2::ggtitle(paste("TIC of",set@parameter$name)) + 
+                  ggplot2::theme_classic()
                   
               switch (type,
                ggplot = return(p),
@@ -731,7 +821,7 @@ methods::setMethod(f="plotTIC",
 #' Displays the image of the matrix of intensities, the TIC and the TIS,
 #' for the selected m/z and time ranges
 #' 
-#' @param object An S4 object of class \code{ptrRaw} or \code{ptrSet}
+#' @param object An S4 object of class \code{ptrRaw-class} or \code{ptrSet}
 #' @param mzRange Either a vector of 2 numerics indicating the m/z limits
 #' or an integer giving a nominal m/z
 #' @param timeRange Vector of 2 numerics giving the time limits
@@ -747,7 +837,8 @@ methods::setMethod(f="plotTIC",
 #' 'classical' display
 #' @return Invisibly returns a list of the raw (sub)matrix 'rawsubM' and
 #' the voc (sub)database 'vocsubDB'
-#' @param fileNames vector of character. The file names of the ptrSer that you want to plot. Could be in 
+#' @param fileNames vector of character. The file names of the ptrSer that you 
+#' want to plot. Could be in 
 #' basename or fullname.
 #' @param ... not used
 #' @rdname plotRaw
@@ -779,7 +870,8 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
   set<-object
   
   fileNamesObject<- set@parameter$listFile
-  if(methods::is(fileNamesObject, "expression")) fileNamesObject<-eval(fileNamesObject)
+  if(methods::is(fileNamesObject, "expression")) 
+    fileNamesObject<-eval(fileNamesObject)
   
   
   
@@ -790,7 +882,8 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
     # check if fileNames are in the ptrset object
     test <- basename(fileNames) %in% basename(fileNamesObject)
     if(!all(test)) stop( "This file(s) are not in the directory: \n" ,
-                         paste(basename(fileNames)[which(! test)],collapse="\n"))
+                         paste(basename(fileNames)[which(! test)],
+                               collapse="\n"))
     # put in full name
     if(any(dirname(fileNames)==".")) {
       fileNames <- fileNamesObject[basename(fileNamesObject) 
@@ -805,7 +898,8 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
   
   if (figure.pdf != "interactive") {
     if (type == "plotly")
-      stop("'plotly display is only available in the 'interactive' mode currently.",
+      stop("'plotly display is only available in the 'interactive' 
+           mode currently.",
            call. = FALSE)
     filenameSplitVc <- unlist(strsplit(basename(figure.pdf), ".", fixed = TRUE))
     extC <- utils::tail(filenameSplitVc, 1)
@@ -827,7 +921,8 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
     index<- which(mzRange[1]< mz & mz < mzRange[2])
     
     #object data 
-    object <- rhdf5::h5read(file, name = "/FullSpectra/TofData",index=list(index,NULL,NULL,NULL))
+    object <- rhdf5::h5read(file, name = "/FullSpectra/TofData",
+                            index=list(index,NULL,NULL,NULL))
    
     #time axis
     timeVn <- as.numeric(names(set@TIC[[basename(file)]]))
@@ -839,7 +934,8 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
     timeVn<-timeVn[indexTime]
     
     #calibrate mass axis
-    FirstcalibCoef <- rhdf5::h5read(file,"FullSpectra/MassCalibration",index=list(NULL,1))
+    FirstcalibCoef <- rhdf5::h5read(file,"FullSpectra/MassCalibration",
+                                    index=list(NULL,1))
     tof <- sqrt(mz)*FirstcalibCoef[1,1] + FirstcalibCoef[2,1]
     #tof<- seq(0,length(mz))
     coefCalib<-set@coefCalib[[basename(file)]][[1]]
@@ -939,7 +1035,8 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
                mzImaVn <- as.numeric(colnames(imageMN))
                abline(h = vapply(vocdbDF[, "ion_mass"],
                                  function(mzN)
-                                   (mzN - min(mzImaVn))/diff(range(mzImaVn)) * ncol(imageMN) + par("usr")[1],
+                                   (mzN - min(mzImaVn))/diff(range(mzImaVn)) * 
+                                   ncol(imageMN) + par("usr")[1],
                                  FUN.VALUE = 1.1),
                       lty = "dotted")
              }
@@ -1040,10 +1137,12 @@ methods::setMethod(f="plotRaw",signature = "ptrSet",
 #' @export
 methods::setMethod(f="plotFeatures",
           signature = "ptrSet",
-          function(set, mz, typePlot , addFeatureLine, ppm, pdfFile, fileNames,colorBy){
+          function(set, mz, typePlot , addFeatureLine, ppm, pdfFile, 
+                   fileNames,colorBy){
             
             fileNamesObject<- set@parameter$listFile
-            if(methods::is(fileNamesObject, "expression")) fileNamesObject<-eval(fileNamesObject)
+            if(methods::is(fileNamesObject, "expression")) 
+              fileNamesObject<-eval(fileNamesObject)
             
             
             
@@ -1055,8 +1154,10 @@ methods::setMethod(f="plotFeatures",
                 # check if fileNames are in the ptrSet object
                 # put in basename  
                 test<- basename(fileNames) %in% basename(fileNamesObject)
-                if(!all(test)) stop( "This file(s) names are not in the directory: \n" ,
-                                     paste(! basename(fileNames)[test],collapse="\n"))
+                if(!all(test)) stop( "This file(s) names are not in 
+                                     the directory: \n" ,
+                                     paste(! basename(fileNames)[test],
+                                           collapse="\n"))
               
                 # Put in fullNames
                 if(any(dirname(fileNames) ==".")) { 
@@ -1104,16 +1205,19 @@ methods::setMethod(f="plotFeatures",
                 
                 n.limit <- dim(indLim)[2]
                 
-                raw <- rhdf5::h5read(file, name = "/FullSpectra/TofData",index=list(indexMz,NULL,NULL,NULL))
+                raw <- rhdf5::h5read(file, name = "/FullSpectra/TofData",
+                                     index=list(indexMz,NULL,NULL,NULL))
                 time<-c(rhdf5::h5read(file, name = "/TimingData/BufTimes"))
                 index_zero<-which(time==0)[-1] 
                 if(length(index_zero)) time<-time[-index_zero]
                 mzAxis.j <- mzAxis[indexMz]
                 rawMn <- matrix(raw,
                                 nrow = dim(raw)[1],
-                                ncol = prod(utils::tail(dim(raw),2))) #* 0.2 ns / 2.9 (single ion signal) if convert to cps
-                
-                FirstcalibCoef <- rhdf5::h5read(file,"FullSpectra/MassCalibration",index=list(NULL,1))
+                                ncol = prod(utils::tail(dim(raw),2))) 
+                #* 0.2 ns / 2.9 (single ion signal) if convert to cps
+                FirstcalibCoef <- rhdf5::h5read(file,
+                                                "FullSpectra/MassCalibration",
+                                                index=list(NULL,1))
                 tof <- sqrt(mzAxis.j)*FirstcalibCoef[1,1] + FirstcalibCoef[2,1]
                 
                 coefCalib<-set@coefCalib[[basename(file)]][[1]]
@@ -1130,28 +1234,41 @@ methods::setMethod(f="plotFeatures",
                   #get index of the time period
                   indexTime<-seq(indLim["start", i], indLim["end", i])
                   indexTimeVec<-c(indexTimeVec,indexTime)
-                  spectrum<-rowSums(rawMn[, indexTime])/(ncol(rawMn[, indexTime])*(time[3]-time[2]))
+                  spectrum<-rowSums(rawMn[, indexTime])/
+                    (ncol(rawMn[, indexTime])*(time[3]-time[2]))
                   
                   data <-data.frame(mz=mzNew[indexSub],
                                      cps=spectrum[indexSub] ,
                                     timePeriods=as.character(i))
                   plotFile <- plotFile + 
-                    ggplot2::geom_point(mapping = ggplot2::aes(x=.data$mz, y=.data$cps, 
-                                                               color=.data$timePeriods),data=data) + 
-                    ggplot2::geom_line(mapping = ggplot2::aes(x=.data$mz, y=.data$cps, 
-                                                              color=.data$timePeriods),data=data,size=1)
+                    ggplot2::geom_point(mapping = ggplot2::aes(x=.data$mz, 
+                                                               y=.data$cps, 
+                                                               color=.data$timePeriods),
+                                        data=data) + 
+                    ggplot2::geom_line(mapping = ggplot2::aes(x=.data$mz, 
+                                                              y=.data$cps, 
+                                                              color=.data$timePeriods),
+                                       data=data,size=1)
                    
                 }
                 
                 #get the background
                 if(!is.null(indLimBg)){
-                  background<-rowSums(rawMn[,indLimBg])/(length(indLimBg)*(time[3]-time[2]))
-                  data=data.frame(mz=mzNew[indexSub], cps=background[indexSub], timePeriods="background")
+                  background<-rowSums(rawMn[,indLimBg])/
+                    (length(indLimBg)*(time[3]-time[2]))
+                  data=data.frame(mz=mzNew[indexSub], cps=background[indexSub], 
+                                  timePeriods="background")
                   
                   #plot background to the file plot
                   plotFile <- plotFile + 
-                    ggplot2::geom_point(mapping = ggplot2::aes(x=.data$mz, y=.data$cps, color=.data$timePeriods),data=data) + 
-                    ggplot2::geom_line(mapping = ggplot2::aes(x=.data$mz, y=.data$cps, color=.data$timePeriods), data=data,
+                    ggplot2::geom_point(mapping = ggplot2::aes(x=.data$mz, 
+                                                               y=.data$cps, 
+                                                               color=.data$timePeriods),
+                                        data=data) + 
+                    ggplot2::geom_line(mapping = ggplot2::aes(x=.data$mz, 
+                                                              y=.data$cps, 
+                                                              color=.data$timePeriods), 
+                                       data=data,
                                        linetype = "dashed")
                 }
                 
@@ -1159,7 +1276,8 @@ methods::setMethod(f="plotFeatures",
                 listPlotFile[[j]]<-plotFile
                 ## add summary line to plotAll
                 # get the average time periods spectrum
-                spectrum <- rowSums(rawMn[, indexTimeVec]) / (length(indexTimeVec)*(time[3]-time[2]))
+                spectrum <- rowSums(rawMn[, indexTimeVec]) / 
+                  (length(indexTimeVec)*(time[3]-time[2]))
                 
                 # spline intrepolation for spectrum
                 splineInterpol<- stats::splinefun(mzNew, spectrum)
@@ -1174,30 +1292,41 @@ methods::setMethod(f="plotFeatures",
                 data=data.frame( mz = mzNew[indexSub], cps = spectrum[indexSub], 
                                  Legend = rep(colour,length(indexSub)))
                 plotAll <- plotAll +
-                  ggplot2::geom_point(ggplot2::aes(x=.data$mz,y=.data$cps,color=.data$Legend),data=data) +
-                  ggplot2::stat_function(mapping=ggplot2::aes(x=.data$mz,color=.data$Legend),data=data, 
+                  ggplot2::geom_point(ggplot2::aes(x=.data$mz,y=.data$cps,
+                                                   color=.data$Legend),data=data) +
+                  ggplot2::stat_function(mapping=ggplot2::aes(x=.data$mz,
+                                                              color=.data$Legend),
+                                         data=data, 
                                          fun=splineInterpol ,n = 1000,size=1)
                 
                 # spline interpolation for background
                 if(!is.null(indLimBg)){
-                  background<-rowSums(rawMn[,indLimBg])/(length(indLimBg)*(time[3]-time[2]))
+                  background<-rowSums(rawMn[,indLimBg])/
+                    (length(indLimBg)*(time[3]-time[2]))
                   splineInterpol<- stats::splinefun(mzNew,background)
                 
                   #plot background
-                  data= data.frame(mz = mzNew[indexSub], Legend = rep(colour,length(indexSub)))
+                  data= data.frame(mz = mzNew[indexSub], 
+                                   Legend = rep(colour,length(indexSub)))
                   plotAll<-plotAll + 
-                    ggplot2::stat_function(mapping=ggplot2::aes(x=.data$mz,color=.data$Legend),data=data, 
-                                         fun=splineInterpol ,n = 1000,linetype="dashed",size=1)
+                    ggplot2::stat_function(mapping=ggplot2::aes(x=.data$mz,
+                                                                color=.data$Legend),
+                                           data=data, 
+                                         fun=splineInterpol ,
+                                         n = 1000,linetype="dashed",size=1)
                 }
                 
                 #plot vertical line line
-                if(addFeatureLine) plotAll<- plotAll+ ggplot2::geom_vline(xintercept = mz)
+                if(addFeatureLine) plotAll<- plotAll+ 
+                  ggplot2::geom_vline(xintercept = mz)
                 
               }#END loop file
               
               plotAll <-plotAll + 
-                ggplot2::ggtitle(paste("Features",round(mz,3),"of",set@parameter$name),
-                                 subtitle = paste(annotateVOC(mz)[2:3],collapse = " ") ) + 
+                ggplot2::ggtitle(paste("Features",round(mz,3),"of",
+                                       set@parameter$name),
+                                 subtitle = paste(annotateVOC(mz)[2:3],
+                                                  collapse = " ") ) + 
                 ggplot2::labs(color = colorBy) + ggplot2::theme_classic()
               
               if(!is.null(pdfFile)){
@@ -1214,7 +1343,8 @@ methods::setMethod(f="plotFeatures",
 
 ## sampleMetadata ----
 
-#' reset the default sampleMetadata 
+#' reset the default sampleMetadata, containing the suborders names and the 
+#' acquisition dates as columns. 
 #' @param ptrset a ptrser object
 #' @return a data.frame 
 #' @export
@@ -1229,7 +1359,8 @@ resetSampleMetadata<-function(ptrset){
     dir<- eval(dir)
     fileNamesObject<- eval(fileNamesObject)
   } 
-  filesFullName <- list.files(dir, recursive = TRUE, pattern="\\.h5$",full.names = TRUE)
+  filesFullName <- list.files(dir, recursive = TRUE, pattern="\\.h5$",
+                              full.names = TRUE)
   fileDir <- dirname(list.files(dir, recursive = TRUE, pattern="\\.h5$"))
   
   filesProcessed <- basename(fileNamesObject)
@@ -1279,8 +1410,12 @@ getSampleMetadata<- function(set){
           }
 
 #' set sampleMetadata in a ptrSet
+#' 
+#' Insert a samplemetada data.frame in a ptrSet object. The dataframe must have all 
+#' file names in rownames. 
 #' @param set a ptrSet object
-#' @param sampleMetadata a data.frame with all file names of the ptrSet in row names
+#' @param sampleMetadata a data.frame with all file names of the ptrSet in 
+#' row names
 #' @return the ptrSet object in argument with the sampleMetadata modified
 #' @export
 #' @examples 
@@ -1301,7 +1436,8 @@ setSampleMetadata<- function(set, sampleMetadata){
             fileName <- basename(files)
             testFilesName <- fileName %in% row.names(sampleMetadata)
             if(! all(testFilesName) ) {
-              stop( paste(fileName[!testFilesName], "not in sampleMetadata row names, please complete theme \n"))
+              stop( paste(fileName[!testFilesName], "not in sampleMetadata 
+                          row names, please complete theme \n"))
             } 
             set@sampleMetadata <-sampleMetadata
             
@@ -1309,7 +1445,9 @@ setSampleMetadata<- function(set, sampleMetadata){
             if(!is.null(set@parameter$saveDir)){
               changeName <- parse(text=paste0(set@parameter$name,"<- set "))
               eval(changeName)
-              eval(parse(text =  paste0( "save(" ,set@parameter$name ,",file= paste0( set@parameter$saveDir,'/', '",set@parameter$name,".RData '))")))
+              eval(parse(text =  paste0( "save(" ,set@parameter$name ,",file= 
+                                         paste0( set@parameter$saveDir,'/', '",
+                                         set@parameter$name,".RData '))")))
             }
             return(set)
           }
@@ -1317,7 +1455,8 @@ setSampleMetadata<- function(set, sampleMetadata){
 
 #' export sampleMetadata
 #' @param set a ptrSet object
-#' @param saveFile a file path in tsv extension where the data.frame will be exported
+#' @param saveFile a file path in tsv extension where the data.frame will be 
+#' exported
 #' @return nothing
 #' @export
 #' @examples 
@@ -1327,7 +1466,8 @@ setSampleMetadata<- function(set, sampleMetadata){
 exportSampleMetada<-function(set, saveFile){
   
   if(!methods::is(set,"ptrSet")) stop("set is not a ptrSet object")
-            if(tools::file_ext(saveFile) != "tsv") stop("saveFile must be in .tsv extension" )
+            if(tools::file_ext(saveFile) != "tsv") stop("saveFile must be in 
+                                                        .tsv extension" )
             
             #get sampleMetadata
             sampleMetadata<-set@sampleMetadata
@@ -1340,7 +1480,8 @@ exportSampleMetada<-function(set, saveFile){
 
 #' import a sampleMetadata from a tsv file to a ptrSet object 
 #' @param set a ptrSet object
-#' @param file a tsv file contains the sample metada to import, with all file names in row name 
+#' @param file a tsv file contains the sample metada to import, with all 
+#' file names in row name 
 #' (the fist column on th excel).
 #' @return a ptrSet with th enew sample Metadata
 #' @export
@@ -1353,7 +1494,8 @@ exportSampleMetada<-function(set, saveFile){
 importSampleMetadata<-function(set,file){
   if(!methods::is(set,"ptrSet")) stop("set is not a ptrSet object")
             sampleMetadata <- try(utils::read.table(file = file, sep="\t",
-                                             header = TRUE, row.names = 1,quote = ""))
+                                             header = TRUE, row.names = 1,
+                                             quote = ""))
             
             # check if row names contains all files 
             dir<-set@parameter$dir
@@ -1362,7 +1504,8 @@ importSampleMetadata<-function(set,file){
             fileName <- basename(files)
             testFilesName <- fileName %in% row.names(sampleMetadata)
               if(! all(testFilesName) ) {
-                stop( paste(fileName[!testFilesName], "not in sampleMetadata row names, please complete theme \n"))
+                stop( paste(fileName[!testFilesName], "not in sampleMetadata 
+                            row names, please complete theme \n"))
               } 
             set@sampleMetadata <- sampleMetadata
             return(set)
@@ -1397,20 +1540,27 @@ methods::setMethod(f="timeLimits",
               object@timeLimit[[file]]<-indLim
             }
             
-            paramterTimeLimit<-list(fracMaxTIC=fracMaxTIC,fracMaxTICBg=fracMaxTICBg, derivThresholdExp=derivThresholdExp,
-                           derivThresholdBg=derivThresholdBg,degreeBaseline=degreeBaseline,
-                           minPoints = minPoints)
+            paramterTimeLimit<-list(fracMaxTIC=fracMaxTIC,fracMaxTICBg=
+                                      fracMaxTICBg, 
+                                    derivThresholdExp=derivThresholdExp,
+                                    derivThresholdBg=derivThresholdBg,
+                                    degreeBaseline=degreeBaseline,
+                                    minPoints = minPoints)
             
             object@parameter$timeLimit<-paramterTimeLimit
             
-            if(redefineKnots) object <- defineKnots(object, knotsPeriod = object@parameter$knotsPeriod)
+            if(redefineKnots) 
+              object <- defineKnots(object, 
+                                    knotsPeriod = object@parameter$knotsPeriod)
             saveDir<-object@parameter$saveDir
             objName<-object@parameter$name
             if(!is.null(saveDir)){
               if(!is.null(objName)){
                 changeName <- parse(text=paste0(objName,"<- object "))
                 eval(changeName)
-                eval(parse(text =  paste0( "save(" ,objName ,",file= paste0( saveDir,'/', '",objName,".RData '))")))
+                eval(parse(text =  paste0( "save(" ,objName ,",file= paste0( 
+                                           saveDir,'/', '",objName,".RData '))"
+                                           )))
               } else save(object, file=paste0(saveDir,"/ptrSet.RData"))
             }
             return(object)
@@ -1423,19 +1573,25 @@ methods::setMethod(f="timeLimits",
 
 #' Define the knots location
 #' 
-#' \code{defineKnots} function determine the knots location for a ptrSet or ptrRaw object.
+#' \code{defineKnots} function determine the knots location for a ptrSet or 
+#' ptrRaw object.
 #' There is three possibilities :  
 #' \itemize{
-#' \item \code{method = expiration} in the expiration periods, a knots is placed every \code{knotsPeriod}
-#' seconds, and 1 knots in the middle of two expiration, one at begin and at the end
-#' \item \code{method= uniforme}, the knots are placed uniformly every \code{knotsPeriod} time points
-#' \item give in \code{knotsList} a list of knot, with all base name file in name of the list element. 
-#' All file must be informed. The knots location must be contained in the time axis
+#' \item \code{method = expiration} in the expiration periods, a knots is 
+#' placed every \code{knotsPeriod} seconds, and 1 knots in the middle of two 
+#' expiration, one at begin and at the end
+#' \item \code{method= uniforme}, the knots are placed uniformly every 
+#' \code{knotsPeriod} time points
+#' \item give in \code{knotsList} a list of knot, with all base name file in 
+#' name of the list element.  All file must be informed. The knots location 
+#' must be contained in the time axis
 #' }
 #' @param  object ptrSet object
-#' @param knotsPeriod the period in second (times scale) between two knots for the two dimensional modelization
+#' @param knotsPeriod the period in second (times scale) between two knots for 
+#' the two dimensional modelization
 #' @param method expiration or uniform
-#' @param knotsList a list of knot location for each files, with all base name file in name of the list element
+#' @param knotsList a list of knot location for each files, with all base name 
+#' file in name of the list element
 #' @return a list with numeric vector of knots for each file
 #' @examples 
 #' data(exhaledPtrset)
@@ -1449,7 +1605,8 @@ methods::setMethod(f="timeLimits",
 #' @export
 methods::setMethod(f = "defineKnots",
                    signature= "ptrSet",
-                   function(object, knotsPeriod=3, method=c("expiration","uniform")[1],
+                   function(object, knotsPeriod=3, 
+                            method=c("expiration","uniform")[1],
          knotsList=NULL){
                      
                      if(knotsPeriod == 0){
@@ -1459,23 +1616,29 @@ methods::setMethod(f = "defineKnots",
                          
                          #check if all file are set
                          if(any(!names(knotsList) %in% names(object@TIC))) 
-                           stop( names(knotsList)[!names(knotsList) %in% names(object@TIC)],
+                           stop( names(knotsList)[!names(knotsList) %in% 
+                                                    names(object@TIC)],
                                  " missing")
                          
                          #check if interior knots are in the times axis
                          test<-apply(names(knotsList),function(file){
                            knots<- knotsList[[file]]
                            t <- as.numeric(names(object@TIC[[file]]))
-                           return(knots[1] >= t[1] & utils::tail(knots,1) <= utils::tail(t,1))
+                           return(knots[1] >= t[1] & 
+                                    utils::tail(knots,1) <= utils::tail(t,1))
                          } )
                          
-                         if(any(!test)) stop(paste("knots are not contained in the time axis for file ",names(knotsList)[which(!test)],"\n"))
+                         if(any(!test)) stop(paste("knots are not contained in 
+                                                   the time axis for file ",
+                                                   names(knotsList)[which(!test)],
+                                                   "\n"))
                          knots<-knotsList
                        } else{
                          knots<-lapply(names(object@TIC),function(file){
                           background<-object@timeLimit[[file]]$backGround
                           t<-as.numeric(names(object@TIC[[file]]))
-                          res<-try(defineKnotsFunc(t,background,knotsPeriod,method,file))
+                          res<-try(defineKnotsFunc(t,background,knotsPeriod,
+                                                   method,file))
                           if(!is.null(attr(res,"condition"))) res<-NULL
                           res
                          })
@@ -1494,7 +1657,9 @@ methods::setMethod(f = "defineKnots",
                        if(!is.null(objName)){
                          changeName <- parse(text=paste0(objName,"<- object "))
                          eval(changeName)
-                         eval(parse(text =  paste0( "save(" ,objName ,",file= paste0( saveDir,'/', '",objName,".RData '))")))
+                         eval(parse(text =  paste0( "save(" ,objName ,",file= 
+                                                    paste0( saveDir,'/', '",
+                                                    objName,".RData '))")))
                        } else save(object, file=paste0(saveDir,"/ptrSet.RData"))
                      }
                      
@@ -1514,37 +1679,17 @@ methods::setMethod(f = "calibration",
             
             
             for (file in fileNames){
-              # #mass axis and total ion average specturm 
-              # spSum <- rhdf5::h5read(file,"/FullSpectra/SumSpectrum",bit64conversion='bit64')
-              # spAvg <- spSum/length(x@TIC[[basename(file)]])
-              # mz <- rhdf5::h5read(file,"/FullSpectra/MassAxis",bit64conversion='bit64')
-              # 
-              # #convert mz to tof 
-              # FirstcalibCoef <- try(rhdf5::h5read(file,"FullSpectra/MassCalibration",index=list(NULL,1)))
-              # attributCalib <- try(rhdf5::h5readAttributes(file,"/FullSpectra"))
-              # if(!is.null(attr(FirstcalibCoef,"condition")) & is.null(attr(attributCalib,"condition"))){
-              #   FirstcalibCoef <-matrix(c(attributCalib$`MassCalibration a`,attributCalib$`MassCalibration b`),ncol=1)
-              # }
-              # 
-              # rownames(FirstcalibCoef)<-c("a","b")
-              # 
-              # #calibration 
-              # calib <- calibrationFun(spAvg,mz,mzCalibRef,FirstcalibCoef,tol)
-              
-              # x@coefCalib[[basename(file)]]<-calib$coefs
-              # x@mzCalibRef[[ basename(file) ]] <- calib$mzCalibRef
-              # x@signalCalibRef[[ basename(file) ]] <- calib$calibSpectr
-              # x@errorCalibPpm[[ basename(file) ]] <- calib$error
-              # x@resolution[[ basename(file)]]<-estimateResol(calib$mzCalibRef,
-              #                                                calib$calibSpectr )
-              
-              raw<-readRaw(file,mzCalibRef =mzCalibRef,calibrationPeriod = calibrationPeriod )
+
+              raw<-readRaw(file,mzCalibRef =mzCalibRef,
+                           calibrationPeriod = calibrationPeriod )
               x@coefCalib[[basename(file)]]<-raw@calibCoef
               x@mzCalibRef[[ basename(file) ]] <- raw@calibMassRef
               x@signalCalibRef[[ basename(file) ]] <- raw@calibSpectr
               x@errorCalibPpm[[ basename(file) ]] <- raw@calibError
-              calibSpectr<-alignCalibrationPeak(raw@calibSpectr,raw@calibMassRef,length(raw@time))
-              resolutionEstimated <-estimateResol(calibMassRef =raw@calibMassRef ,calibSpectr = calibSpectr)
+              calibSpectr<-alignCalibrationPeak(raw@calibSpectr,
+                                                raw@calibMassRef,length(raw@time))
+              resolutionEstimated <-estimateResol(calibMassRef =raw@calibMassRef ,
+                                                  calibSpectr = calibSpectr)
               x@resolution[[ basename(file)]]<-resolutionEstimated
               }
             
@@ -1557,14 +1702,15 @@ methods::setMethod(f = "calibration",
               if(!is.null(objName)){
                 changeName <- parse(text=paste0(objName,"<- x "))
                 eval(changeName)
-                eval(parse(text =  paste0( "save(" ,objName ,",file= paste0( saveDir,'/', '",objName,".RData '))")))
+                eval(parse(text =  paste0( "save(" ,objName ,",file= paste0( 
+                                           saveDir,'/', '",objName,".RData '))")))
               } else save(x, file=paste0(saveDir,"/ptrSet.RData"))
             }
             return(x)
           } )
 ## other ----
-#' get the files diretory of a ptrSet
-#' @param ptrSet ptrSte object 
+#' get the files directory of a ptrSet
+#' @param ptrSet ptrSet object 
 #' @return the directory in absolute path as character
 #' @examples 
 #' data(exhaledPtrset )
@@ -1579,9 +1725,9 @@ getDirectory<-function(ptrSet) {
 
 #' remove the peakList of an ptrSet object 
 #' 
-#' This function is usefull when you want to change the parameters of the detect 
-#' peak function. First delete the peakLIst with \code{rmPeakList}, and apply \code{detectPeak}
-#' with the new parameters.
+#' This function is useful when you want to change the parameters of the detect 
+#' peak function. First delete the peakList with \code{rmPeakList}, and apply 
+#' \code{detectPeak}with the new parameters.
 #' @param object ptrSet object 
 #' @return a ptrSet
 #' @export
@@ -1596,8 +1742,9 @@ rmPeakList<-function(object){
 
 #' show a ptrSet object 
 #' 
-#' It indicates the directory, the numer of files taht contain teh directory at the moment, and teh number of processed files.
-#' The two numbers are diffrents, use \code{updatePtrSet} function.
+#' It indicates the directory, the numbre of files that contain the directory at 
+#' the moment, and the number of processed files.
+#' The two numbers are different, use \code{updatePtrSet} function.
 #' @param object a ptrSet object
 #' @return nothing
 #' @export 
@@ -1611,7 +1758,8 @@ methods::setMethod("show","ptrSet",
             }
             
             
-            nFiles <- length(list.files(dir, recursive = TRUE, pattern="\\.h5$"))
+            nFiles <- length(list.files(dir, recursive = TRUE, 
+                                        pattern="\\.h5$"))
             nFilesCheck <- length(fileCheck)
             nFilesProcess <- length(object@peakList)
         
@@ -1620,20 +1768,39 @@ methods::setMethod("show","ptrSet",
             cat("   ", nFiles,"files contained in the directory \n")
             cat("   ", nFilesCheck, "files checked","\n")
             cat("   ", nFilesProcess, "files processed by detectPeak","\n")
-            if(!is.null(object@parameter$saveDir)) cat("object save in ", object@parameter$saveDir)
+            if(!is.null(object@parameter$saveDir)) cat("object save in ", 
+                                                       object@parameter$saveDir)
           })
 
 #' get the peak list of a ptrSet object 
 #' @param set ptrSet object 
-#' @return a list containing: 
-#' \itemize{ 
-#' \item raw: for each files a list of peak list for each time periods and background, if \code{fracMaxTic} is zero
-# 'in the \code{createPtrSet} function, then there is just one peak list per file 
-#' \item aligned: for each file the peak List after aligning between time periods and removing background threshold}
+#' @return  a list of expressionSet, where:
+#'\itemize{
+#'\item assay Data contains the matrix with m/z peak center in row names, and the 
+#'quantification in cps at each time point
+#'\item feature Data the matrix with  m/z peak center in row names, and the 
+#'following columns: 
+#'   \itemize{
+#'   \item quanti_unit: the mean of the quantification over the expiration/headspace 
+#'time limits defined 
+#'    \item background_unit: the mean of the quantification over the background time 
+#'limits defined 
+#'   \item diffAbs_unit: the mean of the quantification over the expiration/headspace
+#'time limits defined after subtracting the baseline estimated from the background 
+#'points defined 
+#'    \item pValLess/ pValGreater: the p-value of the unilateral t-test, who test 
+#'that quantification (in cps) of expiration points are less/greater than the 
+#'intensity of the background. 
+#'    \item lower/upper: integration boundaries
+#'    \item parameter peak: estimated peak parameter 
+#'   }
+#'} 
 #' @examples 
 #' data(exhaledPtrset )
-#' exhaledPtrset  <- detectPeak(exhaledPtrset  , mzNominal=c(59,60))
-#' getPeakList(exhaledPtrset )
+#' peakList<- getPeakList(exhaledPtrset )
+#' X<-Biobase::exprs(peakList[[1]])
+#' Y<- Biobase::fData(peakList[[1]])
+#' head(Y)
 #' @export
 getPeakList<-function(set){
             return(set@peakList)}
@@ -1652,7 +1819,9 @@ getPeakList<-function(set){
 methods::setMethod("getFileNames",signature = "ptrSet",
           function(object, fullNames){
             fileFullNames <- object@parameter$listFile
-            if(methods::is(fileFullNames,"expression")) fileFullNames<-eval(fileFullNames)
+            if(methods::is(fileFullNames,"expression")) 
+              fileFullNames<-eval(fileFullNames)
             
-            if(fullNames) return(fileFullNames) else return(basename(fileFullNames))
+            if(fullNames) 
+              return(fileFullNames) else return(basename(fileFullNames))
           })

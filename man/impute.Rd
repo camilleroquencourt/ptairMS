@@ -2,25 +2,27 @@
 % Please edit documentation in R/alignment.R
 \name{impute}
 \alias{impute}
-\title{Impute missing values on an expression set from an ptrSet}
+\title{Impute missing values of an expression set from raw data}
 \usage{
 impute(eSet, ptrSet, parallelize = FALSE, nbCores = 2)
 }
 \arguments{
-\item{eSet}{an expression set retun by alignSamples function}
+\item{eSet}{an expression set return by \code{\link[ptairMS]{alignSamples}} 
+function}
 
-\item{ptrSet}{processed by detectPeak function}
+\item{ptrSet}{a \code{\link[ptairMS]{ptrSet-class}} object processed by 
+\code{\link[ptairMS]{detectPeak}} function}
 
-\item{parallelize}{boolean. If \code{TRUE} loop aver files will be parallelized}
+\item{parallelize}{boolean. If \code{TRUE} loop over files will be paralleled}
 
-\item{nbCores}{number of cluster to use for parrallel computation.}
+\item{nbCores}{number of cluster to use for parallel computation.}
 }
 \value{
 the same expression set as in input, with missing values imputing
 }
 \description{
 Imputing missing values by returning back to the raw data and fitting the 
-peak shape function on the noise / residuals
+peak shape function on the noise or residuals signals if peaks already detected.
 }
 \examples{
 data(exhaledPtrset)

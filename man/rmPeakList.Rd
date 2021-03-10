@@ -13,9 +13,9 @@ rmPeakList(object)
 a ptrSet
 }
 \description{
-This function is usefull when you want to change the parameters of the detect 
-peak function. First delete the peakLIst with \code{rmPeakList}, and apply \code{detectPeak}
-with the new parameters.
+This function is useful when you want to change the parameters of the detect 
+peak function. First delete the peakList with \code{rmPeakList}, and apply 
+\code{detectPeak}with the new parameters.
 }
 \examples{
 data(exhaledPtrset )

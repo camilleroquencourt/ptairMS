@@ -15,7 +15,8 @@ calibrationFun(sp, mz, mzCalibRef, calibCoef, peakShape, tol)
 
 \item{calibCoef}{coeficient of the previous calibration}
 
-\item{peakShape}{a list with reference axis and a reference peak shape centered in zero}
+\item{peakShape}{a list with reference axis and a reference peak shape 
+centered in zero}
 
 \item{tol}{maximum error tolarated in ppm}
 }
@@ -23,6 +24,7 @@ calibrationFun(sp, mz, mzCalibRef, calibCoef, peakShape, tol)
 list
 }
 \description{
-Performs calibration on sp with mzCalibRef reference masses and mzToTofFunc as previous 
+Performs calibration on sp with mzCalibRef reference masses and mzToTofFunc 
+as previous 
 calibration function
 }

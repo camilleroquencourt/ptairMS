@@ -7,7 +7,8 @@
 align(peakTab, ppmGroup = 70, dmzGroup = 0.001)
 }
 \arguments{
-\item{peakTab}{table with comlumn : mass, quantification, and groups number to aligned}
+\item{peakTab}{table with comlumn : mass, quantification, and groups 
+number to aligned}
 
 \item{ppmGroup}{width of sub group created beafore density estimation in ppm}
 

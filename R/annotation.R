@@ -23,7 +23,8 @@ setMethod("annotateVOC", "ExpressionSet",
             ionMassColnameI <- which(colnames(fdataDF) == ionMassColname)
             
             if (length(ionMassColnameI) != 1)
-              stop("No or multiple columns found in the fdataDF with the '", ionMassColname, "' name.",
+              stop("No or multiple columns found in the fdataDF with the '", 
+                   ionMassColname, "' name.",
                    call. = FALSE)
             
             ion_mass.vn <- fdataDF[, ionMassColnameI]
@@ -70,7 +71,8 @@ setMethod("annotateVOC", "data.frame",
             ionMassColnameI <- which(colnames(x) == ionMassColname)
             
             if (length(ionMassColnameI) != 1)
-              stop("No or multiple columns found with the '", ionMassColname, "' name.",
+              stop("No or multiple columns found with the '", ionMassColname, 
+                   "' name.",
                    call. = FALSE)
             
             ion_mass.vn <- x[, ionMassColnameI]
@@ -144,7 +146,8 @@ setMethod("annotateVOC", "numeric",
   names(fielddbVl) <- fields
   
   if (sum(!fielddbVl) > 0)
-    warnings("The following fields were not found in the vocDB database and will be ignored:\n", paste(fields[!fielddbVl], collapse = ", "))
+    warnings("The following fields were not found in the vocDB database and 
+             will be ignored:\n", paste(fields[!fielddbVl], collapse = ", "))
   
   fields <- fields[fielddbVl]
   
@@ -178,7 +181,8 @@ setMethod("annotateVOC", "numeric",
           
         }
         
-        annotateDF[i, paste0(prefix, fieldC)] <- paste(sort(unique(vocFieldVc)), collapse = ", ")
+        annotateDF[i, paste0(prefix, fieldC)] <- paste(sort(unique(vocFieldVc)), 
+                                                       collapse = ", ")
         
       }
       
@@ -379,27 +383,13 @@ formula2mass <- function(formula.vc,
                collapse = ", "), " mass(es) cannot be provided currently",
          call. = FALSE)
   }
-  atoms.vn <- atoms.vn[names(atomic_weights.vn)[names(atomic_weights.vn) %in% names(atoms.vn)]]
+  atoms.vn <- atoms.vn[names(atomic_weights.vn)[names(atomic_weights.vn) %in% 
+                                                  names(atoms.vn)]]
   
   atoms.vn
   
 }
 
-#' Isotope detection and validation of isotope clusters in PTR-TOF-MS peak table
-#'
-#' This function identify possible isotope cluster of C13,O17 and O18 atomes after alignment. It writes in the 
-#' features data of the expressionSet (Biobase::fData()) the isotope m/z in the "isotope" column at the ligne 
-#' of the more intenisf peak of the clusters.
-#' @param eSet an expression set of PTR-TOF-MS data aligned 
-#' @param ppm presision for the mass matching
-#' @return an expresion with the column isotope added in teh features data
-#' @examples
-#' data(exhaledPtrset)
-#' exhaled.eset <- alignSamples(exhaledPtrset ,fracGroup=0.9,pValGreaterThres=0.05)
-#' exhaled.eset<- impute(exhaled.eset,exhaledPtrset )
-#' exhaled.eset <-findIsotope(exhaled.eset)
-#' Biobase::fData(exhaled.eset)[,"isotope",drop=FALSE]
-#' @export
 findIsotope<-function(eSet,ppm=100){
   X<-Biobase::exprs(eSet)
   fDATA<-Biobase::fData(eSet)
@@ -407,16 +397,16 @@ findIsotope<-function(eSet,ppm=100){
   
   #FIND AND VALIDE ISOTOPE GROUP
   for (i in seq_along(mz)){
-    iso <- isotopeMzMatching(mz[i], mz[(i+1):length(mz)],ppm)
-    if(length(iso)){
-      testIso<-validateGroup(c(mz[i],iso),X)
-      if(any(testIso)){
-        fDATA[i,"isotope"]<- paste(iso[testIso],collapse = "/")
+      iso <- isotopeMzMatching(mz[i], mz[(i+1):length(mz)],ppm)
+      if(length(iso)){
+        testIso<-validateGroup(c(mz[i],iso),X)
+        if(any(testIso)){
+          fDATA[i,"isotope"]<- paste(iso[testIso],collapse = "/")
+        }
       }
     }
-  }
-  Biobase::fData(eSet)<-fDATA
-  return(eSet)
+    Biobase::fData(eSet)<-fDATA
+    return(eSet)
 }
 
 
@@ -432,14 +422,8 @@ isotopeMzMatching<-function(m,mzSub,ppm,max=1){
   diff<-lapply(split(isotopes, isotopes$element),function(x) {
     if(nrow(x)>1) x$mass[-1]-x$mass[1] else return(NULL) })
   diff<-Reduce(c,diff)
-  Iso <- Reduce(c,lapply(diff,function(d) mzSub[which(abs(mzSub-(m+d))*10^6/m < 50)] ))
-  # diffN <- 1.003355
-  # diffO<-c(1.0042,2.0042) #C13, O17, O18
-  # iso<-list("C13"=NULL,"O17"=NULL,"O18"=NULL)
-  # for(j in seq(max)){
-  #   Iso<-lapply(c(diffN,diffO),function(diff) mzSub[which(abs(mzSub-(m+j*diff))*10^6/m < 100)])
-  #   iso<-mapply(c, iso, Iso, SIMPLIFY=FALSE)
-  # }
+  Iso <- Reduce(c,lapply(diff,
+                         function(d) mzSub[which(abs(mzSub-(m+d))*10^6/m < 50)]))
   iso<-unique(Iso)
   return(iso)
 }
@@ -448,13 +432,15 @@ isotopeMzMatching<-function(m,mzSub,ppm,max=1){
 validateGroup<-function(groupIso,X){
   
   #correlation inter sample
-  testCorPval<-vapply(as.character(groupIso)[-1], function(y) stats::cor.test(X[as.character(groupIso)[1],],                                                                    X[y,],alternative = c("greater"))$p.value,1.1)
+  testCorPval<-vapply(as.character(groupIso)[-1], 
+                      function(y) stats::cor.test(X[as.character(groupIso)[1],],                                                                    X[y,],alternative = c("greater"))$p.value,1.1)
   testCor<- testCorPval < 0.01
   
   #ratio
   ratio<-X[as.character(groupIso)[-1],]/
     matrix(
-      rep(X[as.character(groupIso)[1],,drop=FALSE],length(as.character(groupIso)[-1])),
+      rep(X[as.character(groupIso)[1],,drop=FALSE],
+          length(as.character(groupIso)[-1])),
       nrow=length(as.character(groupIso)[-1]),byrow=TRUE)
   
   anno<-annotateVOC(groupIso[1])
@@ -466,11 +452,14 @@ validateGroup<-function(groupIso,X){
                                stringsAsFactors = FALSE)
   if(anno[,"vocDB_ion_formula"] != ""){
     formula<-anno[,"vocDB_ion_formula"]
-    isoDistrib<-enviPat::isopattern(isotopes,chemforms = formula,threshold = 1,verbose = FALSE)[[1]]
+    isoDistrib<-enviPat::isopattern(isotopes,chemforms = formula,threshold = 1,
+                                    verbose = FALSE)[[1]]
     testRatio<- vapply(seq_len(nrow(ratio)),function(x){
-      index<-which(abs(isoDistrib[,"m/z"]-groupIso[x+1])*10^6/round(groupIso[x+1]) < 100)
+      index<-which(abs(isoDistrib[,"m/z"]-groupIso[x+1])*10^6/
+                     round(groupIso[x+1]) < 100)
       if(length(index)!=0){
-        testRatio<- stats::median(ratio[x,],na.rm = TRUE)*100 <= max(isoDistrib[index,"abundance"]*1.02,50)
+        testRatio<- stats::median(ratio[x,],na.rm = TRUE)*100 <= 
+          max(isoDistrib[index,"abundance"]*1.02,50)
     }else {
       testRatio<- stats::median(ratio[x,],na.rm = TRUE) < 0.5
     }
@@ -481,4 +470,3 @@ validateGroup<-function(groupIso,X){
 
   return(apply(cbind(testCor,testRatio),1,all))
 }
-

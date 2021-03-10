@@ -10,16 +10,35 @@ getPeakList(set)
 \item{set}{ptrSet object}
 }
 \value{
-a list containing: 
-\itemize{ 
-\item raw: for each files a list of peak list for each time periods and background, if \code{fracMaxTic} is zero
-\item aligned: for each file the peak List after aligning between time periods and removing background threshold}
+a list of expressionSet, where:
+\itemize{
+\item assay Data contains the matrix with m/z peak center in row names, and the 
+quantification in cps at each time point
+\item feature Data the matrix with  m/z peak center in row names, and the 
+following columns: 
+  \itemize{
+  \item quanti_unit: the mean of the quantification over the expiration/headspace 
+time limits defined 
+   \item background_unit: the mean of the quantification over the background time 
+limits defined 
+  \item diffAbs_unit: the mean of the quantification over the expiration/headspace
+time limits defined after subtracting the baseline estimated from the background 
+points defined 
+   \item pValLess/ pValGreater: the p-value of the unilateral t-test, who test 
+that quantification (in cps) of expiration points are less/greater than the 
+intensity of the background. 
+   \item lower/upper: integration boundaries
+   \item parameter peak: estimated peak parameter 
+  }
+}
 }
 \description{
 get the peak list of a ptrSet object
 }
 \examples{
 data(exhaledPtrset )
-exhaledPtrset  <- detectPeak(exhaledPtrset  , mzNominal=c(59,60))
-getPeakList(exhaledPtrset )
+peakList<- getPeakList(exhaledPtrset )
+X<-Biobase::exprs(peakList[[1]])
+Y<- Biobase::fData(peakList[[1]])
+head(Y)
 }

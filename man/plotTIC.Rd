@@ -14,7 +14,7 @@ plotTIC(
   ...
 )
 
-\S4method{plotTIC}{ptrRaw}(object, type, baselineRm, showLimits, fracMaxTIC = 0.5, ...)
+\S4method{plotTIC}{ptrRaw}(object, type, baselineRm, showLimits, fracMaxTIC = 0.8, ...)
 
 \S4method{plotTIC}{ptrSet}(
   object,
@@ -31,7 +31,8 @@ plotTIC(
 \arguments{
 \item{object}{ptrSet or ptrRaw S4 object}
 
-\item{type}{set "plotly" to get an interactive plot, and "ggplot" for classical plot.}
+\item{type}{set "plotly" to get an interactive plot, and "ggplot" for 
+classical plot.}
 
 \item{baselineRm}{logical. If \code{TRUE}, remove the baseline of the TIC}
 
@@ -40,18 +41,22 @@ plotTIC(
 
 \item{...}{not used}
 
-\item{fracMaxTIC}{Percentage (between 0 and 1) of the maximum of the Total Ion Chromatogram (TIC) 
-amplitude with baseline removal. We will analyze only the part of the spectrum where 
-the TIC intensity is higher than `fracMaxTIC * max(TIC) `. If you want to analyze the entire spectrum, 
-set this parameter to 0.}
+\item{fracMaxTIC}{Percentage (between 0 and 1) of the maximum of the Total 
+Ion Current (TIC) amplitude with baseline removal. We will analyze only the 
+part of the spectrum where the TIC intensity is higher than 
+`fracMaxTIC * max(TIC) `. If you want to analyze the entire spectrum, set 
+this parameter to 0.}
 
-\item{pdfFile}{a absolute file path. A pdf will be generated with a plot for each file, caints TIC and 
+\item{pdfFile}{a absolute file path. A pdf will be generated with a plot 
+for each file, caints TIC and 
 time limits.}
 
-\item{fileNames}{vector of character. The file names of the ptrSer that you want to plot. Could be in 
+\item{fileNames}{vector of character. The file names of the ptrSer that 
+you want to plot. Could be in 
 basename or fullname.}
 
-\item{colorBy}{character. A name of the ptrSet's sampleMetaData column, to display with
+\item{colorBy}{character. A name of the ptrSet's sampleMetaData column, 
+to display with
 the same color files of same attributes.}
 
 \item{normalizePrimariIon}{should the TIC be normalized by the primary ion}
@@ -63,8 +68,11 @@ a plotly of ggplot2 object.
 plot the Total Ion sptectrum (TIC) for one or several files.
 }
 \examples{
+### ptrRaw object
+
 library(ptairData)
-filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
+filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", 
+package = "ptairData")
 raw <- readRaw(filePath)
 p <- plotTIC(raw)
 p

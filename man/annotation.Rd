@@ -5,7 +5,8 @@
 \alias{annotateVOC,ExpressionSet-method}
 \alias{annotateVOC,data.frame-method}
 \alias{annotateVOC,numeric-method}
-\title{Putatively annotate VOC mz by using the reference compilation from the literature}
+\title{Putative annotation of VOC mz by using the reference compilation from the 
+literature}
 \usage{
 annotateVOC(
   x,
@@ -48,28 +49,35 @@ annotateVOC(
 )
 }
 \arguments{
-\item{x}{Expression set object (resp. data.frame) (resp. numeric vector) containing
-the PTR-MS processed data (resp. containing a column with the ion mass values) (resp. containing the ion mass values)}
+\item{x}{Expression set object (resp. data.frame) (resp. numeric vector) 
+containing
+the PTR-MS processed data (resp. containing a column with the ion mass values) 
+(resp. containing the ion mass values)}
 
-\item{ionMassColname}{Character: column name from the fData (resp. from the data.frame) containing
-the ion mass values; [default: 'ion_mass']; this argument is not used when x is a numeric vector}
+\item{ionMassColname}{Character: column name from the fData 
+(resp. from the data.frame) containing
+the ion mass values; [default: 'ion_mass']; this argument is not used when x 
+is a numeric vector}
 
 \item{ppm}{Numeric: tolerance}
 
-\item{prefix}{Character: prefix for the new 'annotation' columns [default: 'vocDB_']}
+\item{prefix}{Character: prefix for the new 'annotation' 
+columns [default: 'vocDB_']}
 
-\item{fields}{Characer vector: fields of the 'vocDB' database to be queried among:
+\item{fields}{Characer vector: fields of the 'vocDB' database to be 
+queried among:
 'ion_mass' [default], 'ion_formula' [default], 'formula', 'mass_monoiso',
 'name_iupac' [default], 'pubchem_cid', 'inchi', 'inchikey', 'ref_year',
 'ref_pmid', 'disease_name', 'disease_meshid'}
 }
 \value{
-Returns the data.frame with additional columns containing the vocDB informations
+Returns the data.frame with additional columns containing the vocDB 
+informations
 for the matched ion_mass values as well as the detected isotopes
 }
 \description{
-Putatively annotate VOC mz by using the reference compilation from the literature, 
-and detect isotope thanks to the \code{findIsotope} function.
+Putatively annotate VOC mz by using the reference compilation from the 
+literature, and porpose an isotope detetcion.
 }
 \examples{
 data(exhaledPtrset )

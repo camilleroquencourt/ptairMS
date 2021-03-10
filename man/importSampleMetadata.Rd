@@ -9,7 +9,8 @@ importSampleMetadata(set, file)
 \arguments{
 \item{set}{a ptrSet object}
 
-\item{file}{a tsv file contains the sample metada to import, with all file names in row name 
+\item{file}{a tsv file contains the sample metada to import, with all 
+file names in row name 
 (the fist column on th excel).}
 }
 \value{

@@ -13,6 +13,7 @@
 nothing
 }
 \description{
-It indicates the directory, the numer of files taht contain teh directory at the moment, and teh number of processed files.
-The two numbers are diffrents, use \code{updatePtrSet} function.
+It indicates the directory, the numbre of files that contain the directory at 
+the moment, and the number of processed files.
+The two numbers are different, use \code{updatePtrSet} function.
 }

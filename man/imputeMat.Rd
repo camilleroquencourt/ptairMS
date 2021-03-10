@@ -11,10 +11,11 @@ imputeMat(X, ptrSet, quantiUnit)
 
 \item{ptrSet}{processed by detectPeak function}
 
-\item{quantiUnit}{the unit of the quantities in the matrix \code{X} (ppb, cps or ncps)}
+\item{quantiUnit}{the unit of the quantities in the matrix \code{X} (ppb, 
+cps or ncps)}
 }
 \value{
-the same expression set as in input, with missing values imputing
+the same matrix as in input, with missing values imputing
 }
 \description{
 Imputing missing values by returning back to the raw data and fitting the 

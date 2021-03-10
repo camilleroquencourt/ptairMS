@@ -10,14 +10,15 @@ convert_to_mzML(file)
 \item{file}{A .h5 file path}
 }
 \value{
-cretae a mzML file in the same directory of the h5 iput file
+create a mzML file in the same directory of the h5 input file
 }
 \description{
-convert_to_mzML create a mzML file from a h5 file in the same directory with the \code{writeMLData} of
-the \code{MSnbase} package
+convert_to_mzML create a mzML file from a h5 file in the same directory 
+with the \code{writeMLData} of the \code{MSnbase} package
 }
 \examples{
 library(ptairData)
-filePathRaw <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
+filePathRaw <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", 
+package = "ptairData")
 \dontrun{convert_to_mzML(filePathRaw)}
 }

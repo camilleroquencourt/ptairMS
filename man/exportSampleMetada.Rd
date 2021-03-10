@@ -9,7 +9,8 @@ exportSampleMetada(set, saveFile)
 \arguments{
 \item{set}{a ptrSet object}
 
-\item{saveFile}{a file path in tsv extension where the data.frame will be exported}
+\item{saveFile}{a file path in tsv extension where the data.frame will be 
+exported}
 }
 \value{
 nothing

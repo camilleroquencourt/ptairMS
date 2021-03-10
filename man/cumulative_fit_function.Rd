@@ -9,9 +9,11 @@ cumulative_fit_function(fit_function_str, par_var_str, par_fix_str, n.peak)
 \arguments{
 \item{fit_function_str}{fit function who will be use in character}
 
-\item{par_var_str}{parameters of fit function who change with the peak in a vector of character}
+\item{par_var_str}{parameters of fit function who change with the peak in a 
+vector of character}
 
-\item{par_fix_str}{parameters of fit function indepedent of the peak in a vector of character}
+\item{par_fix_str}{parameters of fit function independent of the peak in a 
+vector of character}
 
 \item{n.peak}{number of peak}
 }

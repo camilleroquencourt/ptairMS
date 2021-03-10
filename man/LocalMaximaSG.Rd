@@ -20,7 +20,8 @@ array with peak's index in the spectrum
 }
 \description{
 Apply Savitzky Golay filter to the spectrum and find local maxima such that : 
-second derivate Savitzky Golay filter < 0 and first derivate = 0 and intensity >  minPeakHeight
+second derivate Savitzky Golay filter < 0 and first derivate = 0 and 
+intensity >  minPeakHeight
 }
 \examples{
 spectrum<-dnorm(x=seq(-5,5,length.out = 100))

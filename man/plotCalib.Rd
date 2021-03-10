@@ -4,7 +4,7 @@
 \alias{plotCalib}
 \alias{plotCalib,ptrRaw-method}
 \alias{plotCalib,ptrSet-method}
-\title{Plot the calibration peaks}
+\title{Plot the calibration peaks after calibration}
 \usage{
 plotCalib(object, ppm = 2000, ...)
 
@@ -19,23 +19,27 @@ plotCalib(object, ppm = 2000, ...)
 
 \item{...}{not used}
 
-\item{pdfFile}{is different of \code{NULL}, the file path to save the plots in pdf}
+\item{pdfFile}{is different of \code{NULL}, the file path to save the 
+plots in pdf}
 
-\item{fileNames}{the name of the files in the ptrSet object to plot. If \code{NULL}, all files will be
+\item{fileNames}{the name of the files in the ptrSet object to plot. 
+If \code{NULL}, all files will be
 plotted}
 }
 \value{
 plot
 }
 \description{
-Plot the calibration peaks
+Plot the calibration peaks after calibration
 }
 \examples{
+## ptrSet
 data(exhaledPtrset )
 plotCalib(exhaledPtrset ,fileNames=getFileNames(exhaledPtrset )[1])
 
-##ptrRaw 
-filePath<-system.file("extdata/exhaledAir/ind1/ind1-1.h5", package = "ptairData")
+## ptrRaw 
+filePath<-system.file("extdata/exhaledAir/ind1/ind1-1.h5", 
+package = "ptairData")
 raw <- readRaw(filePath,mzCalibRef=c(21.022,59.049))
 plotCalib(raw)
 }

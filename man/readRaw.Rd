@@ -16,16 +16,18 @@ readRaw(
 \arguments{
 \item{filePath}{h5 absolute file path full name.}
 
-\item{calib}{boolean. If true, an external calibration is performed on the \code{calibrationPeriod} sum spectrum 
-with mzCalibRef reference masses.}
+\item{calib}{boolean. If true, an external calibration is performed on 
+the \code{calibrationPeriod} sum spectrum with mzCalibRef reference masses.}
 
-\item{mzCalibRef}{calibration parameter. Vector of exact theoretical masses values of an intensive peak without overlapping.}
+\item{mzCalibRef}{calibration parameter. Vector of exact theoretical masses 
+values of an intensive peak without overlapping.}
 
-\item{calibrationPeriod}{in second, coefficient calibration are estimated for each sum spectrum of 
+\item{calibrationPeriod}{in second, coefficient calibration are estimated 
+for each sum spectrum of 
 \code{calibrationPeriod} seconds}
 
-\item{tolCalibPpm}{calibration parameter. The maximum error tolerated in ppm. A warning appears for 
-error greater than \code{tolCalibPpm}.}
+\item{tolCalibPpm}{calibration parameter. The maximum error tolerated in ppm. 
+A warning appears for error greater than \code{tolCalibPpm}.}
 
 \item{maxTimePoint}{number maximal of time point to read}
 }
@@ -37,12 +39,14 @@ a ptrRaw object, including slot \itemize{
 }
 }
 \description{
-\code{readRaw} reads a h5 file with rhdf5 library, and calibrates the mass axis 
-with \code{mzCalibRef} masses each \code{calibrationPeriod} seconds.
-It returns a \code{\link[ptairMS]{ptrRaw-class}} S4 object, that contains raw data.
+\code{readRaw} reads a h5 file with rhdf5 library, and calibrates the 
+mass axis with \code{mzCalibRef} masses each \code{calibrationPeriod} 
+seconds. It returns a \code{\link[ptairMS]{ptrRaw-class}} S4 object, 
+that contains raw data.
 }
 \examples{
 library(ptairData)
-filePathRaw <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", package = "ptairData")
+filePathRaw <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", 
+package = "ptairData")
 raw <- readRaw(filePathRaw,mzCalibRef=c(21.022, 60.0525))
 }
