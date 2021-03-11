@@ -57,6 +57,7 @@ utils::globalVariables("::<-")
 #' exhaledPtrset<-createPtrSet(dir=directory,setName="exhaledPtrset",
 #' mzCalibRef=c(21.022,59.049),
 #' fracMaxTIC=0.9,saveDir= NULL)
+#' exhaledPtrset<-rmPeakList(exhaledPtrset)
 #' exhaledPtrset  <- detectPeak(exhaledPtrset ,mzNominal=c(59,60))
 #' peakListEset<-getPeakList(exhaledPtrset)
 #' Biobase::fData(peakListEset[[1]])
@@ -703,7 +704,7 @@ peakListNominalMass <- function(i,mz,sp,ppmPeakMinSep=130 ,calibCoef,
       borne<-cbind(par_estimated[1,],t(borne))
 
     
-    colnames(borne)<-c("Mz","lower","upper")
+    colnames(borne)<-c("Mz","lowerMz","upperMz")
     borne<-borne[order(borne[,"Mz"]),,drop=FALSE]
     borne<-overlapDedect(borne)
     
@@ -711,9 +712,9 @@ peakListNominalMass <- function(i,mz,sp,ppmPeakMinSep=130 ,calibCoef,
       sum((sp.i-mean(sp.i))^2)
     
     R2 <-apply(borne,1,function(x) {
-      1 - sum(sp.i.fit[mz.i>x["lower"] & mz.i < x["upper"]]^2)/
-        sum((sp.i[mz.i>x["lower"] & mz.i < x["upper"]]-mean(sp.i[mz.i>x["lower"] &
-                                                                   mz.i < x["upper"]]))^2)
+      1 - sum(sp.i.fit[mz.i>x["lowerMz"] & mz.i < x["upperMz"]]^2)/
+        sum((sp.i[mz.i>x["lowerMz"] & mz.i < x["upperMz"]]-mean(sp.i[mz.i>x["lowerMz"] &
+                                                                   mz.i < x["upperMz"]]))^2)
     } )
     
     X$R2<-R2
@@ -950,12 +951,12 @@ computeTemporalFile<-function(raw,peak,baseline,
   
   borne <- EICex$borne
   EIC <- EICex$EIC
-  
+  individualBorne<- EICex$individualBorne
   nbPeakOvelap <- sum(borne[,"overlap"])
   
 
   infoPeak<- peak[, grep("parameter",colnames(peak))]
-  borne<-cbind(borne,infoPeak,matrix(0,nrow = nrow(borne),ncol=length(raw@time))) #ajoter colonne de time
+  borne<-cbind(borne,infoPeak,matrix(0,nrow = nrow(borne),ncol=length(raw@time))) 
   
   colnames(borne)[(5+ncol(infoPeak)):ncol(borne)]<-raw@time
   
@@ -966,7 +967,7 @@ computeTemporalFile<-function(raw,peak,baseline,
   c<-1
   
   for(j in seq_along(EIC)){
-    mz<-borne[which(borne[,"lower"]==borneUnique[j,"lower"]),"Mz"]
+    mz<-borne[which(borne[,"lowerMz"]==borneUnique[j,"lowerMz"]),"Mz"]
     peak.detect<-peak[peak[,"Mz"]%in% mz,,drop=FALSE]
     
     #baseline correction (plan)
@@ -981,7 +982,8 @@ computeTemporalFile<-function(raw,peak,baseline,
     
     # find best smooth param
     if(!is.null(knots) & is.null(smoothPenalty)){
-      smoothPenalty<-GCV(rawM = rawM,knots = knots,t = raw@time,timeLimit = timeLimit)
+      smoothPenalty<-GCV(rawM = rawM,knots = knots,t = raw@time,
+                         timeLimit = timeLimit)
     }
     
     deconv2<-deconvMethod(rawM = rawM,t = raw@time,
@@ -994,7 +996,9 @@ computeTemporalFile<-function(raw,peak,baseline,
     }
   }
   borne[,(5+ncol(infoPeak)):ncol(borne)]<-XICdeconv
- 
+  borne[,c("lowerMz","upperMz")] <-
+    individualBorne[,c("lowerMz","upperMz")]
+  
   return(list(matPeak=borne,EIClist=EIC))
 }
 
@@ -1009,18 +1013,18 @@ extractEIC<-function(raw,peak,peakQuantil=0.01,fctFit="sech2"){
   #borne integration
   
 
-    borne<-apply(peak,1,function(x) eval(parse(text=paste0(fctFit,"Inv")))(x["Mz"],
+    individualBorne<-apply(peak,1,function(x) eval(parse(text=paste0(fctFit,"Inv")))(x["Mz"],
                                                                            x["parameter.1"],
                                                                            x["parameter.2"],
                                                                            x["parameter.3"],
                                                                            x["parameter.3"]*peakQuantil,
                                                                            raw@peakShape) )
   
-  borne<-cbind(peak$Mz,t(borne))
-  colnames(borne)<- c("Mz","lower","upper")
-  borne<-borne[order(borne[,"Mz"]),,drop=FALSE]
+    individualBorne<-cbind(peak$Mz,t(individualBorne))
+  colnames(individualBorne)<- c("Mz","lowerMz","upperMz")
+  individualBorne<-individualBorne[order(individualBorne[,"Mz"]),,drop=FALSE]
   #overlap detection and fusion
-    borne<-overlapDedect(borne)
+    borne<-overlapDedect(individualBorne)
     if(nrow(borne)>1) {borneUnique<-borne[!duplicated(data.frame(borne[,2:3])),,drop=FALSE]
     }else borneUnique <- borne
   
@@ -1028,10 +1032,10 @@ extractEIC<-function(raw,peak,peakQuantil=0.01,fctFit="sech2"){
   #extract EIC
   EIC<-list(NULL)
   for (j in seq_len(nrow(borneUnique))){
-    EIC[[j]]<-raw@rawM[raw@mz>borneUnique[j,"lower"] & raw@mz<borneUnique[j,"upper"],]
+    EIC[[j]]<-raw@rawM[raw@mz>borneUnique[j,"lowerMz"] & raw@mz<borneUnique[j,"upperMz"],]
   }
   
-  return(list(EIC=EIC,borne=borne))
+  return(list(EIC=EIC,borne=borne,individualBorne=individualBorne))
 }
 
 
@@ -1040,14 +1044,14 @@ overlapDedect<-function(borne){
   c<-0
   o<-1
   for (i in seq_len(nrow(borne)-1)){
-    if(borne[i+1,"lower"]< borne[i,"upper"]){
+    if(borne[i+1,"lowerMz"]< borne[i,"upperMz"]){
       #save the overlap
       o<-c(o,i+1)
     } else {
       if(length(o)>1){
         #change
-        borne[o,"lower"]<-borne[o[1],"lower"]
-        borne[o,"upper"]<-borne[utils::tail(o,1),"upper"]
+        borne[o,"lowerMz"]<-borne[o[1],"lowerMz"]
+        borne[o,"upperMz"]<-borne[utils::tail(o,1),"upperMz"]
         c<-c+1
         overlap[[c]]<-o
       }
@@ -1056,8 +1060,8 @@ overlapDedect<-function(borne){
   }
   if(length(o)>1){
     #change
-    borne[o,"lower"]<-borne[o[1],"lower"]
-    borne[o,"upper"]<-borne[utils::tail(o,1),"upper"]
+    borne[o,"lowerMz"]<-borne[o[1],"lowerMz"]
+    borne[o,"upperMz"]<-borne[utils::tail(o,1),"upperMz"]
     c<-c+1
     overlap[[c]]<-o
   }
