@@ -38,8 +38,8 @@ data(exhaledPtrset )
 plotCalib(exhaledPtrset ,fileNames=getFileNames(exhaledPtrset )[1])
 
 ## ptrRaw 
-filePath<-system.file("extdata/exhaledAir/ind1/ind1-1.h5", 
-package = "ptairData")
+filePath<-system.file('extdata/exhaledAir/ind1/ind1-1.h5', 
+package = 'ptairData')
 raw <- readRaw(filePath,mzCalibRef=c(21.022,59.049))
 plotCalib(raw)
 }

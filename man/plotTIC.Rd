@@ -31,7 +31,7 @@ plotTIC(
 \arguments{
 \item{object}{ptrSet or ptrRaw S4 object}
 
-\item{type}{set "plotly" to get an interactive plot, and "ggplot" for 
+\item{type}{set 'plotly' to get an interactive plot, and 'ggplot' for 
 classical plot.}
 
 \item{baselineRm}{logical. If \code{TRUE}, remove the baseline of the TIC}
@@ -71,11 +71,11 @@ plot the Total Ion sptectrum (TIC) for one or several files.
 ### ptrRaw object
 
 library(ptairData)
-filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", 
-package = "ptairData")
+filePath <- system.file('extdata/exhaledAir/ind1', 'ind1-1.h5', 
+package = 'ptairData')
 raw <- readRaw(filePath)
 p <- plotTIC(raw)
 p
 data(exhaledPtrset )
-plotTIC(exhaledPtrset ,type="ggplot")
+plotTIC(exhaledPtrset ,type='ggplot')
 }

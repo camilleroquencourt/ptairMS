@@ -32,35 +32,39 @@ alignSamples(
 )
 }
 \arguments{
-\item{X}{ptrSet already processed by \code{\link[ptairMS]{detectPeak}} function}
+\item{X}{ptrSet already processed by the \code{\link[ptairMS]{detectPeak}} 
+function}
 
-\item{ppmGroup}{the ppm larger of a mz group}
+\item{ppmGroup}{ppm maximal width for an mz group}
 
-\item{fracGroup}{We will keep variables only present in \code{fracGroup} 
-percent of at least one \code{group}, if 0 the filter is not applied}
+\item{fracGroup}{only variables present in \code{fracGroup} 
+percent of at least one \code{group} will be kept (if 0 the filter is 
+not applied)}
 
-\item{group}{character. A sampleMetadata data column name. If is \code{NULL},
-variables not presents in \code{fracGroup} percent of samples will be deleted. 
-Else, variables not presents in \code{fracGroup} percent in each group will 
-be deleted.}
+\item{group}{character: sampleMetadata data column name. If \code{NULL},
+variables not present in \code{fracGroup} percent of samples will be deleted. 
+Else, variables not present in \code{fracGroup} percent in in at least one 
+group group will 
+be removed.}
 
-\item{fracExp}{percentage of sample which must have their p-value less than 
+\item{fracExp}{fraction of samples which must have their p-value less than 
 \code{pValGreaterThres} and \code{pValLessThres}}
 
-\item{pValGreaterThres}{threshold of the p-value of the unilateral t-test, 
-who test that quantification (in cps) of expiration points are greater than 
-the intensities of the background.}
+\item{pValGreaterThres}{threshold of the p-value for the unilateral
+testing that quantification (in cps) of expiration points are greater than 
+the intensities in the background.}
 
-\item{pValLessThres}{threshold of the p-value of the unilateral t-test, 
-who test that quantification (in cps) of expiration points are greater than 
-the intensities of the background.}
+\item{pValLessThres}{threshold of the p-value for the unilateral
+testing that quantification (in cps) of expiration points are less than the 
+intensities of the background.}
 
 \item{quantiUnit}{ppb, ncps or cps}
 
-\item{bgCorrected}{logical. Should the peak table must contained the background 
-corrected values.}
+\item{bgCorrected}{logical: should the peak table contain the background 
+corrected values?}
 
-\item{dmzGroup}{difference of mz of a group for little mz}
+\item{dmzGroup}{minimum mz width to be used for grouping the features 
+(required for low masses)}
 }
 \value{
 an \code{\link[Biobase]{ExpressionSet}} (Biobase object)
@@ -68,17 +72,18 @@ an \code{\link[Biobase]{ExpressionSet}} (Biobase object)
 \description{
 \code{AlignSamples} performs alignment between samples (i.e. the matching of 
 variables between the peak lists within the \code{ptrSet} object) by using a 
-kernel gaussian density (delabriere et al, 2017).
-This function return an \code{\link[Biobase]{ExpressionSet}}, which contains 
-the peak table intensities, the sample meta data (borrowed from the
-input ptrSet) and the variable meta data which contains peak intensities in 
+kernel gaussian density (Delabriere et al, 2017).
+This function returns an \code{\link[Biobase]{ExpressionSet}}, which contains 
+the matrix of peak intensities, the sample metadata (borrowed from the
+input ptrSet) and the variable metadata which contains the peak intensities in 
 the background. 
-It is possible to apply two filters:
+Two filters may be applied to:
 \itemize{
-\item  keep only variables which that the p-value of the t-test comparing expiration 
-and background is less than \code{pValGreaterThres} for \code{fracExp} % of the samples
+\item  keep only variables with a significant higher intensity in the 
+expirations compared to the background (i.e., a p-value less than 
+\code{pValGreaterThres}) for at least \code{fracExp} % of the samples
 \item keep only variables which are detected in more 
-than \code{fracGroup} percent of samples (or \code{group})
+than \code{fracGroup} percent of the samples (or \code{group})
 }
 If you do not want to apply those filters, set \code{fracGroup} to 0 and 
 \code{pValGreaterThres} to 1.
@@ -91,5 +96,5 @@ Biobase::fData(eset)
 Biobase::pData(eset)
 }
 \references{
-Delabriere et al.,2017
+Delabriere et al., 2017
 }

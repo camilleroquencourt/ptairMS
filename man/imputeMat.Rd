@@ -25,5 +25,5 @@ peak shape function on the noise / residuals
 data(exhaledPtrset)
 eSet <- alignSamples(exhaledPtrset,pValGreaterThres=0.05,fracGroup=0)
 X <-Biobase::exprs(eSet)
-X <- imputeMat(X,exhaledPtrset,quantiUnit="ppb")
+X <- imputeMat(X,exhaledPtrset,quantiUnit='ppb')
 }

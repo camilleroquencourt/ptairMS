@@ -114,8 +114,8 @@ Detection and quantification of peaks on a sum spectrum.
 }
 \examples{
 library(ptairData)
-filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", 
-package = "ptairData")
+filePath <- system.file('extdata/exhaledAir/ind1', 'ind1-1.h5', 
+package = 'ptairData')
 file <- readRaw(filePath)
 
 peakList <- PeakList(file, mzNominal = c(21,63))

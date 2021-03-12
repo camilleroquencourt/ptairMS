@@ -82,11 +82,11 @@ for the selected m/z and time ranges
 }
 \examples{
 data(exhaledPtrset)
-ptairMS::plotRaw(exhaledPtrset ,mzRange=59,fileNames="ind1-1.h5")
+ptairMS::plotRaw(exhaledPtrset ,mzRange=59,fileNames='ind1-1.h5')
 
-patientRaw <- ptairMS::readRaw(system.file("extdata/exhaledAir/ind1/ind1-1.h5",  
-package = "ptairData"),  mzCalibRef=c(21.022,59.049,75.05))
+patientRaw <- ptairMS::readRaw(system.file('extdata/exhaledAir/ind1/ind1-1.h5',  
+package = 'ptairData'),  mzCalibRef=c(21.022,59.049,75.05))
 ptairMS::plotRaw(patientRaw, mzRange = 59)
-ptairMS::plotRaw(patientRaw, mzRange = 59, type = "plotly")
+ptairMS::plotRaw(patientRaw, mzRange = 59, type = 'plotly')
 
 }

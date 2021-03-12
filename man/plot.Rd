@@ -26,7 +26,7 @@ plot a ptrSet object
 \examples{
 data(exhaledPtrset )
 plot(exhaledPtrset )
-plot(exhaledPtrset ,typePlot="calibError")
-plot(exhaledPtrset ,typePlot="resolution")
-plot(exhaledPtrset ,typePlot="peakShape")
+plot(exhaledPtrset ,typePlot='calibError')
+plot(exhaledPtrset ,typePlot='resolution')
+plot(exhaledPtrset ,typePlot='peakShape')
 }

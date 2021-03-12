@@ -98,8 +98,8 @@ parameter.
 ## ptrRaw object
 
 library(ptairData)
-filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5",
-package = "ptairData")
+filePath <- system.file('extdata/exhaledAir/ind1', 'ind1-1.h5',
+package = 'ptairData')
 raw <- readRaw(filePath)
 
 timLim <- timeLimits(raw, fracMaxTIC=0.9, plotDel=TRUE)

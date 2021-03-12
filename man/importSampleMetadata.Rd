@@ -22,7 +22,7 @@ import a sampleMetadata from a tsv file to a ptrSet object
 \examples{
 library(ptairData)
 data(exhaledPtrset )
-saveFile<-file.path(getwd(),"sampleMetadata.tsv")
+saveFile<-file.path(getwd(),'sampleMetadata.tsv')
 #exportSampleMetada(exhaledPtrset ,saveFile)
 #mycobacteria<-importSampleMetadata(exhaledPtrset ,saveFile)
 }

@@ -20,6 +20,6 @@ export sampleMetadata
 }
 \examples{
 data(exhaledPtrset )
-saveFile<-file.path(getwd(),"sampleMetadata.tsv")
+saveFile<-file.path(getwd(),'sampleMetadata.tsv')
 #exportSampleMetada(exhaledPtrset ,saveFile)
 }

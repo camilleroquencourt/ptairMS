@@ -16,12 +16,12 @@ row names}
 the ptrSet object in argument with the sampleMetadata modified
 }
 \description{
-Insert a samplemetada data.frame in a ptrSet object. The dataframe must have all 
-file names in rownames.
+Insert a samplemetada data.frame in a ptrSet object. The dataframe must 
+have all file names in rownames.
 }
 \examples{
 data(exhaledPtrset )
 SMD<-getSampleMetadata(exhaledPtrset )
-colnames(SMD)[1]<-"species"
+colnames(SMD)[1]<-'species'
 mycobacteria<-setSampleMetadata(exhaledPtrset ,SMD)
 }

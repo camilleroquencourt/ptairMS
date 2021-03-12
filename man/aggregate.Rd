@@ -2,7 +2,7 @@
 % Please edit documentation in R/alignment.R
 \name{aggregate}
 \alias{aggregate}
-\title{aggregate peakgroup for alignExpirations function}
+\title{aggregate peakgroup for align function}
 \usage{
 aggregate(subGroupPeak, n.exp)
 }
@@ -16,5 +16,5 @@ a mtrix with the mediane of mz, mean of ppb, ppb in background,
  and percentage of expiration where th epeak is detected
 }
 \description{
-aggregate peakgroup for alignExpirations function
+aggregate peakgroup for align function
 }

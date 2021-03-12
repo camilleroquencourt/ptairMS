@@ -9,9 +9,10 @@ extractEIC(raw, peak, peakQuantil = 0.01, fctFit = "sech2")
 \arguments{
 \item{raw}{ptrRaw object}
 
-\item{peak}{a data.frame with a column named "Mz". The Mz of the VOC detected}
+\item{peak}{a data.frame with a column named 'Mz'. The Mz of the VOC detected}
 
-\item{peakQuantil}{the quantile of the peak shape to determine the borne of the EIC}
+\item{peakQuantil}{the quantile of the peak shape to determine the borne of 
+the EIC}
 
 \item{fctFit}{function used to fit peak}
 }

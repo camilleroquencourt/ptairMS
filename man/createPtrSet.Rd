@@ -2,7 +2,7 @@
 % Please edit documentation in R/read_data.R
 \name{createPtrSet}
 \alias{createPtrSet}
-\title{Create a ptrSet object form a directory}
+\title{Creates a ptrSet object form a directory}
 \usage{
 createPtrSet(
   dir,
@@ -20,10 +20,11 @@ createPtrSet(
 \item{dir}{character. a directory path which contains several h5 files, 
 possibly organized in subfolder}
 
-\item{setName}{character. The name of the ptrSet object. If `saveDir` is 
+\item{setName}{character. name of the ptrSet object. If `saveDir` is 
 not null, the object will be saved with this name.}
 
-\item{mzCalibRef}{Vector of accurate mass values of intensive peaks and 
+\item{mzCalibRef}{vector of the reference mass values; those masses should be 
+accurate, and the corresponding peaks should be of high intensity and 
 'unique' in a nominal mass interval (without overlapping peaks) to performs 
 calibration. See \code{ ?calibration}.}
 
@@ -31,60 +32,59 @@ calibration. See \code{ ?calibration}.}
 for each sum spectrum of 
 \code{calibrationPeriod} seconds}
 
-\item{fracMaxTIC}{Percentage (between 0 and 1) of the maximum of the 
-Total Ion Current (TIC) amplitude with baseline removal. We will analyze 
-only the part of the spectrum where  the TIC intensity is higher than 
-`fracMaxTIC * max(TIC) `. If you want to analyze the entire spectrum,  set 
-this parameter to 0.}
+\item{fracMaxTIC}{Fraction (between 0 and 1) of the maximum of the 
+Total Ion Current (TIC) amplitude after baseline removal. 
+Only the part of the spectrum where the TIC intensity is higher than 
+`fracMaxTIC * max(TIC) ` will be analyzed. If you want to analyze the entire 
+spectrum,  set this parameter to 0.}
 
-\item{mzBreathTracer}{NULL or an integer. Correspond to a nominal masses of 
-Extract Ion Current  (EIC) for which limits will be computed. If NULL, the 
-limits are calculated on the Total Ion Current (TIC).}
+\item{mzBreathTracer}{integer: nominal mass of the 
+Extracted Ion Current (EIC) used to compute the expiration time limits. 
+If \code{NULL}, the limits will be computed on the Total Ion Current (TIC).}
 
-\item{knotsPeriod}{the period in second (times scale) between two knots for 
-the two dimensional modelization}
+\item{knotsPeriod}{period in second (time scale) between two knots for 
+the two dimensional modeling}
 
-\item{mzPrimaryIon}{the exact mass of the primary ion isotope}
+\item{mzPrimaryIon}{Exact mass of the primary ion isotope}
 
-\item{saveDir}{The directory where the ptrSet object will be saved in 
-.RData. If NULL, nothing will be saved.}
+\item{saveDir}{Directory where the ptrSet object will be saved as 
+.RData. If \code{NULL}, nothing will be saved.}
 }
 \value{
-a ptrSet objet with slot :
+a ptrSet object with slots :
 \itemize{
-\item Parameter: a list containing the parameters used for 
+\item Parameter: list containing the parameters used for 
 \code{createPrtSet}, \code{detectPeak} and  \code{alignTimePeriods} functions.  
-\item sampleMetadata: a data.frame containing infomration on the data, 
+\item sampleMetadata: data frame containing information about the data, 
 with file names in row names
-\item mzCalibRef: a list containing for each file the masses used for the 
+\item mzCalibRef: list containing for each file the masses used for the 
 calibration  (see \code{?ptairMS::calibration} for more details)
-\item signalCalibRef: the mz and intensity +- 0.4Da around the calibration 
+\item signalCalibRef: mz and intensity +- 0.4Da around the calibration 
 masses
-\item errorCalibPpm: a list containing for each file the accuracy error 
+\item errorCalibPpm: list containing for each file the accuracy error 
 in ppm at each calibration masses
-\item coefCalib: a list containing the calibration coeficients 'a' and 
-'b' that permit to convert tof to mz for each file 
-(see \code{?ptairMS::calibration} for more details.  
-\item resolution: the estimated resolution \eqn{m / \Delta m} for each 
+\item coefCalib: list containing the calibration coefficients 'a' and 
+'b' which enable to convert tof to mz for each file 
+(see \code{\link[ptairMS]{calibration}} function for more details.  
+\item resolution: estimated resolution \eqn{m / \Delta m} for each 
 calibration masses within each file
 \item TIC: The Total Ion Current for each file
-\item timeLImit: a list containing list of two element per file: the matrix 
-of time limit for each file  (if \code{fracMaxTIC} is different to zero), 
-and the background index. See ?ptairMS::timeLimits for more details
-\item peakListRaw: a list containing for each file a peak list per time 
-interval and background. (the output of \code{detectPeak} function for 
-each file, see \code{?ptairMS::detectPeak})
-\item peakListAligned: one peak list for each file, obtain after alignment 
-between all time period and backgroud.(the output of \code{alignTimePeriods} 
-function)
+\item timeLImit: list containing, for each file, a list of two element: 
+the matrix of time limit for each file  (if \code{fracMaxTIC} is different 
+to zero), and the background index. See \code{\link[ptairMS]{timeLimits}}
+for more details
+\item peakList: list containing for each file an expression set 
+\code{\link[Biobase]{eSet}}, with m/z peak center, quantification for background 
+and exhaled air in cps, ppb and ncps, and quantity for each time points. See 
+\code{\link[ptairMS]{getPeakList}} for more details. 
 }
 }
 \description{
 This function creates a \code{\link[ptairMS]{ptrSet-class}} S4 object. It 
 opens each file and: 
 \itemize{
-\item performs an external calibration with \code{mzCalibRef} masses on the 
-sum spectra every \code{calibrationPeriod}
+\item performs an external calibration by using the \code{mzCalibRef} 
+reference masses on the sum spectra every \code{calibrationPeriod} second
 \item quantifies the primary ion (H3O+ isotope by default)  on the average 
 total ion spectrum. 
 \item calculates expiration on the \code{mzBreathTracer} trace. The part of 
@@ -94,16 +94,15 @@ If \code{fracMaxTIC} is different to zero, this step is skipped
 \item defines the set of knots for the peak analysis 
 (see \code{\link[ptairMS]{detectPeak}})
 \item provides a default sampleMetadata based on the tree structure of the 
-directory and the acquisition date (a \code{data.frame} with file names in 
+directory and the acquisition date (a \code{data.frame} with file names as 
 row names) 
-\item If \code{saveDir} is not null, the returned object will be saved 
- \code{.Rdata} in \code{saveDir} with 
-\code{setName} as name}
+\item If \code{saveDir} is not \code{NULL}, the returned object will be saved 
+as a  \code{.Rdata} in \code{saveDir} with the \code{setName} as name}
 }
 \examples{
 library(ptairData)
-directory <- system.file("extdata/mycobacteria",  package = "ptairData")
-ptrSet<-createPtrSet(dir=directory,setName="ptrSet"
+directory <- system.file('extdata/mycobacteria',  package = 'ptairData')
+ptrSet<-createPtrSet(dir=directory,setName='ptrSet'
 ,mzCalibRef=c(21.022,59.049),
 fracMaxTIC=0.9,saveDir= NULL)
 }

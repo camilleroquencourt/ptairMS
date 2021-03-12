@@ -57,42 +57,43 @@ detectPeak(
 \arguments{
 \item{x}{a \code{\link[ptairMS]{ptrSet}} object}
 
-\item{ppm}{the minimum distance in ppm between two peaks}
+\item{ppm}{minimum distance in ppm between two peaks}
 
-\item{minIntensity}{the minimum intensity for peak detection. The final threshold 
-for peak detection will be : max ( \code{minPeakDetect} , threshold noise ). 
-The threshold noise correspond to
- max(max( noise around the nominal mass), \code{minIntensityRate} * 
- max( intensity in the nominal mass)}
+\item{minIntensity}{minimum intensity for peak detection. The final threshold 
+for peak detection will be: max(\code{minIntensity}, threshold noise ). 
+The threshold noise corresponds to
+ max(max(noise around the nominal mass), \code{minIntensityRate} * 
+ max(intensity within the nominal mass)}
 
-\item{minIntensityRate}{The rate which multiplies the maximum of the signal 
-intensity, to give a noise threshold}
+\item{minIntensityRate}{Fraction of the maximum 
+intensity to be used for noise thresholding}
 
-\item{mzNominal}{nominal mass who peaks will be detected, if \code{NULL}, all 
-nominal mass present in the mass axis}
+\item{mzNominal}{nominal masses at which peaks will be detected; if \code{NULL}, 
+all nominal masses of the mass axis}
 
-\item{resolutionRange}{a vector with resolution min, resolution mean, and 
-resolution max of the PTR. If \code{NULL}, it estimated on, the calibration peaks.}
+\item{resolutionRange}{vector with the minimum, average, and 
+maximum resolution of the PTR instrument. If \code{NULL}, the values are 
+estimated by using the calibration peaks.}
 
-\item{fctFit}{the function for the quantification of Peak, should be sech2 
-or averagePeak. If \code{NULL}, the best function is choose on the calibration 
-peak.}
+\item{fctFit}{function for the peak quantification: should be sech2 
+or averagePeak. If \code{NULL}, the best function is selected by using the 
+calibration peaks}
 
 \item{smoothPenalty}{second order penalty coefficient of the p-spline used 
-for two-dimensional regression. If \code{NULL} the coefficient is find by 
+for two-dimensional regression. If \code{NULL}, the coefficient is estimated by 
 generalized cross validation (GCV) criteria}
 
-\item{parallelize}{Boolean. If \code{TRUE} loop aver files will be paralleled}
+\item{parallelize}{Boolean. If \code{TRUE}, loops over files are parallelized}
 
 \item{nbCores}{number of cluster to use for parallel computation.}
 
 \item{saving}{boolean. If TRUE, the object will be saved in saveDir with the
-\code{setName} parameter of \code{createPtrSet} function}
+\code{setName} parameter of the \code{createPtrSet} function}
 
-\item{saveDir}{The directory where the ptrSet object will be saved in .RData. 
+\item{saveDir}{The directory where the ptrSet object will be saved as .RData. 
 If NULL, nothing will be saved}
 
-\item{...}{parameter of processFileTemporal}
+\item{...}{may be used to pass parameters to the processFileTemporal function}
 
 \item{timeLimit}{index time of the expiration limits and background. 
 Should be provided by \code{\link[ptairMS]{timeLimits}} function}
@@ -104,20 +105,21 @@ by \code{\link[ptairMS]{defineKnots}} function}
 \item{mzPrimaryIon}{the exact mass of the primary ion isotope}
 }
 \value{
-a S4 object ptrSet, that contains the input ptrset completed with the 
+an S4 ptrSet object, that contains the input ptrSet completed with the 
 peakLists.
 }
 \description{
-\code{detectPeak} function detects peaks on the average total spectrum around 
-nominal masses, for all file present in ptrSet which have not already 
-been processed. After that, it evaluates the temporal evolution of each peaks 
-thanks to a two-dimensional penalize spline regression. Finally, 
-the expiration points (if there are defined in the ptrSet) are average, 
-and a t-test is performed to see the difference between expiration and ambient 
-air. To see the peakList use \code{\link[ptairMS]{getPeakList}} function, which each element 
-correspond to the Peak List of one file. To resume, the following steps are 
-done for each files: \cr
-for nominal masses :
+The \code{detectPeak} function detects peaks on the average total spectrum 
+around nominal masses, for all files present in ptrSet which have not already 
+been processed. The temporal evolution of each peak is then evaluated by using
+a two-dimensional penalized spline regression. Finally, 
+the expiration points (if defined in the ptrSet) are averaged, 
+and a t-test is performed between expiration and ambient 
+air. The peakList can be accessed with the \code{\link[ptairMS]{getPeakList}} 
+function, which returns the information about the detected peaks in each file 
+as a list of ExpressionSet objects.The peak detection steps within each file 
+are as follows: \cr
+for each nominal mass:
 \itemize{
 \item correction of the calibration drift
 \item peak detection on the average spectrum
@@ -129,8 +131,8 @@ for nominal masses :
 
 ## For ptrRaw object
 library(ptairData)
-filePath <- system.file("extdata/exhaledAir/ind1", "ind1-1.h5", 
-package = "ptairData")
+filePath <- system.file('extdata/exhaledAir/ind1', 'ind1-1.h5', 
+package = 'ptairData')
 raw <- readRaw(filePath,mzCalibRef=c(21.022,59.049))
 timeLimit<-timeLimits(raw,fracMaxTIC=0.7)
 knots<-defineKnots(object = raw,timeLimit=timeLimit)
@@ -138,7 +140,7 @@ peakList <- detectPeak(raw, timeLimit=timeLimit, mzNominal = c(21,59),
 smoothPenalty=0,knots=knots)
 Biobase::fData(peakList)
 
-## For ptrset object
+## For a ptrSet object
 library(ptairData)
 directory <- system.file("extdata/exhaledAir",  package = "ptairData")
 exhaledPtrset<-createPtrSet(dir=directory,setName="exhaledPtrset",

@@ -68,8 +68,8 @@ must be contained in the time axis
 data(exhaledPtrset)
 
 #### placed knots every 2 times points
-mycobacteria <- defineKnots(exhaledPtrset ,knotsPeriod=2,method="uniform")
+mycobacteria <- defineKnots(exhaledPtrset ,knotsPeriod=2,method='uniform')
 
 #### placed knots every 3 times points in the expiration (default)
-mycobacteria <- defineKnots(exhaledPtrset ,knotsPeriod=3,method="expiration")
+mycobacteria <- defineKnots(exhaledPtrset ,knotsPeriod=3,method='expiration')
 }

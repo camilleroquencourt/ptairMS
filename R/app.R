@@ -1,7 +1,4 @@
 utils::globalVariables(c("y","point"))
-
-
-
 #' Shinny appplication to modify and view expiration limits
 #'  
 #' This function run a shiny app, where you can check the automatic expiration
@@ -21,7 +18,7 @@ changeTimeLimits<-function(ptrSet){
   ui <- shiny::fluidPage(
     
     #title
-    shiny::titlePanel("View and modify time limits"),
+    shiny::titlePanel("View and modify expiration time limits"),
 
     #choose file in the ptrSet
     shiny::fluidRow(
@@ -315,3 +312,5 @@ changeTimeLimits<-function(ptrSet){
   ptrSetNew <- shiny::runApp(list(ui=ui,server=server))
   return(ptrSetNew)
 }
+
+
