@@ -737,7 +737,7 @@ methods::setMethod(f = "plotRaw", signature = "ptrSet",
                             palette = c("heat", "revHeat", "grey", "revGrey", 
                                         "ramp")[1], showVocDB = TRUE, 
                             figure.pdf = "interactive",
-                            fileNames = NULL, showPeakDetect=FALSE,...) {
+                            fileNames = NULL, ...) {
     set <- object
     fileNamesObject <- set@parameter$listFile
     if (methods::is(fileNamesObject, "expression")) 
