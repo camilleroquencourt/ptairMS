@@ -192,8 +192,8 @@ mzToTof <- function(m, calibCoef) {
 #' @export
 methods::setMethod(f = "plotRaw", signature = "ptrRaw", function(object, mzRange, 
     timeRange = c(NA, NA), type = c("classical", "plotly")[1], ppm = 2000, palette = c("heat", 
-        "revHeat", "grey", "revGrey", "ramp")[1], showVocDB = TRUE, figure.pdf = "interactive", 
-    ...) {
+        "revHeat", "grey", "revGrey", "ramp")[1], showVocDB = TRUE, 
+    figure.pdf = "interactive", ...) {
     mzVn <- object@mz
     timeVn <- object@time
     timeiNTER <- (timeVn[3] - timeVn[2])
@@ -292,6 +292,8 @@ methods::setMethod(f = "plotRaw", signature = "ptrRaw", function(object, mzRange
     }
     return(invisible(list(rawsubM = rawSubMN, vocsubDB = vocdbDF)))
 })
+
+
 .palette <- function(palette) {
     switch(palette, heat = {
         return(rev(grDevices::rainbow(ceiling(256 * 1.5))[seq(1, 256)]))
@@ -306,6 +308,7 @@ methods::setMethod(f = "plotRaw", signature = "ptrRaw", function(object, mzRange
             256)])
     })
 }
+
 .drawScale <- function(imageMN, paletteVc) {
     ylimVn <- c(0, 256)
     ybottomVn <- 0:255
@@ -323,6 +326,7 @@ methods::setMethod(f = "plotRaw", signature = "ptrRaw", function(object, mzRange
         graphics::par("usr")[3], code = 0, lwd = 2, xpd = TRUE)
     graphics::box(lwd = 2)
 }
+
 .prettyAxis <- function(axisValuesVn, opLengthN) {
     if (NA %in% axisValuesVn) {
         warning("NA in axisValuesVn")
@@ -345,6 +349,7 @@ methods::setMethod(f = "plotRaw", signature = "ptrRaw", function(object, mzRange
     prettyAxisLs <- list(atVn = prettyAtVn, labelVn = prettyLabelsVn)
     return(prettyAxisLs)
 }
+
 .drawImage <- function(imageMN, paletteVc) {
     graphics::image(x = seq_len(nrow(imageMN)), y = seq_len(ncol(imageMN)), z = imageMN, 
         col = paletteVc, font.axis = 2, font.lab = 2, xaxt = "n", yaxt = "n", xlab = "", 

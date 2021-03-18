@@ -171,8 +171,8 @@ plotPeakShape <- function(set, showAverage = FALSE) {
             mz <- interval[[as.character(x)]]$mz
             localMax <- LocalMaximaSG(sp = sp, minPeakHeight = max(sp) * 0.2)
             interpol <- stats::spline(mz[(localMax - 4):(localMax + 4)], sp[(localMax - 
-                4):(localMax + 4)], n = 1000)
-            sg <- signal::sgolayfilt(interpol$y, n = 501, p = 3)  #n/2
+                4):(localMax + 4)], n = 100)
+            sg <- signal::sgolayfilt(interpol$y, n = 51, p = 3)  #n/2
             center <- interpol$x[which.max(sg)]
             return(center)
         }, FUN.VALUE = 1.1)
@@ -736,7 +736,8 @@ methods::setMethod(f = "plotRaw", signature = "ptrSet",
                             type = c("classical", "plotly")[1], ppm = 2000, 
                             palette = c("heat", "revHeat", "grey", "revGrey", 
                                         "ramp")[1], showVocDB = TRUE, 
-                            figure.pdf = "interactive",fileNames = NULL, ...) {
+                            figure.pdf = "interactive",
+                            fileNames = NULL, showPeakDetect=FALSE,...) {
     set <- object
     fileNamesObject <- set@parameter$listFile
     if (methods::is(fileNamesObject, "expression")) 
@@ -1388,13 +1389,15 @@ methods::setMethod(f = "calibration", signature = "ptrSet",
                         calibrationPeriod = calibrationPeriod)
         x@coefCalib[[basename(file)]] <- raw@calibCoef
         x@mzCalibRef[[basename(file)]] <- raw@calibMassRef
-        x@signalCalibRef[[basename(file)]] <- raw@calibSpectr
         x@errorCalibPpm[[basename(file)]] <- raw@calibError
         calibSpectr <- alignCalibrationPeak(raw@calibSpectr, 
                                             raw@calibMassRef, length(raw@time))
+        x@signalCalibRef[[basename(file)]] <- calibSpectr
+        
         resolutionEstimated <- estimateResol(calibMassRef = raw@calibMassRef, 
                                             calibSpectr = calibSpectr)
         x@resolution[[basename(file)]] <- resolutionEstimated
+        x@indexTimeCalib[[basename(file)]]<-raw@indexTimeCalib
     }
     
     x@parameter$mzCalibRef <- mzCalibRef
