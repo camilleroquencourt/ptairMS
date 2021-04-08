@@ -8,3 +8,6 @@ Changes in version 0.99.3 (2021-04-01)
 + avoided slot() and created generic method for slot access and setters
 + modyfied the two datSet documentaion
 + added documentation in inst/script 
+
+Changes in version 0.99.4 (2021-04-08)
++ vignette: eval=FALSE in installation chuck

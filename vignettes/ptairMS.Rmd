@@ -23,7 +23,7 @@ knitr::opts_chunk$set(fig.width=12, fig.height=8)
 
 # Installation 
 
-```{r}
+```{r, eval=FALSE}
 if(!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 BiocManager::install("ptairMS")
