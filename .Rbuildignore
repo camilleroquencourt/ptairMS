@@ -2,5 +2,3 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^.*\.yml$
-src-i386/
-src-x64/

@@ -11,3 +11,6 @@ Changes in version 0.99.3 (2021-04-01)
 
 Changes in version 0.99.4 (2021-04-08)
 + vignette: eval=FALSE in installation chuck
+
+Changes in version 0.99.5 (2021-04-08)
++ folder src-x64 and src-i386 in gitignore
