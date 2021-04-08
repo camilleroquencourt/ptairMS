@@ -25,3 +25,4 @@ a list: \cr
 \description{
 Create cumulative function fit
 }
+\keyword{internal}

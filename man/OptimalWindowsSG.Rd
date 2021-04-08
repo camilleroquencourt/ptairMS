@@ -19,3 +19,4 @@ the optimal size of Savitzky Golay filter's windows
 \description{
 Find optimal window's size for Savitzky Golay filter
 }
+\keyword{internal}

@@ -19,7 +19,7 @@ detectPeak(
   parallelize = FALSE,
   nbCores = 2,
   saving = TRUE,
-  saveDir = x@parameter$saveDir,
+  saveDir = getParameters(x)$saveDir,
   ...
 )
 
@@ -50,7 +50,7 @@ detectPeak(
   parallelize = FALSE,
   nbCores = 2,
   saving = TRUE,
-  saveDir = x@parameter$saveDir,
+  saveDir = getParameters(x)$saveDir,
   ...
 )
 }

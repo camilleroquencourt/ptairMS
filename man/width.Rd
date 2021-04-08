@@ -19,3 +19,4 @@ the delta FWHM in tof
 \description{
 Calculate the FWHM (Full Width at Half Maximum) in raw data
 }
+\keyword{internal}

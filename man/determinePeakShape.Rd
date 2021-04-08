@@ -23,3 +23,4 @@ $peak_i(Delta_i,A_i,t_i) = interpolation(x= tof.ref * Delta_i + t_i,y = A_i *
 peak.ref, xout= TOF_i )$ where peak.ref and tof.ref are peaks reference use 
 for mass calibration.
 }
+\keyword{internal}

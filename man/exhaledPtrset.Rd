@@ -8,7 +8,7 @@
 ptrSet object
 }
 \usage{
-exhaledPtrset
+data(exhaledPtrset)
 }
 \description{
 a ptrSet object, created by the \code{ptairMS::createPtrSet} function, 

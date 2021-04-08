@@ -25,7 +25,7 @@
 #' library(ptairData)
 #' filePathRaw <- system.file('extdata/exhaledAir/ind1', 'ind1-1.h5', 
 #' package = 'ptairData')
-#' raw <- readRaw(filePathRaw,mzCalibRef=c(21.022, 60.0525))
+#' raw <- readRaw(filePathRaw,mzCalibRef=c(21.022, 60.0525),calib=FALSE)
 #' @import bit64
 #' @export
 readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41.03858, 
@@ -244,9 +244,16 @@ createPtrSet <- function(dir, setName, mzCalibRef = c(21.022, 29.013424, 41.0385
     fileName <- basename(filesFullName)
     
     # save parameters
-    parameter <- list(dir = dir, listFile = filesFullName, name = setName, mzCalibRef = mzCalibRef, 
-        timeLimit = list(fracMaxTIC = fracMaxTIC), mzBreathTracer = mzBreathTracer, 
-        knotsPeriod = knotsPeriod, saveDir = saveDir)
+    parameter <- list(dir = dir, 
+                      listFile = filesFullName, 
+                      name = setName, 
+                      mzCalibRef = mzCalibRef, 
+        timeLimit = list(fracMaxTIC = fracMaxTIC), 
+        mzBreathTracer = mzBreathTracer, 
+        knotsPeriod = knotsPeriod, 
+        mzPrimaryIon=mzPrimaryIon,
+        calibrationPeriod=calibrationPeriod,
+        saveDir = saveDir)
     
     # create sampleMetadata test if there is subfolder if there is no subfolder
     if (all(fileDir == ".")) {
@@ -265,7 +272,7 @@ createPtrSet <- function(dir, setName, mzCalibRef = c(21.022, 29.013424, 41.0385
     }
     
     # checkSet
-    check <- checkSet(filesFullName, mzCalibRef, fracMaxTIC, mzBreathTracer, calibrationPeriod, 
+    check <- checkSet(files = filesFullName, mzCalibRef, fracMaxTIC, mzBreathTracer, calibrationPeriod, 
         knotsPeriod, mzPrimaryIon)
     
     if (length(check$failed) > 0) {
@@ -318,8 +325,8 @@ updatePtrSet <- function(ptrset) {
                                           Use createPtrSet function")
     
     # get information
-    parameter <- ptrset@parameter
-    sampleMetadata <- ptrset@sampleMetadata
+    parameter <- getParameters(ptrset)
+    sampleMetadata <- getSampleMetadata(ptrset)
     
     # files in the diretcory
     
@@ -359,23 +366,12 @@ updatePtrSet <- function(ptrset) {
         sampleMetadata <- data.frame(sampleMetadata[-deletedFilesIndex, , drop = FALSE])
         
         # deleted in ptrSet
-        ptrset@sampleMetadata <- sampleMetadata
-        ptrset@mzCalibRef[deletedFiles] <- NULL
-        ptrset@signalCalibRef[deletedFiles] <- NULL
-        ptrset@errorCalibPpm[deletedFiles] <- NULL
-        ptrset@coefCalib[deletedFiles] <- NULL
-        ptrset@primaryIon[deletedFiles] <- NULL
-        ptrset@resolution[deletedFiles] <- NULL
-        ptrset@TIC[deletedFiles] <- NULL
-        ptrset@timeLimit[deletedFiles] <- NULL
-        ptrset@peakListRaw[deletedFiles] <- NULL
-        ptrset@peakListAligned[deletedFiles] <- NULL
-        ptrset@parameter$listFile <- filesDirFullNameParam
-        ptrset@breathTracer[deletedFiles] <- NULL
-        ptrset@ptrTransmisison[deletedFiles] <- NULL
-        ptrset@prtReaction[deletedFiles] <- NULL
-        ptrset@date[deletedFiles] <- NULL
-        
+        ptrset<-setSampleMetadata(ptrset,sampleMetadata)
+        parameter<-getParameters(ptrset)
+        parameter$listFile <- filesDirFullNameParam
+        ptrset<- setParameters(ptrset,parameter)
+        ptrset<-deleteFilePtrSet(ptrset,deletedFiles)
+      
         message(paste(deletedFiles, " deleted \n"))
     }
     
@@ -391,8 +387,13 @@ updatePtrSet <- function(ptrset) {
         
         
         # checkset
-        check <- checkSet(newFilesFullNames, mzCalibRef = parameter$mzCalibRef, fracMaxTIC = parameter$timeLimit$fracMaxTIC, 
-            mzBreathTracer = parameter$mzBreathTracer)
+        check <- checkSet(newFilesFullNames, 
+                          mzCalibRef = parameter$mzCalibRef, 
+                          fracMaxTIC = parameter$timeLimit$fracMaxTIC, 
+                          calibrationPeriod = parameter$calibrationPeriod,
+                          knotsPeriod =  parameter$knotsPeriod,
+                          mzPrimaryIon = parameter$mzPrimaryIon,
+                          mzBreathTracer = parameter$mzBreathTracer)
         if (length(check$failed) > 0) {
             filesDirFullName <- filesDirFullName[-which(basename(filesDirFullName) %in% 
                 check$failed)]
@@ -401,20 +402,14 @@ updatePtrSet <- function(ptrset) {
         }
         
         # add new file to ptrset and in same order as list.file
-        ptrset@parameter$listFile <- filesDirFullName
-        ptrset@sampleMetadata <- as.data.frame(sampleMetadata)
-        ptrset@mzCalibRef <- c(ptrset@mzCalibRef, check$mzCalibRefList)[basename(filesDirFullName)]
-        ptrset@signalCalibRef <- c(ptrset@signalCalibRef, check$signalCalibRef)[basename(filesDirFullName)]
-        ptrset@errorCalibPpm <- c(ptrset@errorCalibPpm, check$errorCalibPpm)[basename(filesDirFullName)]
-        ptrset@coefCalib <- c(ptrset@coefCalib, check$coefCalibList)[basename(filesDirFullName)]
-        ptrset@resolution <- c(ptrset@resolution, check$resolution)[basename(filesDirFullName)]
-        ptrset@TIC <- c(ptrset@TIC, check$TIC)[basename(filesDirFullName)]
-        ptrset@timeLimit <- c(ptrset@timeLimit, check$timeLimit)[basename(filesDirFullName)]
-        ptrset@primaryIon <- c(ptrset@primaryIon, check$primaryIon)[basename(filesDirFullName)]
-        ptrset@breathTracer <- c(ptrset@breathTracer, check$breathTracer)[basename(filesDirFullName)]
-        ptrset@ptrTransmisison <- c(ptrset@ptrTransmisison, check$ptrTransmisison)[basename(filesDirFullName)]
-        ptrset@prtReaction <- c(ptrset@prtReaction, check$prtReaction)[basename(filesDirFullName)]
-        ptrset@date <- c(ptrset@date, check$date)[basename(filesDirFullName)]
+        parameter<-getParameters(ptrset)
+        parameter$listFile <- filesDirFullNameParam
+        ptrset<- setParameters(ptrset,parameter)
+        ptrset<- setSampleMetadata(ptrset, as.data.frame(sampleMetadata))
+        
+        check$mzCalibRef<-check$mzCalibRefList
+        ptrset <-mergedPtrSet(ptrset, check ,orderedFile = filesDirFullName)
+       
     }
     
     saveDir <- parameter$saveDir
@@ -472,20 +467,21 @@ checkSet <- function(files,
         }
         
         # calibration infomration
-        mzCalibRefList[[fileName[j]]] <- raw@calibMassRef
-        # signalCalibRef[[ fileName[j] ]] <- raw@calibSpectr
-        errorCalibPpm[[fileName[j]]] <- raw@calibError
-        coefCalibList[[fileName[j]]] <- raw@calibCoef
-        indexTimeCalib[[fileName[j]]] <- raw@indexTimeCalib
+        mzCalibRefList[[fileName[j]]] <- getCalibrationInfo(raw)$calibMassRef
+        # signalCalibRef[[ fileName[j] ]] <- getCalibrationInfo(raw)$calibSpectr
+        errorCalibPpm[[fileName[j]]] <- getCalibrationInfo(raw)$calibError
+        coefCalibList[[fileName[j]]] <- getCalibrationInfo(raw)$calibCoef
+        indexTimeCalib[[fileName[j]]] <- getCalibrationInfo(raw)$indexTimeCalib
         
         # estimate the resolution
-        calibSpectr <- alignCalibrationPeak(raw@calibSpectr, raw@calibMassRef, length(raw@time))
+        calibSpectr <- alignCalibrationPeak(getCalibrationInfo(raw)$calibSpectr, getCalibrationInfo(raw)$calibMassRef, 
+                                            length(getRawInfo(raw)$time))
         signalCalibRef[[fileName[j]]] <- calibSpectr
-        resolutionEstimated <- estimateResol(calibMassRef = raw@calibMassRef, calibSpectr = calibSpectr)
+        resolutionEstimated <- estimateResol(calibMassRef = getCalibrationInfo(raw)$calibMassRef, calibSpectr = calibSpectr)
         resolution[[fileName[j]]] <- resolutionEstimated
-        reaction[[fileName[j]]] <- raw@prtReaction
-        transmisison[[fileName[j]]] <- raw@ptrTransmisison
-        date[[fileName[j]]] <- raw@date
+        reaction[[fileName[j]]] <- getPTRInfo(raw)$prtReaction
+        transmisison[[fileName[j]]] <- getPTRInfo(raw)$ptrTransmisison
+        date[[fileName[j]]] <- getDate(raw)
         resolutionRange <- c(min(resolutionEstimated) * 0.8, mean(resolutionEstimated), 
             max(resolutionEstimated) * 1.2)
         
@@ -493,21 +489,21 @@ checkSet <- function(files,
         # /TimingData))$BlockPeriod #nano seconde
         
         # TIC
-        TIC[[fileName[j]]] <- colSums(raw@rawM)
+        TIC[[fileName[j]]] <- colSums(getRawInfo(raw)$rawM)
         if (is.null(mzBreathTracer)) {
-            breathTracer[[fileName[j]]] <- colSums(raw@rawM)
+            breathTracer[[fileName[j]]] <- colSums(getRawInfo(raw)$rawM)
         } else {
             index <- lapply(mzBreathTracer, function(x) {
                 th <- 350 * x/10^6
-                which(x - th < raw@mz & raw@mz < x + th)
+                which(x - th < getRawInfo(raw)$mz & getRawInfo(raw)$mz < x + th)
             })
-            breathTracer[[fileName[j]]] <- colSums(raw@rawM[unlist(index), ])
+            breathTracer[[fileName[j]]] <- colSums(getRawInfo(raw)$rawM[unlist(index), ])
         }
         # timeLimit
         
         indLim <- timeLimits(raw, fracMaxTIC = fracMaxTIC, mzBreathTracer = mzBreathTracer)
         timeLimit[[fileName[j]]] <- indLim
-        t <- raw@time
+        t <- getRawInfo(raw)$time
         
         # default knots location every 3 second on expiration
         if (knotsPeriod == 0) {
@@ -522,13 +518,16 @@ checkSet <- function(files,
         peakShape[[fileName[j]]] <- l.shape
         
         # check best fit
-        sech2 <- mean(PeakList(raw, mzNominal = raw@calibMassRef, fctFit = "sech2", 
-            maxIter = 1, ppm = 500, minIntensityRate = 0.2, windowSize = 0.2, resolutionRange = resolutionRange, 
+        sech2 <- mean(PeakList(raw, mzNominal = getCalibrationInfo(raw)$calibMassRef, 
+                               fctFit = "sech2", 
+            maxIter = 1, ppm = 500, minIntensityRate = 0.2, 
+            windowSize = 0.2, resolutionRange = resolutionRange, 
             peakShape = l.shape)$peak$R2)
-        averagePeak <- mean(PeakList(raw, mzNominal = raw@calibMassRef, fctFit = "averagePeak", 
+        
+        averagePeak <- mean(PeakList(raw, mzNominal = getCalibrationInfo(raw)$calibMassRef, fctFit = "averagePeak", 
             resolutionRange = resolutionRange, maxIter = 1, peakShape = l.shape, 
             ppm = 500, minIntensityRate = 0.2, windowSize = 0.2)$peak$R2)
-        asymGauss <- mean(PeakList(raw, mzNominal = raw@calibMassRef, fctFit = "asymGauss", 
+        asymGauss <- mean(PeakList(raw, mzNominal = getCalibrationInfo(raw)$calibMassRef, fctFit = "asymGauss", 
             resolutionRange = resolutionRange, maxIter = 1, peakShape = l.shape, 
             ppm = 500, minIntensityRate = 0.2, windowSize = 0.2)$peak$R2)
         
@@ -536,7 +535,7 @@ checkSet <- function(files,
             averagePeak, asymGauss))]
         
         # check if mass 21 contains in mass axis
-        if (!21 %in% unique(round(raw@mz))) {
+        if (!21 %in% unique(round(getRawInfo(raw)$mz))) {
             warning("mass 21 not in mass Axis,the ppb quantification can not be done.")
             primaryIonV <- NA
         } else {
@@ -548,11 +547,11 @@ checkSet <- function(files,
             if (primaryIndex) 
                 primaryIonV <- p$peak$quanti_cps[primaryIndex] else primaryIonV <- NA
         }
-        if (!38 %in% unique(round(raw@mz))) {
+        if (!38 %in% unique(round(getRawInfo(raw)$mz))) {
             waterCluster <- NA
         } else {
             p <- PeakList(raw, mzNominal = c(38), ppm = 700, minIntensityRate = 0.5, 
-                minIntensity = 0, maxIter = 1, thNoiseRate = 0, fctFit = fctFit, 
+                minIntensity = 0, maxIter = 1, thNoiseRate = 0, fctFit = fctFit[[fileName[j]]], 
                 peakShape = l.shape, windowSize = 0.2)
             clusterIndex <- which(abs(p$peak - 38.03) * 10^6/21 < 200)
             if (length(clusterIndex) != 0) 
@@ -581,13 +580,16 @@ checkSet <- function(files,
 #' library(ptairData)
 #' filePathRaw <- system.file('extdata/exhaledAir/ind1', 'ind1-1.h5', 
 #' package = 'ptairData')
-#' \dontrun{convert_to_mzML(filePathRaw)}
+#' # write a mzml file in the same directory
+#' convert_to_mzML(filePathRaw)
+#' file_mzML <- gsub(".h5", ".mzML", filePathRaw)
+#' file.remove(file_mzML)
 #' @export
 convert_to_mzML <- function(file) {
     data <- readRaw(file)
-    mzVn <- data$mz
-    timVn <- data$time
-    rawMN <- data$rawdata
+    mzVn <- getRawInfo(data)$mz
+    timVn <- getRawInfo(data)$time
+    rawMN <- getRawInfo(data)$rawM
     mzML <- apply(rawMN, 2, function(x) matrix(c(mzVn[x != 0], x[x != 0]), ncol = 2))
     pk_count <- vapply(mzML, function(x) dim(x)[1], FUN.VALUE = 1)
     

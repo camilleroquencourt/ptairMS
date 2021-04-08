@@ -9,11 +9,12 @@ aggregate(subGroupPeak, n.exp)
 \arguments{
 \item{subGroupPeak}{teh group tp aggregate}
 
-\item{n.exp}{number of expirations done in the file}
+\item{n.exp}{number of expiration done in the file}
 }
 \value{
-a mtrix with the mediane of mz, mean of ppb, ppb in background, 
- and percentage of expiration where th epeak is detected
+a matrix with the median of mz, mean of ppb, ppb in background, 
+ and percentage of expiration where the peak is detected
+ @keywords internal
 }
 \description{
 aggregate peakgroup for align function

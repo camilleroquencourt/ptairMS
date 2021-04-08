@@ -17,12 +17,12 @@ test_calib<-function(){
   testthat::expect_is(fileCalibrate, 'ptrRaw')
   
   #check format 
-  testthat::expect_equal(dim(fileCalibrate@calibCoef[[1]]), c(2,1))
-  testthat::expect_equal(rownames(fileCalibrate@calibCoef[[1]]), c("a","b"))
+  testthat::expect_equal(dim(getCalibrationInfo(fileCalibrate)$calibCoef[[1]]), c(2,1))
+  testthat::expect_equal(rownames(getCalibrationInfo(fileCalibrate)$calibCoef[[1]]), c("a","b"))
   
   #check values
-  testthat::expect_equal(c(round(fileCalibrate@calibCoef[[1]])), c(8839,-219))
-  testthat::expect_true(all(fileCalibrate@calibError<20))
+  testthat::expect_equal(c(round(getCalibrationInfo(fileCalibrate)$calibCoef[[1]])), c(8839,-219))
+  testthat::expect_true(all(getCalibrationInfo(fileCalibrate)$calibError<20))
   
 }
 

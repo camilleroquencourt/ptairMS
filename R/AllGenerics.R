@@ -13,7 +13,7 @@ setGeneric("detectPeak",
                     parallelize=FALSE,
                     nbCores=2,
                     saving=TRUE,
-                    saveDir=x@parameter$saveDir,...){
+                    saveDir=getParameters(x)$saveDir,...){
              standardGeneric("detectPeak")
            })
 
@@ -77,7 +77,7 @@ setGeneric("defineKnots",
 ## SetMethod
 setGeneric("PeakList",
            function(raw,
-                    mzNominal = unique(round(raw@mz)), 
+                    mzNominal = unique(round(getRawInfo(raw)$mz)), 
                     ppm = 130, resolutionRange=c(3000,5000,8000),
                     minIntensity=5, fctFit=c("sech2","averagePeak")[1], 
                     peakShape=NULL,maxIter=1, R2min,autocorNoiseMax = 0.3,
@@ -137,6 +137,69 @@ setGeneric("plotCalib",
 setGeneric("getFileNames", function(object,fullNames=FALSE){
   standardGeneric("getFileNames")
 })
+
+setGeneric("getParameters", function(object){
+    standardGeneric("getParameters")
+})
+
+setGeneric("setParameters", function(object,newparam){
+    standardGeneric("setParameters")
+})
+
+setGeneric("getDate", function(object){
+    standardGeneric("getDate")
+})
+
+
+
+setGeneric("getCalibrationInfo", function(object){
+    standardGeneric("getCalibrationInfo")
+})
+
+setGeneric("getPeaksInfo", function(object){
+    standardGeneric("getPeaksInfo")
+})
+
+
+setGeneric("setPeakShape", function(object,peakShape){
+    standardGeneric("setPeakShape")
+})
+
+
+setGeneric("setCalibration", function(object,newCalibrationInfo,...){
+    standardGeneric("setCalibration")
+})
+
+
+setGeneric("getTimeInfo", function(object){
+    standardGeneric("getTimeInfo")
+})
+
+
+setGeneric("getPTRInfo", function(object){
+    standardGeneric("getPTRInfo")
+})
+
+setGeneric("getRawInfo", function(object){
+    standardGeneric("getRawInfo")
+})
+
+setGeneric("setTimeLimits", function(object,newTimeLimites,index=NULL){
+    standardGeneric("setTimeLimits")
+})
+
+setGeneric("setKnots", function(object,newKnots,index=NULL){
+    standardGeneric("setKnots")
+})
+setGeneric("deleteFilePtrSet", function(object,deletedFiles){
+    standardGeneric("deleteFilePtrSet")
+})
+
+setGeneric("mergedPtrSet", function(object,ptrSetNewfile,orderedFile){
+    standardGeneric("mergedPtrSet")
+})
+
+
 
 ## annotateVOC ----
 

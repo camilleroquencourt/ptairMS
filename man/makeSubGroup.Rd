@@ -21,3 +21,4 @@ the sub peakgroup
 Use in align function. return a peak group thanks to kernel gaussian density 
 in a peak matrix.
 }
+\keyword{internal}

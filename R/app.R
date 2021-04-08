@@ -22,7 +22,7 @@ changeTimeLimits<-function(ptrSet){
 
     #choose file in the ptrSet
     shiny::fluidRow(
-      shiny::selectInput("fileName","File name:",as.list(names(ptrSet@TIC)),selectize=FALSE)
+      shiny::selectInput("fileName","File name:",as.list(names(getTimeInfo(ptrSet)$TIC)),selectize=FALSE)
     ),
     
     shiny::fluidRow(shiny::p("Select the periods (rows) that you want delete. 
@@ -52,7 +52,7 @@ changeTimeLimits<-function(ptrSet){
     # change parameter of timeLimit
     shiny::fluidRow(
       shiny::column(width = 3,shiny::numericInput("fracMaxTIC", "FracMaxTIC", 
-                                                  ptrSet@parameter$timeLimit$fracMaxTIC,0, 1, 0.05)),
+                                                  getParameters(ptrSet)$timeLimit$fracMaxTIC,0, 1, 0.05)),
       shiny::column(width = 3,shiny::numericInput("fracMaxTICBg", 
                                                   "fracMaxTICBg",0.2,0, 1, 0.05)),
       shiny::column(width = 3,shiny::numericInput("derivThresholdExp", 
@@ -94,9 +94,9 @@ changeTimeLimits<-function(ptrSet){
     
     # get the time limit of the selected file
     shiny::observeEvent(input$fileName, {
-      rv$data <- t(ptrSetNew()@timeLimit[[input$fileName]]$exp)
-      rv$bgPoints <- ptrSetNew()@timeLimit[[input$fileName]]$backGround
-      rv$knots<-  ptrSetNew()@knots[[input$fileName]]
+      rv$data <- t(getTimeInfo(ptrSetNew())$timeLimit[[input$fileName]]$exp)
+      rv$bgPoints <- getTimeInfo(ptrSetNew())$timeLimit[[input$fileName]]$backGround
+      rv$knots<-  getPeaksInfo(ptrSetNew())$knots[[input$fileName]]
     })
     
     #delete the selected expirations
@@ -115,8 +115,11 @@ changeTimeLimits<-function(ptrSet){
           rv$data <- rv$data[-rowNum,,drop=FALSE]
           rv$knots<-knots[-knotTodelete]
           ptrSet<-ptrSetNew()
-          ptrSet@timeLimit[[input$fileName]]$exp <- t(rv$data)
-          ptrSet@knots[[input$fileName]]<-rv$knots
+          timeLimitInput<-getTimeInfo(ptrSet)$timeLimit[[input$fileName]]
+          timeLimitInput$exp <- t(rv$data)
+          ptrSet<-setTimeLimits(ptrSet,newTimeLimites =timeLimitInput,index = input$fileName )
+          ptrSet<-setKnots(ptrSet,rv$knots,input$fileName)
+         
           ptrSetNew(ptrSet)
         }
   
@@ -133,14 +136,14 @@ changeTimeLimits<-function(ptrSet){
       minPointsNew <-input$minPoints
       degreeBaselineNew <- input$degreeBaseline
       
-      timeLimit<-timeLimitFun(TIC = ptrSet@breathTracer[[input$fileName]],
+      timeLimit<-timeLimitFun(TIC = getTimeInfo(ptrSet)$breathTracer[[input$fileName]],
                               fracMaxTIC =fracMaxTICNew ,
                               fracMaxTICBg = fracMaxTICBgNew,
                               derivThresholdExp = derivThresholdExpNew,
                               derivThresholdBg = derivThresholdBgNew,
                               minPoints =minPointsNew ,
                               degreeBaseline = degreeBaselineNew)
-      t<-as.numeric(names( ptrSet@TIC[[input$fileName]]))
+      t<-as.numeric(names( getTimeInfo(ptrSet)$TIC[[input$fileName]]))
       background<-timeLimit$backGround
       if(input$methodKnot ==  "around expiration") 
         method<-"expiration" else method<- "uniform"
@@ -149,10 +152,16 @@ changeTimeLimits<-function(ptrSet){
       rv$data <- t(timeLimit$exp)
       rv$bgPoints<- timeLimit$backGround
       rv$knots<-knots
+      
       ptrSet<-ptrSetNew()
-      ptrSet@timeLimit[[input$fileName]]$exp <- t(rv$data)
-      ptrSet@timeLimit[[input$fileName]]$backGround <- rv$bgPoints
-      ptrSet@knots[[input$fileName]]<-rv$knots
+      timeLimitInput<-getTimeInfo(ptrSet)$timeLimit[[input$fileName]]
+      
+      timeLimitInput$exp <- t(rv$data)
+      timeLimitInput$backGround <- rv$bgPoints
+      
+      ptrSet<-setTimeLimits(ptrSet,newTimeLimites =timeLimitInput,index = input$fileName )
+      ptrSet<-setKnots(ptrSet,rv$knots,input$fileName)
+      
       paramterTimeLimit<-list(fracMaxTIC=fracMaxTICNew,
                               fracMaxTICBg=fracMaxTICBgNew, 
                               derivThresholdExp=derivThresholdExpNew,
@@ -160,8 +169,10 @@ changeTimeLimits<-function(ptrSet){
                               minPoints = minPointsNew,
                               degreeBaseline=degreeBaselineNew)
       
-      ptrSet@parameter$knotsPeriod<-input$knotsPeriod
-      ptrSet@parameter$timeLimit<-paramterTimeLimit
+      parameter<-getParameters(ptrSet)
+      parameter$knotsPeriod<-input$knotsPeriod
+      parameter$timeLimit<-paramterTimeLimit
+      ptrSet<- setParameters(ptrSet,parameter)
       ptrSetNew(ptrSet)
     })
     
@@ -180,8 +191,8 @@ changeTimeLimits<-function(ptrSet){
       degreeBaselineNew <- input$degreeBaseline
       
       
-      timeLimit<-lapply(names(ptrSet@TIC),function(fileName) {
-       timeLimitFun(TIC = ptrSet@breathTracer[[fileName]],
+      timeLimit<-lapply(names(getTimeInfo(ptrSet)$TIC),function(fileName) {
+       timeLimitFun(TIC = getTimeInfo(ptrSet)$breathTracer[[fileName]],
                     fracMaxTIC =fracMaxTICNew ,
                     fracMaxTICBg = fracMaxTICBgNew,
                     derivThresholdExp = derivThresholdExpNew,
@@ -189,11 +200,11 @@ changeTimeLimits<-function(ptrSet){
                     minPoints =minPointsNew ,degreeBaseline = degreeBaselineNew)
         })
       
-      names(timeLimit) <- names(ptrSet@TIC)
-      knots<-lapply(names(ptrSet@timeLimit),function(fileName) {
+      names(timeLimit) <- names(getTimeInfo(ptrSet)$TIC)
+      knots<-lapply(names(getTimeInfo(ptrSet)$timeLimit),function(fileName) {
         
         background<-timeLimit[[fileName]]$backGround
-        t<-as.numeric(names( ptrSet@TIC[[fileName]]))
+        t<-as.numeric(names( getTimeInfo(ptrSet)$TIC[[fileName]]))
 
         if(input$methodKnot == "around expiration") {
           defineKnotsExpiration(t,background,input$knotsPeriod) 
@@ -211,8 +222,10 @@ changeTimeLimits<-function(ptrSet){
       rv$knots<-knots[[input$fileName]]
       
       ptrSet<-ptrSetNew()
-      ptrSet@timeLimit<-timeLimit
-      ptrSet@knots<-knots
+      
+      ptrSet<-setTimeLimits(ptrSet,timeLimit)
+      ptrSet<-setKnots(ptrSet,knots)
+      
       paramterTimeLimit<-list(fracMaxTIC=fracMaxTICNew,
                               fracMaxTICBg=fracMaxTICBgNew, 
                               derivThresholdExp=derivThresholdExpNew,
@@ -220,8 +233,10 @@ changeTimeLimits<-function(ptrSet){
                               minPoints = minPointsNew,
                               degreeBaseline=degreeBaselineNew)
       
-      ptrSet@parameter$knotsPeriod<-input$knotsPeriod
-      ptrSet@parameter$timeLimit<-paramterTimeLimit
+      parameter<-getParameters(ptrSet)
+      parameter$knotsPeriod<-input$knotsPeriod
+      parameter$timeLimit<-paramterTimeLimit
+      ptrSet<- setParameters(ptrSet,parameter)
       ptrSetNew(ptrSet)
     })
     
@@ -237,9 +252,12 @@ changeTimeLimits<-function(ptrSet){
     shiny::observeEvent(input$table_cell_edit,
       {
         rv$data[ input$table_cell_edit$row , 
-                 input$table_cell_edit$col] <- input$table_cell_edit$value
+                 input$table_cell_edit$col] <- as.numeric(input$table_cell_edit$value)
         ptrSet <- ptrSetNew()
-        ptrSet@timeLimit[[input$fileName]]$exp <- t(rv$data)
+        timeLimitInput<-getTimeInfo(ptrSet)$timeLimit[[input$fileName]]
+        timeLimitInput$exp <- t(rv$data)
+
+        ptrSet<-setTimeLimits(ptrSet,newTimeLimites =timeLimitInput,index = input$fileName )
         ptrSetNew(ptrSet)
       }
     )
@@ -248,7 +266,7 @@ changeTimeLimits<-function(ptrSet){
     output$TIC <- plotly::renderPlotly({
       s <- input$table_rows_selected
       fileName <- input$fileName
-      TIC <- ptrSet@breathTracer[[fileName]]
+      TIC <- getTimeInfo(ptrSet)$breathTracer[[fileName]]
       time <- as.numeric(names(TIC))
       indexTimeLimit <- t(rv$data)
       expPoint<-Reduce(c,apply(indexTimeLimit,2,function(x) seq(x[1],x[2])))
@@ -296,9 +314,9 @@ changeTimeLimits<-function(ptrSet){
     # save the ptrSet with change
     shiny::observeEvent(input$download, {
       ptrSet <- ptrSetNew()
-      saveDir<-ptrSet@parameter$saveDir
+      saveDir<-getParameters(ptrSet)$saveDir
       if(!is.null(saveDir)){
-        name<-ptrSet@parameter$name
+        name<-getParameters(ptrSet)$name
         changeName <- parse(text=paste0(name,"<- ptrSet "))
         eval(changeName)
         eval(parse(text =  paste0( "save(" ,name ,",file= paste0( saveDir,'/', '",name,".RData '))")))

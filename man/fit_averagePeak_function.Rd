@@ -25,3 +25,4 @@ peak function made on an average of reference peaks normalized
 \description{
 fit function average
 }
+\keyword{internal}

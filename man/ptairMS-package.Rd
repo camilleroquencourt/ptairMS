@@ -15,6 +15,13 @@ This package implements a suite of methods to preprocess data from PTR-TOF-MS in
    study on adults undergoing invasive mechanical ventilation in the intensive care unit due to severe COVID-19 or non-COVID-19 acute respiratory
    distress syndrome (ARDS), and permit to identfy four potentiel biomarquers of the infection.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item Report bugs at \url{https://github.com/camilleroquencourt/ptairMS/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: camille Roquencourt \email{camille.roquencourt@hotmail.fr}
 

@@ -20,5 +20,8 @@ with the \code{writeMLData} of the \code{MSnbase} package
 library(ptairData)
 filePathRaw <- system.file('extdata/exhaledAir/ind1', 'ind1-1.h5', 
 package = 'ptairData')
-\dontrun{convert_to_mzML(filePathRaw)}
+# write a mzml file in the same directory
+convert_to_mzML(filePathRaw)
+file_mzML <- gsub(".h5", ".mzML", filePathRaw)
+file.remove(file_mzML)
 }

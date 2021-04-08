@@ -28,14 +28,14 @@ test_peakSet<-function(){
   dir <- system.file("extdata/mycobacteria",  package = "ptairData")
   dirSet <- createPtrSet(dir = dir, setName = "test", 
                          mzCalibRef = c(21.022,59.049))
-  ListFiles <- names(dirSet@TIC)
+  ListFiles <- names(getTimeInfo(dirSet)$TIC)
   peakLists <- detectPeak(dirSet, smoothPenalty = 0,
                           resolutionRange =  c(3000,5000,9000),
                           mzNominal = c(21,59))
 
   # type,
   testthat::expect_is(peakLists,'ptrSet')
-  testthat::expect_true(all(sapply(peakLists@peakList,function(x) 
+  testthat::expect_true(all(sapply(getPeakList(peakLists),function(x) 
     nrow(Biobase::exprs(x))>=2)))
   
   

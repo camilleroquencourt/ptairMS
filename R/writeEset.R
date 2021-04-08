@@ -18,11 +18,10 @@
 #' @rdname writeEset
 #' @export
 #' @examples
-#' data(exhaledPtrset )
+#' data(exhaledPtrset)
 #' eset <- ptairMS::alignSamples(exhaledPtrset ) 
-#'\dontrun{
 #' writeEset(eset, dirName = file.path(getwd(), "processed_dataset"))
-#'}
+#' unlink(file.path(getwd(), "processed_dataset"),recursive = TRUE)
 setMethod("writeEset", "ExpressionSet",
           function(x,
                    dirName,

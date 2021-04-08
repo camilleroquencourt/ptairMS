@@ -1,74 +1,10 @@
-CHANGES IN VERSION 1.0.2
-------------------------------
+Changes in version 0.99.0 (2021-03-12)
++ Submitted to Bioconductor
 
-NEW FEATURE
-
-    o for quantification: the baseline is computed only from background, and quatification without this correction in write in quanti_cps, and with this correction in absolute value in diffAbs_cps. We can choose in alignSamples function wich quanti use with bgCorrected TURE or FALSE 
-
-
-CHANGES IN VERSION 1.0.1
-------------------------------
-
-NEW FEATURE
-
-    o isotope matching with more atoms (list added in extdata atomic_itsotopes.tsv)
-
-CHANGES IN VERSION 0.0.14
-------------------------------
-
-NEW FEATURE
-
-    o parallelize version of impute function.
-
-
-CHANGES IN VERSION 0.0.14
-------------------------------
-
-NEW FEATURE
-
-    o check ptr reaction parameters (Udrift, pDrift, Tdrift et E/N), and water cluster intensity. 
-
-
-CHANGES IN VERSION 0.0.12
-------------------------------
-
-NEW FEATURE
-
-    o fracExp parameter in alignSamples, to keep features significatively diffrent from ambiant air for at least fracExp % of the samples
-
-CHANGES IN VERSION 0.0.8
-------------------------------
-
-NEW FEATURE
-
-    o Nppb, ncps and cps in peakListRaw and peakListAligned, choice in alignSample qua
-ntiUnit parameter
-
-CHANGES IN VERSION 0.0.8
-------------------------------
-
-NEW FEATURE
-
-    o New process function for detectPeak: processTemporalFile that compute the exctracted chromatogram for all peak finded on the TIS and annotateVOC: new version of vocDB based on the Human Breathomics Database 
-
-
-CHANGES IN VERSION 0.0.6
-------------------------------
-
-NEW FEATURE
-
-    o findIsotope function to find isotope clusters in the final peak table 
-
-CHANGES IN VERSION 0.0.4
-------------------------------
-
-INTERNAL MODIFICATION
-
-    o travis testing 
-
-CHANGES IN VERSION 0.0.2
-------------------------------
-
-NEW FEATURE
-
-    o a shiny application to view and delete selected expirations is added in the changeTimeLimits function 
+Changes in version 0.99.3 (2021-04-01)
++ added BugReports to description files
++ changed in vigette: remove echo = FASLSE and added installation section 
++ remove dontrun from examples
++ avoided slot() and created generic method for slot access and setters
++ modyfied the two datSet documentaion
++ added documentation in inst/script 

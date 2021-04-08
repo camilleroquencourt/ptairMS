@@ -17,3 +17,4 @@ ggplot object
 \description{
 plot the average peak shape of reference calibration masses for a ptrSet
 }
+\keyword{internal}

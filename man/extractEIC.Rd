@@ -22,3 +22,4 @@ list containing all EIC and the mz borne for all peak
 \description{
 extract all raw EIC from a pre-definied peak List
 }
+\keyword{internal}

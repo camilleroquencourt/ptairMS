@@ -17,3 +17,4 @@ a numeric vector
 \description{
 Estimation of the transmisison curve
 }
+\keyword{internal}

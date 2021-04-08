@@ -25,3 +25,4 @@ list with fit information
 \description{
 Fit peak with average function
 }
+\keyword{internal}

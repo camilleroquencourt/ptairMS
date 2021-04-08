@@ -8,7 +8,7 @@
 a ptrSet object
 }
 \usage{
-mycobacteriaSet
+data(mycobacteriaSet)
 }
 \description{
 a ptrSet object, created by the \code{ptairMS::createPtrSet} function, 

@@ -3,11 +3,14 @@
 \name{getFileNames}
 \alias{getFileNames}
 \alias{getFileNames,ptrSet-method}
-\title{get the file names containing in the directory of a ptrSet}
+\alias{getFileNames,ptrRaw-method}
+\title{get the file names containing in the directory of a ptrSet or ptrRaw}
 \usage{
 getFileNames(object, fullNames = FALSE)
 
 \S4method{getFileNames}{ptrSet}(object, fullNames = FALSE)
+
+\S4method{getFileNames}{ptrRaw}(object, fullNames = FALSE)
 }
 \arguments{
 \item{object}{ptrSet object}
@@ -19,6 +22,8 @@ prepended to the file names.}
 a vector of character that contains all file names
 }
 \description{
+get the file names containing in the directory of a ptrSet or ptrRaw
+
 get the file names containing in the directory of a ptrSet
 }
 \examples{

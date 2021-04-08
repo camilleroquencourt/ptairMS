@@ -28,9 +28,8 @@ export (e.g., the samples are written column wise in the 'dataMatrix.tsv'
 exported file).
 }
 \examples{
-data(exhaledPtrset )
+data(exhaledPtrset)
 eset <- ptairMS::alignSamples(exhaledPtrset ) 
-\dontrun{
 writeEset(eset, dirName = file.path(getwd(), "processed_dataset"))
-}
+unlink(file.path(getwd(), "processed_dataset"),recursive = TRUE)
 }

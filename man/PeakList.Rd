@@ -7,7 +7,7 @@
 \usage{
 PeakList(
   raw,
-  mzNominal = unique(round(raw@mz)),
+  mzNominal = unique(round(getRawInfo(raw)$mz)),
   ppm = 130,
   resolutionRange = c(3000, 5000, 8000),
   minIntensity = 5,
@@ -28,7 +28,7 @@ PeakList(
 
 \S4method{PeakList}{ptrRaw}(
   raw,
-  mzNominal = unique(round(raw@mz)),
+  mzNominal = unique(round(getRawInfo(raw)$mz)),
   ppm = 130,
   resolutionRange = c(300, 5000, 8000),
   minIntensity = 5,

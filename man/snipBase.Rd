@@ -19,3 +19,4 @@ baseline estimation of the spectrum
 \description{
 Baseline estimation
 }
+\keyword{internal}

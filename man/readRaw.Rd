@@ -48,5 +48,5 @@ that contains raw data.
 library(ptairData)
 filePathRaw <- system.file('extdata/exhaledAir/ind1', 'ind1-1.h5', 
 package = 'ptairData')
-raw <- readRaw(filePathRaw,mzCalibRef=c(21.022, 60.0525))
+raw <- readRaw(filePathRaw,mzCalibRef=c(21.022, 60.0525),calib=FALSE)
 }

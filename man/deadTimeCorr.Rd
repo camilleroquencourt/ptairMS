@@ -23,3 +23,4 @@ a ptrRaw object with the raw matrix corrected
 \description{
 Dead time correction on raw data
 }
+\keyword{internal}

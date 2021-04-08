@@ -45,8 +45,8 @@ methods::setMethod(f = "plot", signature = "ptrSet", function(x, y, typePlot = "
 })
 # plot resolution boxplot for a ptrSet
 plotResolution <- function(set) {
-    mzCalibRef <- set@parameter$mzCalibRef
-    resolution <- set@resolution
+    mzCalibRef <- getParameters(set)$mzCalibRef
+    resolution <- getPTRInfo(set)$resolution
     # complete missing masses
     index <- which(vapply(resolution, length, 1) != length(mzCalibRef))
     resolution[index] <- lapply(resolution[index], function(x) {
@@ -78,7 +78,7 @@ plotResolution <- function(set) {
         ], ggplot2::aes(x = Mz, y = resolution, label = name), vjust = -0.5, size = 3) + 
         ggplot2::ggtitle(label = expression("Resolution m/" ~ Delta ~ "(m)")) + ggplot2::ylab("m/delta(m)") + 
         ggplot2::theme_classic()
-    resolutionEstimated <- Reduce(c, set@resolution)
+    resolutionEstimated <- Reduce(c, getPTRInfo(set)$resolution)
     info <- gridExtra::tableGrob(t(data.frame(resolution = c(min = floor(min(resolutionEstimated)/1000) * 
         1000, mean = round(mean(resolutionEstimated)/1000) * 1000, 
         max = ceiling(max(resolutionEstimated)/1000) * 
@@ -87,18 +87,18 @@ plotResolution <- function(set) {
 }
 #' @importFrom rlang .data    
 plotCalibError <- function(set) {
-    massCalib <- set@mzCalibRef
-    errorList <- set@errorCalibPpm
+    massCalib <- getCalibrationInfo(set)$mzCalibRef
+    errorList <- getCalibrationInfo(set)$errorCalibPpm
     names(errorList) <- paste(seq(1, length(errorList)), names(errorList), 
                               sep = "-")
     # get list files
-    listFiles <- set@parameter$listFile
+    listFiles <- getParameters(set)$listFile
     if (methods::is(listFiles, "expression")) 
         listFiles <- eval(listFiles)
     # number of files
     nfiles <- length(massCalib)
     # calibration reference
-    mzCalibRef <- set@parameter$mzCalibRef
+    mzCalibRef <- getParameters(set)$mzCalibRef
     # count how many time masses where excluded
     count <- table(unlist(massCalib))
     exclud <- nfiles - count
@@ -150,18 +150,17 @@ is_outlier <- function(x) {
 #' @param showAverage boolean 
 #' @return ggplot object
 #' @importFrom scales hue_pal 
+#' @keywords internal
 plotPeakShape <- function(set, showAverage = FALSE) {
-    mzRef <- set@parameter$mzCalibRef
-    n.files <- length(set@mzCalibRef)
+    mzRef <- getParameters(set)$mzCalibRef
+    n.files <- length(getCalibrationInfo(set)$mzCalibRef)
     npoints <- 50
     interval.ref <- seq(-3, 3, length = npoints)  # +- 3 * peak width(=1) 
     # loop over file
     peak_ref <- array(NA, dim = c(length(mzRef), n.files, npoints))
     for (n.file in seq_len(n.files)) {
-        massRef <- set@mzCalibRef[[n.file]]
-        # interval<- alignCalibrationPeak( set@signalCalibRef[[n.file]],
-        # massRef,length(set@TIC[[n.files]]))
-        interval <- set@signalCalibRef[[n.file]]
+        massRef <- getCalibrationInfo(set)$mzCalibRef[[n.file]]
+        interval <- getCalibrationInfo(set)$signalCalibRef[[n.file]]
         names(interval) <- massRef
         n.mass <- length(interval)
         delta <- vapply(interval, function(x) width(tof = x$mz, peak = x$signal)$delta, 
@@ -277,19 +276,19 @@ plotPeakShape <- function(set, showAverage = FALSE) {
     return(p + ggplot2::theme_classic())
 }
 plotPeakShapeTof <- function(set) {
-    mzRef <- set@parameter$mzCalibRef
-    n.files <- length(set@mzCalibRef)
+    mzRef <- getParameters(set)$mzCalibRef
+    n.files <- length(getCalibrationInfo(set)$mzCalibRef)
     npoints <- 50
     interval.ref <- seq(-3, 3, length = npoints)  # +- 3 * peak width(=1) 
     # loop over file
     peak_ref <- array(NA, dim = c(length(mzRef), n.files, npoints))
     for (n.file in seq_len(n.files)) {
-        massRef <- set@mzCalibRef[[n.file]]
-        interval <- alignCalibrationPeak(set@signalCalibRef[[n.file]], massRef, 
-                                         length(set@TIC[[n.files]]))
+        massRef <- getCalibrationInfo(set)$mzCalibRef[[n.file]]
+        interval <- alignCalibrationPeak(getCalibrationInfo(set)$signalCalibRef[[n.file]], massRef, 
+                                         length(getTimeInfo(set)$TIC[[n.files]]))
         names(interval) <- massRef
         n.mass <- length(interval)
-        coefs <- set@coefCalib[[n.file]]
+        coefs <- getCalibrationInfo(set)$coefCalib[[n.file]]
         # delta <- vapply(interval, function(x) width(tof =
         # sqrt(x$mz)*coefs['a',]+coefs['b',], peak = x$signal)$delta, FUN.VALUE = 1.1)
         delta <- vapply(interval, function(x) width(tof = x$mz, peak = x$signal)$delta, 
@@ -385,24 +384,24 @@ plotPeakShapeTof <- function(set) {
 }
 
 plotPtrReaction <- function(pSet) {
-    U <- Reduce(c, lapply(pSet@prtReaction, function(x) {
+    U <- Reduce(c, lapply(getPTRInfo(pSet)$prtReaction, function(x) {
         y <- c(x$TwData[1, , ])
         mean(y[y != 0])
     }))
-    PD <- Reduce(c, lapply(pSet@prtReaction, function(x) {
+    PD <- Reduce(c, lapply(getPTRInfo(pSet)$prtReaction, function(x) {
         y <- c(x$TwData[2, , ])
         mean(y[y != 0])
     }))
-    TD <- Reduce(c, lapply(pSet@prtReaction, function(x) {
+    TD <- Reduce(c, lapply(getPTRInfo(pSet)$prtReaction, function(x) {
         y <- c(x$TwData[3, , ])
         mean(y[y != 0])
     }))
-    EN <- Reduce(c, lapply(pSet@prtReaction, function(x) {
+    EN <- Reduce(c, lapply(getPTRInfo(pSet)$prtReaction, function(x) {
         y <- c(x$TwData[4, , ])
         mean(y[y != 0])
     }))
-    primaryIon <- Reduce(c, lapply(pSet@primaryIon, function(x) x$primaryIon))
-    date <- Reduce(c, pSet@date)
+    primaryIon <- Reduce(c, lapply(getPTRInfo(pSet)$primaryIon, function(x) x$primaryIon))
+    date <- Reduce(c, getDate(pSet))
     date <- vapply(date, function(x) chron::chron(dates. = strsplit(x, " ")[[1]][1], 
         times. = strsplit(x, " ")[[1]][2], format = c("d/m/y", "h:m:s")), 
         FUN.VALUE = chron::chron(1))
@@ -480,7 +479,7 @@ plotPtrReaction <- function(pSet) {
 #' plotCalib(raw)
 methods::setMethod(f = "plotCalib", signature = "ptrSet", function(object, ppm = 2000, 
     pdfFile = NULL, fileNames = NULL, ...) {
-    fileNamesObject <- object@parameter$listFile
+    fileNamesObject <- getParameters(object)$listFile
     if (methods::is(fileNamesObject, "expression")) 
         fileNamesObject <- eval(fileNamesObject)
     set <- object
@@ -499,12 +498,12 @@ methods::setMethod(f = "plotCalib", signature = "ptrSet", function(object, ppm =
                 paste(!fileNames[test], collapse = "\n"))
     }
     # get information for plot
-    massCalib <- set@mzCalibRef[fileNames]
-    # spectrCalib<-lapply(fileNames, function(x)
-    # alignCalibrationPeak(set@signalCalibRef[[x]], length(set@TIC[[x]])))
+    massCalib <- getCalibrationInfo(set)$mzCalibRef[fileNames] 
+    # spectrCalib<-lapply(fileNames, function(x) 
+    # alignCalibrationPeak(getCalibrationInfo(set)$signalCalibRef[[x]], length(getTimeInfo(set)$TIC[[x]])))
     # names(spectrCalib)<-fileNames
-    spectrCalib <- set@signalCalibRef
-    errorList <- set@errorCalibPpm[fileNames]
+    spectrCalib <- getCalibrationInfo(set)$signalCalibRef
+    errorList <- getCalibrationInfo(set)$errorCalibPpm[fileNames]
     # get the extension of the file
     if (!is.null(pdfFile)) {
         # check is pdf extension
@@ -576,7 +575,7 @@ methods::setMethod(f = "plotTIC", signature = "ptrSet",
                                 showLimits, pdfFile = NULL, 
                                 fileNames = NULL, colorBy = "rownames", 
                                 normalizePrimariIon = FALSE, ...) {
-    fileNamesObject <- object@parameter$listFile
+    fileNamesObject <- getParameters(object)$listFile
     if (methods::is(fileNamesObject, "expression")) 
         fileNamesObject <- eval(fileNamesObject)
     set <- object
@@ -597,10 +596,10 @@ methods::setMethod(f = "plotTIC", signature = "ptrSet",
         }
     }
     # get the TIC and time limit
-    TIC <- set@TIC[basename(fileNames)]
-    indLim <- set@timeLimit[basename(fileNames)]$exp
+    TIC <- getTimeInfo(set)$TIC[basename(fileNames)]
+    indLim <- getTimeInfo(set)$timeLimit[basename(fileNames)]$exp
     # getSampleMetadata
-    SMD <- set@sampleMetadata
+    SMD <- getSampleMetadata(set)
     # test if colorBy is a colnames of samplemetadata
     if (colorBy != "rownames" & !(colorBy %in% colnames(SMD))) {
         message(colorBy, " is not a column of sample metadata")
@@ -629,7 +628,7 @@ methods::setMethod(f = "plotTIC", signature = "ptrSet",
         ticPlot <- TIC[[j]]
         time <- as.numeric(names(ticPlot))
         if (normalizePrimariIon) 
-            ticPlot <- ticPlot/set@primaryIon[[j]]
+            ticPlot <- ticPlot/getPTRInfo(set)$primaryIon[[j]]
         if (!is.null(pdfFile)) {
             plot <- ggplot2::qplot(x = time, y = ticPlot/(time[2] - time[1]), 
                                     xlab = "time", ylab = "Sum cps", 
@@ -679,7 +678,7 @@ methods::setMethod(f = "plotTIC", signature = "ptrSet",
         
         limitdf <- lapply(Legend, 
                         function(j) {
-                            t<-as.numeric(names(set@TIC[[j]]))[c(set@timeLimit[[j]]$exp)]
+                            t<-as.numeric(names(getTimeInfo(set)$TIC[[j]]))[c(getTimeInfo(set)$timeLimit[[j]]$exp)]
                             data.frame(x = t, Legend = rep(j, 2))}
             )
         limitdf <- Reduce(rbind, limitdf)
@@ -688,7 +687,7 @@ methods::setMethod(f = "plotTIC", signature = "ptrSet",
             color = .data$Legend), data = limitdf, size = 0.9)
     }
     # set title and legend
-    p <- p + ggplot2::ggtitle(paste("TIC of", set@parameter$name)) + 
+    p <- p + ggplot2::ggtitle(paste("TIC of", getParameters(set)$name)) + 
         ggplot2::theme_classic()
     switch(type, ggplot = return(p), plotly = return(plotly::ggplotly(p)))
 }  #end function
@@ -739,7 +738,7 @@ methods::setMethod(f = "plotRaw", signature = "ptrSet",
                             figure.pdf = "interactive",
                             fileNames = NULL, ...) {
     set <- object
-    fileNamesObject <- set@parameter$listFile
+    fileNamesObject <- getParameters(set)$listFile
     if (methods::is(fileNamesObject, "expression")) 
         fileNamesObject <- eval(fileNamesObject)
     # get list files
@@ -785,7 +784,7 @@ methods::setMethod(f = "plotRaw", signature = "ptrSet",
         object <- rhdf5::h5read(file, name = "/FullSpectra/TofData", 
                                 index = list(index, NULL, NULL, NULL))
         # time axis
-        timeVn <- as.numeric(names(set@TIC[[basename(file)]]))
+        timeVn <- as.numeric(names(getTimeInfo(set)$TIC[[basename(file)]]))
         timeiNTER <- (timeVn[3] - timeVn[2])
         timeRange.file <- rep(0, 0)
         timeRange.file[1] <- max(min(timeVn), timeRange[1], na.rm = TRUE)
@@ -798,7 +797,7 @@ methods::setMethod(f = "plotRaw", signature = "ptrSet",
                                         index = list(NULL,1))
         tof <- sqrt(mz) * FirstcalibCoef[1, 1] + FirstcalibCoef[2, 1]
         # tof<- seq(0,length(mz))
-        coefCalib <- set@coefCalib[[basename(file)]][[1]]
+        coefCalib <- getCalibrationInfo(set)$coefCalib[[basename(file)]][[1]]
         mzVn <- ((tof - coefCalib["b", ])/coefCalib["a", ])^2
         mzVn <- mzVn[index]
         # formate object matix
@@ -904,7 +903,7 @@ methods::setMethod(f = "plotFeatures", signature = "ptrSet",
                         addFeatureLine, ppm, pdfFile, 
                         fileNames, colorBy) {
     
-                    fileNamesObject <- set@parameter$listFile
+                    fileNamesObject <- getParameters(set)$listFile
     if (methods::is(fileNamesObject, "expression")) 
         fileNamesObject <- eval(fileNamesObject)
     
@@ -925,7 +924,7 @@ methods::setMethod(f = "plotFeatures", signature = "ptrSet",
     }
     
     # getSampleMetadata
-    SMD <- set@sampleMetadata
+    SMD <- getSampleMetadata(set)
     
     # test if colorBy is a colnames of samplemetadata
     if (colorBy != "rownames" & !(colorBy %in% colnames(SMD))) {
@@ -955,8 +954,8 @@ methods::setMethod(f = "plotFeatures", signature = "ptrSet",
         # get the index of the mzAxis
         thLarge <- max(0.4, mz * (ppm/2)/10^6)
         indexMz <- which(mz - thLarge < mzAxis & mzAxis < mz + thLarge)
-        indLim <- set@timeLimit[[basename(file)]]$exp
-        indLimBg <- set@timeLimit[[basename(file)]]$backGround
+        indLim <- getTimeInfo(set)$timeLimit[[basename(file)]]$exp
+        indLimBg <- getTimeInfo(set)$timeLimit[[basename(file)]]$backGround
         n.limit <- dim(indLim)[2]
         raw <- rhdf5::h5read(file, name = "/FullSpectra/TofData", 
                             index = list(indexMz, NULL, NULL, NULL))
@@ -971,7 +970,7 @@ methods::setMethod(f = "plotFeatures", signature = "ptrSet",
         FirstcalibCoef <- rhdf5::h5read(file, "FullSpectra/MassCalibration", 
                                         index = list(NULL, 1))
         tof <- sqrt(mzAxis.j) * FirstcalibCoef[1, 1] + FirstcalibCoef[2, 1]
-        coefCalib <- set@coefCalib[[basename(file)]][[1]]
+        coefCalib <- getCalibrationInfo(set)$coefCalib[[basename(file)]][[1]]
         mzNew <- ((tof - coefCalib["b", ])/coefCalib["a", ])^2
         # get smaller windows
         th <- mz * (ppm/2)/10^6
@@ -1067,7 +1066,7 @@ methods::setMethod(f = "plotFeatures", signature = "ptrSet",
             plotAll <- plotAll + ggplot2::geom_vline(xintercept = mz)
     }  #END loop file
     plotAll <- plotAll + ggplot2::ggtitle(paste("Features", round(mz, 3), 
-                                                "of", set@parameter$name), 
+                                                "of", getParameters(set)$name), 
         subtitle = paste(annotateVOC(mz)[2:3], collapse = " ")) + 
         ggplot2::labs(color = colorBy) + 
         ggplot2::theme_classic()
@@ -1088,8 +1087,8 @@ methods::setMethod(f = "plotFeatures", signature = "ptrSet",
 #' data(exhaledPtrset )
 #' SMD<- resetSampleMetadata(exhaledPtrset )
 resetSampleMetadata <- function(ptrset) {
-    dir <- ptrset@parameter$dir
-    fileNamesObject <- ptrset@parameter$listFile
+    dir <- getParameters(ptrset)$dir
+    fileNamesObject <- getParameters(ptrset)$listFile
     if (methods::is(dir, "expression")) {
         dir <- eval(dir)
         fileNamesObject <- eval(fileNamesObject)
@@ -1123,7 +1122,7 @@ resetSampleMetadata <- function(ptrset) {
                                     row.names = fileName, 
                                     stringsAsFactors = FALSE)
     }
-    sampleMetadata$date <- Reduce(c, ptrset@date)
+    sampleMetadata$date <- Reduce(c, getDate(ptrset))
     return(sampleMetadata)
 }
 #' get sampleMetadata of a ptrSet
@@ -1158,7 +1157,7 @@ setSampleMetadata <- function(set, sampleMetadata) {
     if (!methods::is(set, "ptrSet")) 
         stop("set is not a ptrSet object")
     # check if row names contains all files
-    files <- set@parameter$listFile
+    files <- getParameters(set)$listFile
     if (methods::is(files, "expression")) 
         files <- eval(files)
     fileName <- basename(files)
@@ -1169,12 +1168,12 @@ setSampleMetadata <- function(set, sampleMetadata) {
     }
     set@sampleMetadata <- sampleMetadata
     ## save
-    if (!is.null(set@parameter$saveDir)) {
-        changeName <- parse(text = paste0(set@parameter$name, "<- set "))
+    if (!is.null(getParameters(set)$saveDir)) {
+        changeName <- parse(text = paste0(getParameters(set)$name, "<- set "))
         eval(changeName)
-        eval(parse(text = paste0("save(", set@parameter$name, ",file= 
-                                         paste0( set@parameter$saveDir,'/', '", 
-            set@parameter$name, ".RData '))")))
+        eval(parse(text = paste0("save(", getParameters(set)$name, ",file= 
+                                         paste0( getParameters(set)$saveDir,'/', '", 
+                                 getParameters(set)$name, ".RData '))")))
     }
     return(set)
 }
@@ -1195,7 +1194,7 @@ exportSampleMetada <- function(set, saveFile) {
         stop("saveFile must be in 
                                                         .tsv extension")
     # get sampleMetadata
-    sampleMetadata <- set@sampleMetadata
+    sampleMetadata <- getSampleMetadata(set)
     # write the data.frame in a tsv file
     utils::write.table(sampleMetadata, file = saveFile, sep = "\t", 
                         col.names = NA)
@@ -1220,7 +1219,7 @@ importSampleMetadata <- function(set, file) {
                                             header = TRUE, 
         row.names = 1, quote = ""))
     # check if row names contains all files
-    dir <- set@parameter$dir
+    dir <- getParameters(set)$dir
     if (methods::is(dir, "expression")) 
         dir <- eval(dir)
     files <- list.files(dir, recursive = TRUE, pattern = "\\.h5$")
@@ -1230,7 +1229,7 @@ importSampleMetadata <- function(set, file) {
         stop(paste(fileName[!testFilesName], "not in sampleMetadata 
                             row names, please complete theme \n"))
     }
-    set@sampleMetadata <- sampleMetadata
+    set<- setSampleMetadata(set = set,sampleMetadata = sampleMetadata)
     return(set)
 }
 ## time limits ----
@@ -1242,12 +1241,12 @@ methods::setMethod(f = "timeLimits", signature = "ptrSet",
                             minPoints = 2, 
                             degreeBaseline = 1, baseline = TRUE, 
                             redefineKnots = TRUE, plotDel = FALSE) {
-    fileNames <- object@parameter$listFile
+    fileNames <- getParameters(object)$listFile
     if (methods::is(fileNames, "expression")) 
         fileNames <- eval(fileNames)
     fileNames <- basename(fileNames)
     for (file in fileNames) {
-        TIC <- object@breathTracer[[file]]
+        TIC <- getTimeInfo(object)$breathTracer[[file]]
         indLim <- timeLimitFun(TIC, fracMaxTIC = fracMaxTIC, 
                                 fracMaxTICBg = fracMaxTICBg,
                                 derivThresholdExp = derivThresholdExp, 
@@ -1256,7 +1255,9 @@ methods::setMethod(f = "timeLimits", signature = "ptrSet",
                                 baseline = baseline, 
                                 minPoints = minPoints, 
                                plotDel = plotDel)
-        object@timeLimit[[file]] <- indLim
+        
+        
+        object<-setTimeLimits(object,newTimeLimites =indLim,index = file )
     }
     
     paramterTimeLimit <- list(fracMaxTIC = fracMaxTIC, 
@@ -1266,12 +1267,15 @@ methods::setMethod(f = "timeLimits", signature = "ptrSet",
                             degreeBaseline = degreeBaseline, 
                             minPoints = minPoints)
     
-    object@parameter$timeLimit <- paramterTimeLimit
-    
+    parameter<-getParameters(object)
+   parameter$timeLimit <- paramterTimeLimit
+   object<-setParameters(object,parameter) 
+   
+   
     if (redefineKnots) 
-        object <- defineKnots(object, knotsPeriod = object@parameter$knotsPeriod)
-    saveDir <- object@parameter$saveDir
-    objName <- object@parameter$name
+        object <- defineKnots(object, knotsPeriod = getParameters(object)$knotsPeriod)
+    saveDir <- getParameters(object)$saveDir
+    objName <- getParameters(object)$name
     
     if (!is.null(saveDir)) {
         if (!is.null(objName)) {
@@ -1327,13 +1331,13 @@ methods::setMethod(f = "defineKnots", signature = "ptrSet",
     } else {
         if (!is.null(knotsList)) {
             # check if all file are set
-            if (any(!names(knotsList) %in% names(object@TIC))) 
-                stop(names(knotsList)[!names(knotsList) %in% names(object@TIC)], 
+            if (any(!names(knotsList) %in% names(getTimeInfo(object)$TIC))) 
+                stop(names(knotsList)[!names(knotsList) %in% names(getTimeInfo(object)$TIC)], 
                   " missing")
             # check if interior knots are in the times axis
             test <- apply(names(knotsList), function(file) {
                 knots <- knotsList[[file]]
-                t <- as.numeric(names(object@TIC[[file]]))
+                t <- as.numeric(names(getTimeInfo(object)$TIC[[file]]))
                 return(knots[1] >= t[1] & utils::tail(knots, 1) <= utils::tail(t, 
                   1))
             })
@@ -1343,22 +1347,26 @@ methods::setMethod(f = "defineKnots", signature = "ptrSet",
                   names(knotsList)[which(!test)], "\n"))
             knots <- knotsList
         } else {
-            knots <- lapply(names(object@TIC), function(file) {
-                background <- object@timeLimit[[file]]$backGround
-                t <- as.numeric(names(object@TIC[[file]]))
+            knots <- lapply(names(getTimeInfo(object)$TIC), function(file) {
+                background <- getTimeInfo(object)$timeLimit[[file]]$backGround
+                t <- as.numeric(names(getTimeInfo(object)$TIC[[file]]))
                 res <- try(defineKnotsFunc(t, background, knotsPeriod, method, file))
                 if (!is.null(attr(res, "condition"))) 
                   res <- NULL
                 res
             })
         }
-        names(knots) <- names(object@TIC)
+        names(knots) <- names(getTimeInfo(object)$TIC)
     }
-                        
-    object@knots <- knots
-    saveDir <- object@parameter$saveDir
-    objName <- object@parameter$name
-    object@parameter$knotsPeriod <- knotsPeriod
+        
+                                 
+    object <- setKnots(object,knots)
+    parameter<-getParameters(object)
+    saveDir <- parameter$saveDir
+    objName <- parameter$name
+    parameter$knotsPeriod <- knotsPeriod
+    object<-setParameters(object,parameter)    
+   
     if (!is.null(saveDir)) {
         if (!is.null(objName)) {
             changeName <- parse(text = paste0(objName, "<- object "))
@@ -1379,7 +1387,7 @@ methods::setMethod(f = "calibration", signature = "ptrSet",
     29.013424, 41.03858, 75.04406, 203.943, 330.8495), 
     calibrationPeriod = 60, tol = 70) {
                        
-    fileNames <- x@parameter$listFile
+    fileNames <- getParameters(x)$listFile
     
     if (methods::is(fileNames, "expression")) 
         fileNames <- eval(fileNames)
@@ -1387,22 +1395,26 @@ methods::setMethod(f = "calibration", signature = "ptrSet",
     for (file in fileNames) {
         raw <- readRaw(file, mzCalibRef = mzCalibRef, 
                         calibrationPeriod = calibrationPeriod)
-        x@coefCalib[[basename(file)]] <- raw@calibCoef
-        x@mzCalibRef[[basename(file)]] <- raw@calibMassRef
-        x@errorCalibPpm[[basename(file)]] <- raw@calibError
-        calibSpectr <- alignCalibrationPeak(raw@calibSpectr, 
-                                            raw@calibMassRef, length(raw@time))
-        x@signalCalibRef[[basename(file)]] <- calibSpectr
+        calibSpectr <- alignCalibrationPeak(getCalibrationInfo(raw)$calibSpectr, 
+                                            getCalibrationInfo(raw)$calibMassRef, 
+                                            length(getRawInfo(raw)$time))
+        resolutionEstimated <- estimateResol(calibMassRef = getCalibrationInfo(raw)$calibMassRef, 
+                                             calibSpectr = calibSpectr)
+        calibList<-list(coefCalib=getCalibrationInfo(raw)$calibCoef,
+                        mzCalibRef=getCalibrationInfo(raw)$calibMassRef,
+                        errorCalibPpm=getCalibrationInfo(raw)$calibError,
+                        signalCalibRef=calibSpectr,
+                        resolution=resolutionEstimated,
+                        indexTimeCalib=raw@indexTimeCalib)
         
-        resolutionEstimated <- estimateResol(calibMassRef = raw@calibMassRef, 
-                                            calibSpectr = calibSpectr)
-        x@resolution[[basename(file)]] <- resolutionEstimated
-        x@indexTimeCalib[[basename(file)]]<-raw@indexTimeCalib
+        x<-setCalibration(x,calibList,index=basename(file))
     }
     
-    x@parameter$mzCalibRef <- mzCalibRef
-    saveDir <- x@parameter$saveDir
-    objName <- x@parameter$name
+    parameter<-getParameters(x)
+    parameter$mzCalibRef <- mzCalibRef
+    x<-setParameters(x,parameter)
+    saveDir <- parameter$saveDir
+    objName <- parameter$name
     if (!is.null(saveDir)) {
         if (!is.null(objName)) {
             changeName <- parse(text = paste0(objName, "<- x "))
@@ -1424,7 +1436,7 @@ methods::setMethod(f = "calibration", signature = "ptrSet",
 #' getDirectory(exhaledPtrset )
 #' @export
 getDirectory <- function(ptrSet) {
-    dir <- ptrSet@parameter$dir
+    dir <- getParameters(ptrSet)$dir
     if (methods::is(dir, "expression")) 
         dir <- eval(dir)
     return(dir)
@@ -1442,7 +1454,9 @@ getDirectory <- function(ptrSet) {
 #' exhaledPtrset <-rmPeakList(exhaledPtrset )
 rmPeakList <- function(object) {
     object@peakList <- list()
-    object@parameter$detectPeakParam <- NULL
+    parameter<-getParameters(object)
+    parameter$detectPeakParam <- NULL
+    object<-setParameters(object,parameter)
     return(object)
 }
 
@@ -1455,22 +1469,22 @@ rmPeakList <- function(object) {
 #' @return nothing
 #' @export 
 methods::setMethod("show", "ptrSet", function(object) {
-    dir <- object@parameter$dir
-    fileCheck <- object@parameter$listFile
+    dir <- getParameters(object)$dir
+    fileCheck <- getParameters(object)$listFile
     if (methods::is(dir, "expression")) {
         dir <- eval(dir)
         fileCheck <- eval(fileCheck)
     }
     nFiles <- length(list.files(dir, recursive = TRUE, pattern = "\\.h5$"))
     nFilesCheck <- length(fileCheck)
-    nFilesProcess <- length(object@peakList)
-    cat("ptrSet object :", object@parameter$name, "\n")
+    nFilesProcess <- length( getPeakList(object) )
+    cat("ptrSet object :", getParameters(object)$name, "\n")
     cat("directory:", dir, "\n")
     cat("   ", nFiles, "files contained in the directory \n")
     cat("   ", nFilesCheck, "files checked", "\n")
     cat("   ", nFilesProcess, "files processed by detectPeak", "\n")
-    if (!is.null(object@parameter$saveDir)) 
-        cat("object save in ", object@parameter$saveDir)
+    if (!is.null(getParameters(object)$saveDir)) 
+        cat("object save in ", getParameters(object)$saveDir)
 })
 #' get the peak list of a ptrSet object 
 #' @param set ptrSet object 
@@ -1505,7 +1519,7 @@ methods::setMethod("show", "ptrSet", function(object) {
 getPeakList <- function(set) {
     return(set@peakList)
 }
-#' get the file names containing in the directory of a ptrSet
+#' get the file names containing in the directory of a ptrSet or ptrRaw
 #' @param object ptrSet object 
 #' @param fullNames logical: if \code{TRUE}, it return the the directory path is 
 #' prepended to the file names.
@@ -1518,9 +1532,231 @@ getPeakList <- function(set) {
 methods::setMethod("getFileNames", signature = "ptrSet", 
                    function(object, fullNames) {
                        
-    fileFullNames <- object@parameter$listFile
+    fileFullNames <- getParameters(object)$listFile
     if (methods::is(fileFullNames, "expression")) 
         fileFullNames <- eval(fileFullNames)
     if (fullNames) 
         return(fileFullNames) else return(basename(fileFullNames))
 })
+
+
+
+#' get the file names containing in the directory of a ptrSet
+#' @rdname getFileNames
+#' @export
+methods::setMethod("getFileNames", signature = "ptrRaw", 
+                   function(object, fullNames) {
+                       return(object@name)
+                   })
+
+
+methods::setMethod("getParameters", signature = "ptrSet", 
+                   function(object) {
+                       
+                      return(object@parameter)
+                   })
+
+methods::setMethod("setParameters", signature = "ptrSet", 
+                   function(object,newparam) {
+                       object@parameter<-newparam
+                       return(object)
+                   })
+
+
+methods::setMethod("getDate", signature = "ptrSet", 
+                   function(object) {
+                       
+                       return(object@date)
+                   })
+
+methods::setMethod("getDate", signature = "ptrRaw", 
+                   function(object) {
+                       
+                       return(object@date)
+                   })
+
+
+
+methods::setMethod("getCalibrationInfo", signature = "ptrSet", 
+                   function(object) {
+                       return(list(mzCalibRef=object@mzCalibRef,
+                                   signalCalibRef = object@signalCalibRef,
+                                   errorCalibPpm =object@errorCalibPpm,
+                                   coefCalib=object@coefCalib,
+                                   indexTimeCalib=object@indexTimeCalib)
+                                   )
+                   })
+
+methods::setMethod("getCalibrationInfo", signature = "ptrRaw", 
+                   function(object) {
+                       return(list(
+                                    calibMzToTof = object@calibMzToTof,
+                                    calibToftoMz = object@calibToftoMz,
+                                    calibCoef=object@calibCoef,
+                                    calibMassRef = object@calibMassRef,
+                                    calibError=object@calibError,
+                                    calibSpectr = object@calibSpectr,
+                                    indexTimeCalib=object@indexTimeCalib)
+                       )
+                   })
+
+
+methods::setMethod("setCalibration", signature = "ptrRaw", 
+                   function(object,newCalibrationInfo) {
+    object@indexTimeCalib <- newCalibrationInfo$indexTimeCalib
+    object@calibSpectr <- newCalibrationInfo$calibSpectr
+    object@calibError <- newCalibrationInfo$calibError
+    object@calibCoef <-newCalibrationInfo$calibCoef
+    return(object)
+                   })
+
+methods::setMethod("setCalibration", signature = "ptrSet", 
+                   function(object,newCalibrationInfo,index=NULL) {
+                        if(is.null(index)) index<- seq_along(newCalibrationInfo)
+                        if( length(index == 1) ){
+                                object@coefCalib[[index]] <- newCalibrationInfo$coefCalib
+                                object@mzCalibRef[[index]] <- newCalibrationInfo$mzCalibRef
+                                object@errorCalibPpm[[index]] <- newCalibrationInfo$errorCalibPpm
+                                object@signalCalibRef[[index]] <- newCalibrationInfo$signalCalibRef
+                                object@resolution[[index]] <- newCalibrationInfo$resolution
+                                object@indexTimeCalib[[index]] <-newCalibrationInfo$indexTimeCalib
+                                
+                        } else{
+                            object@coefCalib[index] <- newCalibrationInfo$coefCalib
+                            object@mzCalibRef[index] <- newCalibrationInfo$mzCalibRef
+                            object@errorCalibPpm[index] <- newCalibrationInfo$errorCalibPpm
+                            object@signalCalibRef[index] <- newCalibrationInfo$signalCalibRef
+                            object@resolution[index] <- newCalibrationInfo$resolution
+                            object@indexTimeCalib[index] <-newCalibrationInfo$indexTimeCalib
+                        }
+                        
+                       return(object)
+                   })
+
+
+
+
+
+methods::setMethod("getPeaksInfo", signature = "ptrSet", 
+                   function(object) {
+                       return(list(knots=object@knots,
+                       fctFit=object@fctFit,
+                       peakShape=object@peakShape))
+                   })
+
+methods::setMethod("getPeaksInfo", signature = "ptrRaw", 
+                   function(object) {
+                       return(list(
+                                   peakShape=object@peakShape))
+                   })
+
+methods::setMethod("getTimeInfo", signature = "ptrSet", 
+                   function(object) {
+                       return(list(TIC =object@TIC,
+                       breathTracer=object@breathTracer,
+                       timeLimit=object@timeLimit))
+                   })
+
+
+methods::setMethod("setTimeLimits", signature = "ptrSet",
+                   function(object,newTimeLimites,index=NULL) {
+                       if(is.null(index)){
+                           object@timeLimit <-  newTimeLimites
+                       } else if(length(index) == 1 ) {
+                           object@timeLimit[[index]] <-  newTimeLimites 
+                           } else object@timeLimit[index] <-  newTimeLimites 
+                        return(object)
+                   })
+
+methods::setMethod("setKnots", signature = "ptrSet",
+                   function(object,newKnots,index=NULL) {
+                       if(is.null(index)){
+                           object@knots <-  newKnots
+                       } else if(length(index) == 1 ) {
+                           object@knots[[index]] <-  newKnots 
+                       } else object@knots[index] <-  newKnots 
+                       return(object)
+                   })
+
+
+
+methods::setMethod("getPTRInfo", signature = "ptrSet", 
+                   function(object) {
+                       
+                       return(list(primaryIon=object@primaryIon,
+                       ptrTransmisison = object@ptrTransmisison,
+                       prtReaction = object@prtReaction,
+                       resolution = object@resolution))
+                   })
+
+methods::setMethod("getPTRInfo", signature = "ptrRaw", 
+                   function(object) {
+                       
+                       return(list(
+                                   ptrTransmisison = object@ptrTransmisison,
+                                   prtReaction = object@prtReaction))
+                   })
+
+
+methods::setMethod("getRawInfo", signature = "ptrRaw", 
+                   function(object) {
+                       return(list(
+                           rawM= object@rawM,
+                           mz =  object@mz,
+                           time = object@time))
+                   })
+
+
+methods::setMethod("setPeakShape", signature = "ptrRaw", 
+                   function(object,peakShape) {
+                      object@peakShape<-peakShape
+                      object
+                   })
+
+
+
+
+methods::setMethod("deleteFilePtrSet", signature = "ptrSet", 
+                   function(object,deletedFiles) {
+   
+    object@mzCalibRef[deletedFiles] <- NULL
+    object@signalCalibRef[deletedFiles] <- NULL
+    object@errorCalibPpm[deletedFiles] <- NULL
+    object@coefCalib[deletedFiles] <- NULL
+    object@indexTimeCalib[deletedFiles] <- NULL
+    object@knots[deletedFiles] <- NULL
+    object@fctFit[deletedFiles] <- NULL
+    object@peakShape[deletedFiles] <- NULL
+    object@primaryIon[deletedFiles] <- NULL
+    object@resolution[deletedFiles] <- NULL
+    object@TIC[deletedFiles] <- NULL
+    object@timeLimit[deletedFiles] <- NULL
+    object@peakList[deletedFiles] <- NULL
+    object@breathTracer[deletedFiles] <- NULL
+    object@ptrTransmisison[deletedFiles] <- NULL
+    object@prtReaction[deletedFiles] <- NULL
+    object@date[deletedFiles] <- NULL
+
+    object
+})
+
+
+
+methods::setMethod("mergedPtrSet", signature = "ptrSet", 
+                   function(object,ptrSetNewfile,orderedFile) {
+
+    object@mzCalibRef <- c(getCalibrationInfo(object)$mzCalibRef, ptrSetNewfile$mzCalibRefList)[basename(orderedFile)]
+    object@signalCalibRef <- c(getCalibrationInfo(object)$signalCalibRef, ptrSetNewfile$signalCalibRef)[basename(orderedFile)]
+    object@errorCalibPpm <- c(getCalibrationInfo(object)$errorCalibPpm, ptrSetNewfile$errorCalibPpm)[basename(orderedFile)]
+    object@coefCalib <- c(getCalibrationInfo(object)$coefCalib, ptrSetNewfile$coefCalibList)[basename(orderedFile)]
+    object@resolution <- c(getPTRInfo(object)$resolution, ptrSetNewfile$resolution)[basename(orderedFile)]
+    object@TIC <- c(getTimeInfo(object)$TIC, ptrSetNewfile$TIC)[basename(orderedFile)]
+    object@timeLimit <- c(getTimeInfo(object)$timeLimit, ptrSetNewfile$timeLimit)[basename(orderedFile)]
+    object@primaryIon <- c(getPTRInfo(object)$primaryIon, ptrSetNewfile$primaryIon)[basename(orderedFile)]
+    object@breathTracer <- c(getTimeInfo(object)$breathTracer, ptrSetNewfile$breathTracer)[basename(orderedFile)]
+    object@ptrTransmisison <- c(getPTRInfo(object)$ptrTransmisison, ptrSetNewfile$ptrTransmisison)[basename(orderedFile)]
+    object@prtReaction <- c(getPTRInfo(object)$prtReaction, ptrSetNewfile$prtReaction)[basename(orderedFile)]
+    object@date <- c(getDate(object), ptrSetNewfile$date)[basename(orderedFile)]
+    
+    return(object)
+    })

@@ -20,3 +20,4 @@ A list containing groups formed by alignment.
 \description{
 Alignment with kernel gaussian density
 }
+\keyword{internal}

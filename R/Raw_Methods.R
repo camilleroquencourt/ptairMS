@@ -40,9 +40,9 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
     tol = 70) {
     object <- x
     # get mz axis and average spectrum
-    mz <- object@mz
-    time <- c(object@time)
-    sp <- rowSums(object@rawM)/(dim(object@rawM)[2] * (time[3] - time[2]))
+    mz <- getRawInfo(object)$mz
+    time <- c(getRawInfo(object)$time)
+    sp <- rowSums(getRawInfo(object)$rawM)/(dim(getRawInfo(object)$rawM)[2] * (time[3] - time[2]))
     width.window <- 0.4
     # check if mzCalibRef are in mz
     outMz <- which(vapply(mzCalibRef, function(x) !any(round(x) - width.window < 
@@ -63,7 +63,8 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
     object@calibMassRef <- mzCalibRef
     # determine average peak shape on calibration masses
     peakShape <- determinePeakShape(object)$peakShapetof
-    object@peakShape <- peakShape
+    object<-setPeakShape(object,peakShape)
+    
     # performs calibration every steps second
     calib_List <- list(NULL)
     indexTime <- round(diff(time)[1], 3)
@@ -71,12 +72,13 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
     for (i in seq(0, (floor(length(time)/nbIndex) - 1))) {
         if (i >= 0) {
             index <- seq(from = i * nbIndex + 1, to = min((i * nbIndex + nbIndex), 
-                length(object@time)))
+                length(getRawInfo(object)$time)))
             if (i == (floor(length(time)/nbIndex) - 1) & utils::tail(index, 1) < 
                 length(time)) 
-                index <- c(index, seq(utils::tail(index, 1) + 1, length(object@time)))
-            sp.i <- rowSums(object@rawM[, index])
-            calib_List[[i + 1]] <- c(calibrationFun(sp.i, mz, mzCalibRef, calibCoef = object@calibCoef[[1]], 
+                index <- c(index, seq(utils::tail(index, 1) + 1, length(getRawInfo(object)$time)))
+            sp.i <- rowSums(getRawInfo(object)$rawM[, index])
+            calib_List[[i + 1]] <- c(calibrationFun(sp.i, mz, mzCalibRef, 
+                                                    calibCoef = getCalibrationInfo(object)$calibCoef[[1]], 
                 peakShape, tol), list(index = index))
         }
     }
@@ -88,12 +90,17 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
     matrixEror <- Reduce(rbind, lapply(calib_List, function(x) x$error))
     if (length(calib_List) > 1) 
         matrixEror <- apply(matrixEror, 2, mean)
-    object@indexTimeCalib <- lapply(calib_List, function(x) x$index)
-    object@calibSpectr <- lapply(calib_List, function(x) x$calibSpectr)
-    object@calibError <- matrixEror
-    object@calibCoef <- lapply(calib_List, function(x) x$coefs)
+    
+    calibrationInfo<-list(indexTimeCalib=lapply(calib_List, function(x) x$index),
+                          calibSpectr=lapply(calib_List, function(x) x$calibSpectr),
+                          calibError=matrixEror,
+                          calibCoef=lapply(calib_List, function(x) x$coefs))
+    object<-setCalibration(object,calibrationInfo)
+    
+    
     return(object)
 })
+
 #'calibration function
 #'
 #'Performs calibration on sp with mzCalibRef reference masses and mzToTofFunc 
@@ -107,6 +114,7 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
 #' centered in zero
 #' @param tol maximum error tolarated in ppm
 #' @return list 
+#' @keywords internal
 calibrationFun <- function(sp, mz, mzCalibRef, calibCoef, peakShape, tol) {
     width.window <- 0.4
     mzToTofFunc <- function(mz) mzToTof(mz, calibCoef)
@@ -194,10 +202,10 @@ methods::setMethod(f = "plotRaw", signature = "ptrRaw", function(object, mzRange
     timeRange = c(NA, NA), type = c("classical", "plotly")[1], ppm = 2000, palette = c("heat", 
         "revHeat", "grey", "revGrey", "ramp")[1], showVocDB = TRUE, 
     figure.pdf = "interactive", ...) {
-    mzVn <- object@mz
-    timeVn <- object@time
+    mzVn <- getRawInfo(object)$mz
+    timeVn <- getRawInfo(object)$time
     timeiNTER <- (timeVn[3] - timeVn[2])
-    rawMN <- object@rawM
+    rawMN <- getRawInfo(object)$rawM
     if (length(mzRange) == 1) 
         mzRange <- mzRange + c(-1, 1) * mzRange * ppm * 1e-06
     mzRange[1] <- max(min(mzVn), mzRange[1], na.rm = TRUE)
@@ -382,9 +390,9 @@ methods::setMethod(f = "plotCalib", signature = "ptrRaw", function(object, ppm =
     ...) {
     raw <- object
     # get mass and specter
-    mzCalibRef <- raw@calibMassRef
-    calibSpectr <- alignCalibrationPeak(raw@calibSpectr, mzCalibRef, length(raw@time))
-    error <- raw@calibError
+    mzCalibRef <- getCalibrationInfo(raw)$calibMassRef
+    calibSpectr <- alignCalibrationPeak(getCalibrationInfo(raw)$calibSpectr, mzCalibRef, length(getRawInfo(raw)$time))
+    error <- getCalibrationInfo(raw)$calibError
     # plot in a window of 2000 ppm
     nb_plot <- length(mzCalibRef)
     nb_row <- ceiling(sqrt(nb_plot))
@@ -402,7 +410,7 @@ methods::setMethod(f = "plotCalib", signature = "ptrRaw", function(object, ppm =
             paste("error:", round(error[i], 2), "ppm")))
         graphics::abline(v = m, col = "red", lwd = 2)
     }
-    title(main = raw@name, outer = TRUE, line = 0.5, cex.main = 2)
+    title(main = getFileNames(raw), outer = TRUE, line = 0.5, cex.main = 2)
     graphics::par(oma = c(0, 0, 0, 0))
     graphics::layout(matrix(1))
 })
@@ -426,19 +434,19 @@ methods::setMethod(f = "plotCalib", signature = "ptrRaw", function(object, ppm =
 methods::setMethod(f = "plotTIC", signature = "ptrRaw", function(object, type, baselineRm, 
     showLimits, fracMaxTIC = 0.8, ...) {
     # get the TIC and time limit
-    TIC <- colSums(object@rawM)
+    TIC <- colSums(getRawInfo(object)$rawM)
     # remove baseline
     if (baselineRm) {
         bl <- try(snipBase(TIC))
         if (is.null(attr(bl, "condition"))) 
             TIC <- TIC - bl else TIC <- TIC - TIC[1]
     }
-    plot <- ggplot2::qplot(x = object@time, y = TIC, xlab = "time", ylab = "intensity", 
-        main = paste("TIC of", object@name))
+    plot <- ggplot2::qplot(x = getRawInfo(object)$time, y = TIC, xlab = "time", ylab = "intensity", 
+        main = paste("TIC of", getFileNames(object)))
     if (showLimits) {
         # calculate timeLimit
         indLim <- timeLimits(object, fracMaxTIC = fracMaxTIC, plotDel = FALSE)$exp
-        plot <- plot + ggplot2::geom_vline(ggplot2::aes(xintercept = object@time[c(indLim)], 
+        plot <- plot + ggplot2::geom_vline(ggplot2::aes(xintercept = getRawInfo(object)$time[c(indLim)], 
             color = "time limits")) + ggplot2::scale_fill_manual("Legend")
     }
     plot <- plot + ggplot2::theme(plot.title = ggplot2::element_text(size = 20, face = "bold"), 
@@ -499,8 +507,8 @@ methods::setMethod(f = "plotTIC", signature = "ptrRaw", function(object, type, b
 methods::setMethod(f = "timeLimits", signature = "ptrRaw", function(object, fracMaxTIC = 0.6, 
     fracMaxTICBg = 0.2, derivThresholdExp = 0.5, derivThresholdBg = 0.05, mzBreathTracer = NULL, 
     minPoints = 2, degreeBaseline = 1, baseline = TRUE, redefineKnots = TRUE, plotDel = FALSE) {
-    rawM <- object@rawM
-    mz <- object@mz
+    rawM <- getRawInfo(object)$rawM
+    mz <- getRawInfo(object)$mz
     if (is.null(dim(rawM))) 
         stop("rawM must be a matrix")
     if (fracMaxTIC < 0 || fracMaxTIC > 1) 
@@ -627,13 +635,13 @@ methods::setMethod(f = "defineKnots", signature = "ptrRaw", function(object, kno
         knots <- list(NULL)
     } else {
         if (!is.null(knotsList)) {
-            t <- object@time
+            t <- getRawInfo(object)$time
             if (knotsList[1] >= t[1] & utils::tail(knotsList, 1) <= utils::tail(t, 
                 1)) 
                 stop(paste("knots are not contained in the time axis \n"))
         } else {
             background <- timeLimit$backGround
-            t <- object@time
+            t <- getRawInfo(object)$time
             knots <- try(defineKnotsFunc(t, background, knotsPeriod, method))
         }
     }
@@ -736,19 +744,22 @@ defineKnotsExpiration <- function(t, background, knots) {
 #' peakList$peak
 #'@rdname PeakList 
 #'@export
-methods::setMethod(f = "PeakList", signature = "ptrRaw", function(raw, mzNominal = unique(round(raw@mz)), 
+methods::setMethod(f = "PeakList", signature = "ptrRaw", 
+                   function(raw, 
+                            mzNominal = unique(round(getRawInfo(raw)$mz)), 
     ppm = 130, resolutionRange = c(300, 5000, 8000), minIntensity = 5, fctFit = c("sech2", 
         "averagePeak")[1], peakShape = NULL, maxIter = 3, R2min = 0.995, autocorNoiseMax = 0.3, 
     plotFinal = FALSE, plotAll = FALSE, thNoiseRate = 1.1, minIntensityRate = 0.01, 
     countFacFWHM = 10, daSeparation = 0.005, d = 3, windowSize = 0.4) {
     # get raw element
-    sp <- rowSums(raw@rawM)/(ncol(raw@rawM) * (raw@time[3] - raw@time[2]))  # average spectrum 
-    mz <- raw@mz  # mass axis
-    mzCalibRef <- raw@calibMassRef
-    calibCoef <- raw@calibCoef[[1]]
-    if (fctFit == "averagePeak" & is.null(peakShape)) {
+    sp <- rowSums(getRawInfo(raw)$rawM)/(ncol(getRawInfo(raw)$rawM) * (getRawInfo(raw)$time[3] - getRawInfo(raw)$time[2]))  # average spectrum 
+    mz <- getRawInfo(raw)$mz  # mass axis
+    mzCalibRef <- getCalibrationInfo(raw)$calibMassRef
+    calibCoef <- getCalibrationInfo(raw)$calibCoef[[1]]
+    if ( (fctFit == "averagePeak") & is.null(peakShape)) {
         peakShape <- determinePeakShape(raw)$peakShapemz
-        raw@peakShape <- peakShape
+        raw<-setPeakShape(raw,peakShape)
+
     }
     prePeaklist <- lapply(mzNominal, function(m) {
         peakListNominalMass(i = m, mz = mz, sp = sp, ppmPeakMinSep = ppm, calibCoef = calibCoef, 
@@ -791,12 +802,12 @@ methods::setMethod(f = "detectPeak", signature = "ptrRaw", function(x, ppm = 130
     ...) {
     raw <- x
     # get infomration
-    massCalib <- raw@calibMassRef
+    massCalib <- getCalibrationInfo(raw)$calibMassRef
     # resolution
     if (is.null(resolutionRange)) {
-        calibSpectr <- alignCalibrationPeak(raw@calibSpectr, calibMassRef = massCalib, 
-            ntimes = length(raw@time))
-        resolutionEstimated <- estimateResol(raw@calibMassRef, calibSpectr)
+        calibSpectr <- alignCalibrationPeak(getCalibrationInfo(raw)$calibSpectr, calibMassRef = massCalib, 
+            ntimes = length(getRawInfo(raw)$time))
+        resolutionEstimated <- estimateResol(getCalibrationInfo(raw)$calibMassRef, calibSpectr)
         resolutionRange <- c(floor(min(resolutionEstimated)/1000) * 1000, round(mean(resolutionEstimated)/1000) * 
             1000, ceiling(max(resolutionEstimated)/1000) * 1000)
     }
@@ -852,15 +863,15 @@ estimateResol <- function(calibMassRef, calibSpectr) {
 #' @return nothing
 #' @export 
 methods::setMethod("show", "ptrRaw", function(object) {
-    cat(object@name, "\n")
-    cat("  mz range: ", paste(round(range(object@mz), 2), collapse = " - "), "\n")
-    cat("  time range: ", paste(round(range(object@time), 2), collapse = " - "), 
+    cat(getFileNames(object), "\n")
+    cat("  mz range: ", paste(round(range(getRawInfo(object)$mz), 2), collapse = " - "), "\n")
+    cat("  time range: ", paste(round(range(getRawInfo(object)$time), 2), collapse = " - "), 
         "\n")
     cat("  Calibration error in ppm: \n")
-    if (length(object@calibError) == 1) {
+    if (length(getCalibrationInfo(object)$calibError) == 1) {
         cat("     No calibration performs")
     } else {
-        print(round(object@calibError, 2))
+        print(round(getCalibrationInfo(object)$calibError, 2))
     }
 })
 #### dead time correction -----
@@ -871,8 +882,9 @@ methods::setMethod("show", "ptrRaw", function(object) {
 #'@param r number of extraction
 #'@param threshold only bin of intensity more then threshold*r which be corrected
 #'@return a ptrRaw object with the raw matrix corrected
+#'@keywords internal
 deadTimeCorr <- function(raw, ve, vne, r, threshold = 0.1) {
-    rawM <- raw@rawM
+    rawM <- getRawInfo(raw)$rawM
     index <- which(rawM > threshold * r)
     for (j in index) {
         rawM[j] <- -r * log(1 - (rawM[j]/r * (1 - sum(raw[(j - vne):(j - 1 - ve)])/r)^-1 * 

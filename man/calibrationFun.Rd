@@ -28,3 +28,4 @@ Performs calibration on sp with mzCalibRef reference masses and mzToTofFunc
 as previous 
 calibration function
 }
+\keyword{internal}
