@@ -147,13 +147,12 @@ aggregateTemporalFile <- function(time, indTimeLim, matPeak, funAggreg, dbl = 4)
     # agregation of expirations and bg
     indLim <- indTimeLim$exp
     indBg <- indTimeLim$backGround
-    bg <- FALSE
+    
+    XIC <- as.matrix(matPeak[, (ncol(matPeak) - length(time) + 1):ncol(matPeak), 
+                             drop = FALSE])
     
     if (!is.null(indBg)) {
-        bg <- TRUE
-        XIC <- as.matrix(matPeak[, (ncol(matPeak) - length(time) + 1):ncol(matPeak), 
-            drop = FALSE])
-        
+
         ## baseline Corrected
         XICbl <- t(apply(XIC, 1, function(x) {
             lm <- stats::lm(cps ~ stats::poly(point, d = dbl), 
@@ -162,6 +161,17 @@ aggregateTemporalFile <- function(time, indTimeLim, matPeak, funAggreg, dbl = 4)
             bl <- stats::predict(lm, newdata = data.frame(point = seq_along(time)))
             x <- x - bl
         }))
+        
+        
+        for(j in seq_len(nrow(XIC))){
+            x<-XIC[j,]
+            lm <- stats::lm(cps ~ stats::poly(point, d = dbl), 
+                            data = data.frame(cps = x[indBg],
+                                              point = indBg))
+            bl <- stats::predict(lm, newdata = data.frame(point = seq_along(time)))
+            x <- x - bl
+        }
+        
         
         # test significativité comparaison de moyenne normal
         indExp <- Reduce(c, apply(indLim, 2, function(x) seq(x[1], x[2])))
@@ -292,7 +302,12 @@ alignSamplesFunc <- function(peakList, sampleMetadata, ppmGroup = 100,
     
     
     peakList <- lapply(peakList, 
-                       function(x) as.data.table(Biobase::fData(x)[, -c(2,3, 4)]))
+                       function(x) {
+                           
+                           x<-as.data.table(Biobase::fData(x)[, -c(2,3, 4)])
+                           
+                           
+                           })
     testquantiUnit <- Reduce(c, lapply(peakList, function(x) {
         x <- as.matrix(x)
         all(is.na(x[, paste0("quanti_", quantiUnit)]))
@@ -312,38 +327,39 @@ alignSamplesFunc <- function(peakList, sampleMetadata, ppmGroup = 100,
             quantiUnit <- "cps"
         }
     }
+   
     
-    if (any(grepl("background", Reduce(c, lapply(peakList, colnames))))) {
-        peakList <- lapply(peakList, function(x) {
-            
-            diff <- which(grepl("diffAbs", colnames(x)))
-            quanti <- which(grepl("quanti", colnames(x)))
-            bg <- which(grepl("background", colnames(x)))
-            other <- seq_len(ncol(x))[-c(quanti, bg, diff)]
-            
-            if (bgCorrected) {
-                quanti <- diff[which(grepl(quantiUnit, colnames(x)[diff]))]
+    .SD <- data.table::.SD
+        
+    peakList <- lapply(peakList, function(x) {
+            backgroundCOL<-which(grepl("background",colnames(x)))
+            if(all(!is.na(x[,.SD,.SD=colnames(x)[backgroundCOL]]))){
+                
+                diff <- which(grepl("diffAbs", colnames(x)))
+                quanti <- which(grepl("quanti", colnames(x)))
+                bg <- which(grepl("background", colnames(x)))
+                other <- seq_len(ncol(x))[-c(quanti, bg, diff)]
+                
+                if (bgCorrected) {
+                    quanti <- diff[which(grepl(quantiUnit, colnames(x)[diff]))]
+                } else quanti <- quanti[which(grepl(quantiUnit, colnames(x)[quanti]))]
                 colnames(x)[quanti] <- paste("quanti", quantiUnit, sep = "_")
-            } else quanti <- quanti[which(grepl(quantiUnit, colnames(x)[quanti]))]
+                bg <- bg[which(grepl(quantiUnit, colnames(x)[bg]))]
+                
+               
+                x <- x[, .SD, .SD = colnames(x)[c(other, quanti, bg)]]
+                
+                
+                x 
+            }else {
+                quanti <- which(grepl("quanti", colnames(x)))
+                other <- seq_len(ncol(x))[-c(quanti,backgroundCOL)]
+                quanti <- quanti[which(grepl(quantiUnit, colnames(x)[quanti]))]
+                x <- x[, .SD, .SD = colnames(x)[c(other, quanti)]]
+                x
+            }
             
-            bg <- bg[which(grepl(quantiUnit, colnames(x)[bg]))]
-            
-            .SD <- data.table::.SD
-            x <- x[, .SD, .SD = colnames(x)[c(other, quanti, bg)]]
-            
-            
-            x
         })
-    } else {
-        peakList <- lapply(peakList, function(x) {
-            quanti <- which(grepl("quanti", colnames(x)))
-            other <- seq_len(ncol(x))[-c(quanti)]
-            quanti <- quanti[which(grepl(quantiUnit, colnames(x)[quanti]))]
-            .SD <- data.table::.SD
-            x <- x[, .SD, .SD = colnames(x)[c(other, quanti)]]
-            x
-        })
-    }
     
     
     ## add column group with Samples group number
@@ -617,8 +633,13 @@ imputeFunc <- function(file, missingValues, eSet, ptrSet) {
     transmission <- try(rhdf5::h5read(filesFullName.j, "PTR-Transmission"))
     
     # calibrate mass axis
-    FirstcalibCoef <- rhdf5::h5read(filesFullName.j, "FullSpectra/MassCalibration", 
-        index = list(NULL, 1))
+    FirstcalibCoef <- try(rhdf5::h5read(filesFullName.j, "FullSpectra/MassCalibration", 
+        index = list(NULL, 1)))
+    attributCalib <- try(rhdf5::h5readAttributes(filesFullName.j, "/FullSpectra"))
+    if (!is.null(attr(FirstcalibCoef, "condition")) & is.null(attr(attributCalib, "condition"))) {
+        FirstcalibCoef <- matrix(c(attributCalib$`MassCalibration a`, attributCalib$`MassCalibration b`), 
+                            ncol = 1)
+    }
     tof <- sqrt(mzAxis) * FirstcalibCoef[1, 1] + FirstcalibCoef[2, 1]
     coefCalib <- getCalibrationInfo(ptrSet)$coefCalib[[file]][[1]]
     mzAxis <- ((tof - coefCalib["b", ])/coefCalib["a", ])^2

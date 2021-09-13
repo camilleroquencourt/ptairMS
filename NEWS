@@ -1,3 +1,6 @@
+Changes in version 1.0.1 (2021-09-13)
++ Added graphical interface
+
 Changes in version 0.99.0 (2021-03-12)
 + Submitted to Bioconductor
 
@@ -14,3 +17,6 @@ Changes in version 0.99.4 (2021-04-08)
 
 Changes in version 0.99.5 (2021-04-08)
 + folder src-x64 and src-i386 in gitignore
+
+Changes in version 0.99.6 (2021-04-08)
++ detectPeak and alignSamples updated for samples without expiration (environemental)

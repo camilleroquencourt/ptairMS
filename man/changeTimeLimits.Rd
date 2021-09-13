@@ -26,5 +26,5 @@ library(ptairData)
 directory <- system.file("extdata/exhaledAir",  package = "ptairData")
 ptrSet <- createPtrSet(directory,setName="ptrSet",mzCalibRef=c(21.022,59.049),
 fracMaxTIC=0.8)
-\donttest{ptrSet <- changeTimeLimits(ptrSet)}
+\dontrun{ptrSet <- changeTimeLimits(ptrSet)}
 }

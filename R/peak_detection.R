@@ -114,8 +114,9 @@ setMethod(f = "detectPeak", signature = "ptrSet",
     fileDone <- names(peakList)
     fileToProcess <- which(!(fileName %in% fileDone))
     fileName <- fileName[fileToProcess]
-    allFilesName <- basename(files)  #to save the oder
+    allFilesName <- basename(files) 
     files <- files[fileToProcess]
+    #to save the oder
     if (length(files) == 0) {
         message("All files have already been processed")
         return(ptrset)
@@ -162,7 +163,7 @@ setMethod(f = "detectPeak", signature = "ptrSet",
             minIntensity = minIntensity, fctFit = fctFit[[basename(x)]], 
             minIntensityRate = minIntensityRate, 
             knots = knots[[basename(x)]], smoothPenalty = smoothPenalty, 
-            peakShape = peakShape[[basename(x)]]))
+            peakShape = peakShape[[basename(x)]]),...)
         if (!is.null(attr(test, "condition"))) {
             return(list(raw = NULL, aligned = NULL))
         } else return(test)
@@ -186,8 +187,8 @@ setMethod(f = "detectPeak", signature = "ptrSet",
                                      function(x) is.null(x$raw))))
     if (length(failed)) {
         peakLists <- peakLists[-failed]
-        warning(allFilesName[failed], "failed")
-        allFilesName<-allFilesName[-failed]
+        warning(basename(files)[failed], "failed")
+        files<-files[-failed]
     }
     
     
@@ -205,8 +206,8 @@ setMethod(f = "detectPeak", signature = "ptrSet",
         Biobase::ExpressionSet(assayData = assayMatrix, 
                                featureData = Biobase::AnnotatedDataFrame(featuresMatrix))
     })
-    names(peakListsEset) <- basename(allFilesName)
-    ptrset@peakList <- peakListsEset[allFilesName]
+    names(peakListsEset) <- basename(files)
+    ptrset@peakList <-c(peakListsEset,ptrset@peakList)
 
     # save
     if (!is.null(saveDir) & saving) {
@@ -241,6 +242,9 @@ processFileTemporal <- function(fullNamefile, massCalib,
         l.shape <- peakShape
         raw<-setPeakShape(raw,peakShape)
     } else l.shape = list(NULL)
+    
+
+    
     process <- lapply(mzNominal, 
                       function(m) processFileTemporalNominalMass(m = m, 
         raw = raw, mzNominal = mzNominal, ppm = ppm, 
@@ -248,8 +252,7 @@ processFileTemporal <- function(fullNamefile, massCalib,
         minIntensity = minIntensity, fctFit = fctFit, 
         minIntensityRate = minIntensityRate, 
         knots = knots, smoothPenalty = smoothPenalty, l.shape = l.shape, 
-        timeLimit = indTimeLim, 
-        ...))
+        timeLimit = indTimeLim))
     matPeak <- Reduce(rbind, process)
     ## agregate
     matPeakAg <- aggregateTemporalFile(time = getRawInfo(raw)$time, indTimeLim = indTimeLim, 
@@ -316,7 +319,6 @@ processFileTemporalNominalMass <- function(m, raw, mzNominal,
     rawM <- getRawInfo(raw)$rawM
     rawSub <- rawM[mz > m - 0.6 & mz < m + 0.6, ]
     # estimate the calibration shift
-    
     calib_List <- getCalibrationInfo(raw)$calibCoef
     indexTimeCalib <- getCalibrationInfo(raw)$indexTimeCalib
     if (length(calib_List) > 1) {
@@ -331,7 +333,7 @@ processFileTemporalNominalMass <- function(m, raw, mzNominal,
             index <- indexTimeCalib[[i]]
             rawMCorr[, index] <- vapply(index, function(j) {
                 stats::approx(x = as.numeric(rownames(rawSub)), y = rawSub[, j], 
-                                xout = as.numeric(rownames(rawSub)) + 
+                                xout = as.numeric(rownames(rawSub),ties=min) + 
                   shiftm[i])$y
             }, FUN.VALUE = rep(0, nrow(rawSub)))
         }
@@ -350,13 +352,14 @@ processFileTemporalNominalMass <- function(m, raw, mzNominal,
         fitFunc = fctFit, minIntensityRate = minIntensityRate, l.shape = l.shape, 
         ...)
     peak <- PeakListm$peak
+    baseline<- PeakListm$baseline[[1]]
     if (is.null(peak)) 
         return(NULL) else {
         # 2d déconvolution
         if (is.null(knots)) 
             deconvMethod <- deconv2d2linearIndependant else deconvMethod <- deconv2dLinearCoupled
         fileProccess <- computeTemporalFile(raw = raw, peak = peak, 
-                                            baseline = PeakListm$baseline, 
+                                            baseline = baseline, 
                                             deconvMethod = deconvMethod, 
                                             fctFit = fctFit, knots = knots, 
                                             smoothPenalty = smoothPenalty,
@@ -372,7 +375,7 @@ processFileTemporalNominalMass <- function(m, raw, mzNominal,
 }
 ### peak detection for 1D sptectrum ----
 peakListNominalMass <- function(i, mz, sp, ppmPeakMinSep = 130, calibCoef, resolutionRange = c(300, 
-    5000, 8000), minPeakDetect = 10, fitFunc = "sech2", maxIter = 2, R2min = 0.995, 
+    5000, 8000), minPeakDetect = 10, fitFunc = "sech2", maxIter = 4, R2min = 0.998, 
     autocorNoiseMax = 0.3, plotFinal = FALSE, plotAll = FALSE, thNoiseRate = 1.1, 
     minIntensityRate = 0.01, countFacFWHM = 10, daSeparation = 0.001, d = 3, windowSize = 0.4, 
     l.shape = NULL, blCor = TRUE) {
@@ -381,7 +384,7 @@ peakListNominalMass <- function(i, mz, sp, ppmPeakMinSep = 130, calibCoef, resol
     warning_mat <- NULL
     infoPlot <- list()
     baseline <- list()
-    no_peak_return <- list(emptyData, warning_mat, infoPlot)
+    no_peak_return <- list(emptyData, warning_mat, infoPlot, baseline)
     # select spectrum around the nominal mass i
     index.large <- which(mz < i + windowSize + 0.2 & mz > i - windowSize - 0.2)
     mz.i.large <- mz[index.large]
@@ -417,7 +420,7 @@ peakListNominalMass <- function(i, mz, sp, ppmPeakMinSep = 130, calibCoef, resol
         sp.i <- sp.i.large.corrected[match(index, index.large)]
     }
     infoPlot[[as.character(i)]] <- list(mz = mz.i, sp = sp.i, main = i, pointsPeak = NA)
-    no_peak_return <- list(emptyData, warning_mat, infoPlot)
+    no_peak_return <- list(emptyData, warning_mat, infoPlot,baseline)
     ## fit itterative
     sp.i.fit <- sp.i  # initialization of sp.i.fit
     c = 1  # initialize number of itteration
@@ -426,7 +429,7 @@ peakListNominalMass <- function(i, mz, sp, ppmPeakMinSep = 130, calibCoef, resol
         if (c == 1) {
             minpeakheight <- max(max(thr * thNoiseRate, minIntensityRate * max(sp.i), 
                 minPeakDetect))
-        } else minpeakheight <- max(minpeakheight * 0.8, 1)  # minimum intenisty
+        } else minpeakheight <- max(minpeakheight * 0.8, 0.1)  # minimum intenisty
         # Find local maximum with Savitzky golay filter or wavelet
         init <- initializeFit(i, sp.i.fit, sp.i, mz.i, calibCoef, 
                               resmean = resolutionRange[2], 
@@ -441,8 +444,8 @@ peakListNominalMass <- function(i, mz, sp, ppmPeakMinSep = 130, calibCoef, resol
                   mz_par <- par_estimated[1, ]
                   # delete peak also find
                   to_delete <- NULL
-                  for (p in seq_along(par_estimated[1, ])) {
-                    Da_proxi <- abs(mz_par[p] - mz_init)
+                  for (p in seq_along(mz_init)) {
+                    Da_proxi <- abs(mz_par - mz_init[p])
                     if (i > 17) 
                       test_proxi <- Da_proxi * 10^6/i > ppmPeakMinSep
                     if (i <= 17) 
@@ -457,7 +460,7 @@ peakListNominalMass <- function(i, mz, sp, ppmPeakMinSep = 130, calibCoef, resol
                     break
                   # add new peak
                   if (!is.null(to_delete)) {
-                    par_estimated <- par_estimated[, -to_delete, drop = FALSE]
+                      init$mz <- init$mz[ -to_delete, ,drop = FALSE]
                   }
                 }  # END if c> 1
             n.peak <- nrow(init$mz)
@@ -539,9 +542,9 @@ peakListNominalMass <- function(i, mz, sp, ppmPeakMinSep = 130, calibCoef, resol
             } else break
         }
         # condition for break
-        if (auto_cor_res < 0.3) 
+        if (auto_cor_res < autocorNoiseMax) 
             break
-        if (R2 > 0.995) 
+        if (R2 > R2min) 
             break
         if (c > 1) {
             # degradation of R2
@@ -555,7 +558,7 @@ peakListNominalMass <- function(i, mz, sp, ppmPeakMinSep = 130, calibCoef, resol
                 break
             }
         }
-        if (n.peak > 5) 
+        if (n.peak > 10) 
             break
         # Iteration limit
         if (c == maxIter) {
@@ -572,10 +575,10 @@ peakListNominalMass <- function(i, mz, sp, ppmPeakMinSep = 130, calibCoef, resol
         # until no peak to close or inside an other peak
         init <- t(par_estimated)
         n.peak <- nrow(init)
-        lower.cons <- c(t(matrix(c(rep(0, n.peak), rep(init[, 1]/
+        lower.cons <- c(t(matrix(c(rep(range(mz.i)[1], n.peak), rep(init[, 1]/
                                                            (resolution_upper * 
             2), 2), rep(0, n.peak)), ncol = 4)))
-        upper.cons <- c(t(matrix(c(rep(Inf, n.peak), rep(init[, 1]/(resolution_lower * 
+        upper.cons <- c(t(matrix(c(rep(range(mz.i)[2], n.peak), rep(init[, 1]/(resolution_lower * 
             2), 2), rep(Inf, n.peak)), ncol = 4)))
         fit <- fitPeak(init, sp.i, mz.i, lower.cons, upper.cons, fitFunc, l.shape)
         fit.peak <- fit$fit.peak
@@ -591,9 +594,11 @@ peakListNominalMass <- function(i, mz, sp, ppmPeakMinSep = 130, calibCoef, resol
             x[2], x[3], x[4], mz.i, l.shape))
         X <- data.frame(Mz = center_peak, quanti_cps = quanti, delta_mz = delta_mz, 
             resolution = center_peak/delta_mz, parameter = t(par_estimated[-1, ]))
-        X <- X[quanti > 1, , drop = FALSE]
-        par_estimated <- par_estimated[, quanti > 1, drop = FALSE]
-        peaks <- peaks[, quanti > 1, drop = FALSE]
+        
+        #X <- X[quanti > 1, , drop = FALSE]
+        #par_estimated <- par_estimated[, quanti > 1, drop = FALSE]
+        #peaks <- peaks[, quanti > 1, drop = FALSE]
+        peaks<-peaks[,order(X[, 1]),drop=FALSE]
         X <- X[order(X[, 1]), , drop = FALSE]
         par_estimated <- par_estimated[, order(par_estimated[1, ]), drop = FALSE]
         # R2
@@ -616,18 +621,22 @@ peakListNominalMass <- function(i, mz, sp, ppmPeakMinSep = 130, calibCoef, resol
             break
         to_delete <- NULL
         # tets if peak is under an other peak
-        for (j in seq_len(nrow(X) - 1)) {
-            sign_diff <- levels(factor(sign(peaks[, j + 1] - peaks[, j])))
-            sign_diff <- sign_diff[sign_diff != 0]
-            if (length(sign_diff) < 2) {
-                if ("-1" %in% sign_diff) 
-                  to_delete <- c(to_delete, j + 1) else to_delete <- c(to_delete, j)
-            }
-        }
+        # for (j in seq_len(nrow(X) - 1)) {
+        #     sign_diff <- levels(factor(sign(peaks[, j + 1] - peaks[, j])))
+        #     sign_diff <- sign_diff[sign_diff != 0]
+        #     if (length(sign_diff) < 2) {
+        #         if ("-1" %in% sign_diff) 
+        #           to_delete <- c(to_delete, j + 1) else to_delete <- c(to_delete, j)
+        #     }else if( abs( mean((peaks[, j + 1] - peaks[, j])[peaks[, j + 1] - peaks[, j] <0])) < 0.1 ){
+        #         to_delete <- c(to_delete, j) # if the abs of mean values where peak j+1 < peaks j is very small
+        #     } else if( abs( mean((peaks[, j + 1] - peaks[, j])[peaks[, j + 1] - peaks[, j] >0])) < 0.1){
+        #         to_delete <- c(to_delete, j + 1) # if the abs of mean values where peak j < peaks j+1 is very small
+        #     }
+        # }
         
         # if no
         if (is.null(to_delete)) {
-            # tets proximity
+            # test proximity
             control_proxi <- c(FALSE, diff(X[, 1]) * 10^6/i < ppmPeakMinSep)
             # if no break
             if (all(!control_proxi)) 
@@ -839,10 +848,10 @@ computeTemporalFile <- function(raw, peak, baseline,
         # baseline correction (plan)
         rawM <- EIC[[j]]
         borneMz <- range(as.numeric(rownames(rawM)))
-        bl1D <- baseline[[as.character(round(mz[1]))]]
-        bl1D <- bl1D[as.numeric(names(bl1D)) >= borneMz[1] & as.numeric(names(bl1D)) <= 
-            borneMz[2]]
-        BL <- matrix(bl1D, ncol = ncol(rawM), nrow = nrow(rawM))
+        bl1D <- baseline
+        bl1D <- bl1D[as.numeric(names(bl1D)) >= borneMz[1] & as.numeric(names(bl1D)) <=
+             borneMz[2]]
+        BL <- matrix(rep(bl1D,ncol(rawM)), ncol = ncol(rawM), nrow = nrow(rawM))
         rawM <- rawM - BL
         rawM[rawM < 0] <- 0
         # find best smooth param
@@ -861,6 +870,7 @@ computeTemporalFile <- function(raw, peak, baseline,
     borne[, c("lowerMz", "upperMz")] <- individualBorne[, c("lowerMz", "upperMz")]
     return(list(matPeak = borne, EIClist = EIC))
 }
+
 #'extract all raw EIC from a pre-definied peak List
 #'@param raw ptrRaw object
 #'@param peak a data.frame with a column named 'Mz'. The Mz of the VOC detected
@@ -993,8 +1003,9 @@ deconv2dLinearCoupled <- function(rawM, t, peak.detect, raw, fctFit,
         predPeak[, i] <- colSums(pred)
     }
     # image(t(rawM)) image(t(predRaw))
+    
     return(list(predRaw = predRaw, predPeak = predPeak, 
-                predRawLarge = predRawLarge))
+                predRawLarge = predRawLarge,param=param))
 }
 GCV <- function(rawM, knots, t, timeLimit, stepSp = 0.01, d = 3) {
     trace <- colSums(rawM)
@@ -1265,20 +1276,27 @@ determinePeakShape <- function(raw, plotShape = FALSE) {
         sp <- sp - snipBase(sp)
         list(mz = mzx, signal = sp)
     })
-    n.mass <- length(massRef)
+    
     # find center and width peak for each mass
-    deltaMz <- vapply(interval, function(x) width(tof = x$mz, peak = x$signal)$delta, 
-        FUN.VALUE = 1.1)
     mz_centre <- vapply(interval, function(x) {
         sp <- x$signal
         mz <- x$mz
-        localMax <- LocalMaximaSG(sp = sp, minPeakHeight = max(sp) * 0.2)
-        interpol <- stats::spline(mz[(localMax - 4):(localMax + 4)], sp[(localMax - 
-            4):(localMax + 4)], n = 1000)
-        sg <- signal::sgolayfilt(interpol$y, n = 501, p = 3)  #n/
-        center <- interpol$x[which.max(sg)]
-        return(center)
+        localMax <- LocalMaximaSG(sp = sp, minPeakHeight = max(sp) * 0.1)
+        if(length(localMax)==1){
+            interpol <- stats::spline(mz[(localMax - 4):(localMax + 4)], sp[(localMax - 
+                                                                                 4):(localMax + 4)], n = 1000)
+            sg <- signal::sgolayfilt(interpol$y, n = 501, p = 3)  #n/
+            center <- interpol$x[which.max(sg)]
+            return(center)  
+        } else return(0)
+        
     }, FUN.VALUE = 1.1)
+    interval<-interval[mz_centre!=0]
+    massRef<-massRef[mz_centre!=0]
+    n.mass <- length(massRef)
+    mz_centre<-mz_centre[mz_centre!=0]
+    deltaMz <- vapply(interval, function(x) width(tof = x$mz, peak = x$signal)$delta, 
+                      FUN.VALUE = 1.1)
     deltaTof <- vapply(interval, function(x) width(tof = mzToTof(x$mz, calibCoef = getCalibrationInfo(raw)$calibCoef[[1]]), 
         peak = x$signal)$delta, FUN.VALUE = 1.1)
     tof_centre <- vapply(interval, function(x) {

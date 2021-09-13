@@ -35,9 +35,7 @@ The _**ptairMS**_ package provides a workflow to process PTR-TOF-MS raw data in 
 
 Proton Transfer Reaction - Mass Spectrometry (PTR-MS) has emerged with excellent sensitivity and specificity for VOC analysis in a wide range of applications, including environment, food quality, and biology [[@blake_proton-transfer_2009]](https://doi.org/10.1021/cr800364q). In the area of health and care, PTR-MS opens up unique opportunities for real-time analysis *at the patient's bedside*.
 
-
 # Volatolomics
-
 The characterization of volatile organic compounds (VOCs) emitted by living organisms is of major interest in medicine, food sciences, and ecology. As an example, thousands of VOCs have been identified in the exhaled breath, resulting from normal metabolism or pathological processes [[@de_lacy_costello_review_2014]](https://doi.org/10.1088/1752-7155/8/1/014001). The main advantage of breath analysis in medicine is that the sampling is non-invasive [[@devillier_metabolomics_2017]](https://doi.org/10.2174/1381612823666170130155627). Methods based on mass spectrometry (MS) are the reference technologies for VOC analysis because of their sensitivity and large dynamic range.
 
 # The _**ptairMS**_ processing workflow
@@ -74,6 +72,16 @@ library(ptairMS)
 library(ptairData)
 ```
 
+## Graphical Interface 
+
+The whole workflow of ptairMS can be run interactively through a graphical user interface, which provides visualizations (expiration phases, peaks in the raw data, peak table, individual VOCs), quality controls (calibration, resolution, peak shape and evolution of reagent ions depending on time), and exploratory data analysis.
+
+```{r, eval=FALSE}
+shiny::runApp(system.file('R/ShinnyApp.R', package = "ptairMS"))
+```
+
+Alternatively, the workflow can be run on the command line. We describe hereafter the main steps and parameters.
+
 ## `createPtrSet`: Checking raw data and setting parameters
 
 The analysis starts from a directory containing the raw data. For this example, we use the **exhaledAir** from the _**ptairData**_ package:
@@ -106,7 +114,7 @@ To create a `ptrSet` object form the raw data directory:
 ```{r createPtrSet, message = FALSE}
 exhaledPtrset <- createPtrSet(dir=dirRaw,
                      setName="exhaledPtrset",
-                     mzCalibRef = c(21.022, 60.0525),
+                     mzCalibRef = c(21.022, 60.0525),fracMaxTIC = 0.7,
                      saveDir = NULL )
 ```
 

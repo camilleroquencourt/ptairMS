@@ -14,7 +14,7 @@ PeakList(
   fctFit = c("sech2", "averagePeak")[1],
   peakShape = NULL,
   maxIter = 1,
-  R2min,
+  R2min = 0.995,
   autocorNoiseMax = 0.3,
   plotFinal = FALSE,
   plotAll = FALSE,

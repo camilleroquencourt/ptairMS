@@ -54,7 +54,7 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
     # test if there is a only one peak on the TIS
     nLocalMax <- vapply(mzCalibRef, function(x) {
         spx <- sp[x - 0.4 < mz & mz < x + 0.4]
-        length(LocalMaximaSG(sp = spx, minPeakHeight = 0.1 * max(spx)))
+        length(LocalMaximaSG(sp = spx, minPeakHeight = 0.2 * max(spx)))
     }, FUN.VALUE = 0)
     badMass <- which(nLocalMax != 1)
     if (length(badMass) != 0) {
@@ -62,7 +62,7 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
     }
     object@calibMassRef <- mzCalibRef
     # determine average peak shape on calibration masses
-    peakShape <- determinePeakShape(object)$peakShapetof
+    peakShape <- determinePeakShape(raw = object)$peakShapetof
     object<-setPeakShape(object,peakShape)
     
     # performs calibration every steps second

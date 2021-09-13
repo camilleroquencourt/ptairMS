@@ -69,7 +69,6 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
     transmission <- try(rhdf5::h5read(filePath, "PTR-Transmission"))
     calibCoef <- try(rhdf5::h5read(filePath, "FullSpectra/MassCalibration", index = list(NULL, 
         1)))
-    
     attributCalib <- try(rhdf5::h5readAttributes(filePath, "/FullSpectra"))
     if (!is.null(attr(calibCoef, "condition")) & is.null(attr(attributCalib, "condition"))) {
         calibCoef <- matrix(c(attributCalib$`MassCalibration a`, attributCalib$`MassCalibration b`), 
@@ -97,8 +96,9 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
         rawMn <- rawMn[, -index_zero]
     }
     
-    # count ion conversion factor<-sampleInterval*1e9 /singleIon #*
-    # (SampleInterval,ns) / (single ion signal mV.ns) for convert to number of ion
+    # count ion conversion 
+    #factor<- sampleInterval*1e9 /singleIon 
+    #*(SampleInterval,ns) / (single ion signal mV.ns) for convert to number of ion
     # rawMn<-rawMn*as.numeric(factor)
     
     # calibration infomration
@@ -292,7 +292,7 @@ createPtrSet <- function(dir, setName, mzCalibRef = c(21.022, 29.013424, 41.0385
         TIC = check$TIC, breathTracer = check$breathTracer, fctFit = check$fctFit, 
         peakShape = check$peakShape, peakList = check$peakList, date = check$date)
     
-    # save in Rdata with the name choosen
+    # save in Rdata with the name chosen
     if (!is.null(saveDir)) {
         changeName <- parse(text = paste0(setName, "<- ptrSet "))
         eval(changeName)
@@ -366,12 +366,11 @@ updatePtrSet <- function(ptrset) {
         sampleMetadata <- data.frame(sampleMetadata[-deletedFilesIndex, , drop = FALSE])
         
         # deleted in ptrSet
-        ptrset<-setSampleMetadata(ptrset,sampleMetadata)
         parameter<-getParameters(ptrset)
         parameter$listFile <- filesDirFullNameParam
         ptrset<- setParameters(ptrset,parameter)
         ptrset<-deleteFilePtrSet(ptrset,deletedFiles)
-      
+        ptrset<-setSampleMetadata(ptrset,sampleMetadata)
         message(paste(deletedFiles, " deleted \n"))
     }
     
@@ -383,7 +382,7 @@ updatePtrSet <- function(ptrset) {
         sampleMetadata[newFilesName, ] <- NA
         
         # same order as list.file
-        sampleMetadata <- sampleMetadata[basename(filesDirFullName), ]
+        sampleMetadata <- sampleMetadata[basename(filesDirFullName), ,drop=FALSE]
         
         
         # checkset
@@ -397,8 +396,9 @@ updatePtrSet <- function(ptrset) {
         if (length(check$failed) > 0) {
             filesDirFullName <- filesDirFullName[-which(basename(filesDirFullName) %in% 
                 check$failed)]
+            filesDirFullNameParam<-filesDirFullName
             sampleMetadata <- sampleMetadata[-which(row.names(sampleMetadata) %in% 
-                check$failed), ]
+                check$failed), ,drop=FALSE]
         }
         
         # add new file to ptrset and in same order as list.file
@@ -459,7 +459,7 @@ checkSet <- function(files,
     for (j in seq_along(files)) {
         
         # check reading and calibration of file
-        raw <- try(readRaw(files[j], mzCalibRef = mzCalibRef, calibrationPeriod = calibrationPeriod))
+        raw <- try(readRaw(filePath = files[j], mzCalibRef = mzCalibRef, calibrationPeriod = calibrationPeriod))
         if (attr(raw, "class") == "try-error") {
             message(paste(fileName[j], " opening or calibration failed"))
             failed <- c(failed, fileName[j])
@@ -539,23 +539,30 @@ checkSet <- function(files,
             warning("mass 21 not in mass Axis,the ppb quantification can not be done.")
             primaryIonV <- NA
         } else {
-            p <- PeakList(raw, mzNominal = round(mzPrimaryIon), ppm = 700, minIntensityRate = 0.5, 
+            p <- try(PeakList(raw, mzNominal = round(mzPrimaryIon), ppm = 700, minIntensityRate = 0.5, 
                 minIntensity = 0, maxIter = 1, thNoiseRate = 0, fctFit = fctFit[[fileName[j]]], 
-                peakShape = l.shape, windowSize = 0.2)
+                peakShape = l.shape, windowSize = 0.2))
             
-            primaryIndex <- which(abs(p$peak - mzPrimaryIon) * 10^6/21 < 200)
-            if (primaryIndex) 
-                primaryIonV <- p$peak$quanti_cps[primaryIndex] else primaryIonV <- NA
+            if(is.null(attr(p,"condition"))){
+                primaryIndex <- which.min(abs(p$peak - mzPrimaryIon))
+                if (primaryIndex) 
+                    primaryIonV <- p$peak$quanti_cps[primaryIndex] else primaryIonV <- NA
+            } else primaryIonV <- NA
+            #primaryIndex <- which(abs(p$peak - mzPrimaryIon) * 10^6/21 < 200)
         }
         if (!38 %in% unique(round(getRawInfo(raw)$mz))) {
             waterCluster <- NA
         } else {
-            p <- PeakList(raw, mzNominal = c(38), ppm = 700, minIntensityRate = 0.5, 
+            p <- try(PeakList(raw, mzNominal = c(38), ppm = 700, minIntensityRate = 0.5, 
                 minIntensity = 0, maxIter = 1, thNoiseRate = 0, fctFit = fctFit[[fileName[j]]], 
-                peakShape = l.shape, windowSize = 0.2)
-            clusterIndex <- which(abs(p$peak - 38.03) * 10^6/21 < 200)
-            if (length(clusterIndex) != 0) 
-                waterCluster <- p$peak$quanti_cps[clusterIndex] else waterCluster <- NA
+                peakShape = l.shape, windowSize = 0.2))
+            
+            if(is.null(attr(p,"condition"))){
+                clusterIndex <- which(abs(p$peak - 38.03) * 10^6/21 < 200)
+                if (length(clusterIndex) != 0) 
+                    waterCluster <- p$peak$quanti_cps[clusterIndex] else waterCluster <- NA
+            } else  waterCluster <- NA
+            
         }
         primaryIon[[fileName[j]]] <- list(primaryIon = primaryIonV, waterCluster = waterCluster)
         
@@ -624,3 +631,14 @@ convert_to_mzML <- function(file) {
     file_mzML <- gsub(".h5", ".mzML", file)
     MSnbase::writeMSData(object = mzML, file = file_mzML, header = hdr)
 }
+
+
+
+
+# data("exhaledPtrset")
+# exhaledPtrset@prtReaction<-lapply(exhaledPtrset@prtReaction,function(x) {
+#     x$TwInfo[3]<-"T-Drift[degree C]"
+#     x})
+# save(exhaledPtrset,version = 2,
+#      file = "C:/Users/CR258086/Documents/Source/ptairMS/data/exhaledPtrset.RData")
+

@@ -8,6 +8,6 @@
 #' used for isotope matching 
 #' 
 #' vocDB is the volatolomic data base download on the website : https://hbdb.cmdm.tw, 
-#' Human Breathomics Database (search per compounds), used for annotation
+#' Human Breathomics Database (search per compounds), used for annotation and deLacy costallo 14
 #' 
 #' ManualAdd add are vocs that we decided to add to vocDB

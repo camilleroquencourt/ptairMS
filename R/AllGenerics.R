@@ -80,7 +80,7 @@ setGeneric("PeakList",
                     mzNominal = unique(round(getRawInfo(raw)$mz)), 
                     ppm = 130, resolutionRange=c(3000,5000,8000),
                     minIntensity=5, fctFit=c("sech2","averagePeak")[1], 
-                    peakShape=NULL,maxIter=1, R2min,autocorNoiseMax = 0.3,
+                    peakShape=NULL,maxIter=1, R2min=0.995,autocorNoiseMax = 0.3,
                     plotFinal=FALSE, plotAll=FALSE, thNoiseRate=1.1, 
                     minIntensityRate = 0.01,
                     countFacFWHM=10, daSeparation=0.005, d=3, windowSize=0.4){

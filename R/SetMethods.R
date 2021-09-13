@@ -47,6 +47,7 @@ methods::setMethod(f = "plot", signature = "ptrSet", function(x, y, typePlot = "
 plotResolution <- function(set) {
     mzCalibRef <- getParameters(set)$mzCalibRef
     resolution <- getPTRInfo(set)$resolution
+    
     # complete missing masses
     index <- which(vapply(resolution, length, 1) != length(mzCalibRef))
     resolution[index] <- lapply(resolution[index], function(x) {
@@ -89,7 +90,7 @@ plotResolution <- function(set) {
 plotCalibError <- function(set) {
     massCalib <- getCalibrationInfo(set)$mzCalibRef
     errorList <- getCalibrationInfo(set)$errorCalibPpm
-    names(errorList) <- paste(seq(1, length(errorList)), names(errorList), 
+    names(errorList) <- paste(seq(1, length(errorList)), names(errorList),
                               sep = "-")
     # get list files
     listFiles <- getParameters(set)$listFile
@@ -502,7 +503,7 @@ methods::setMethod(f = "plotCalib", signature = "ptrSet", function(object, ppm =
     # spectrCalib<-lapply(fileNames, function(x) 
     # alignCalibrationPeak(getCalibrationInfo(set)$signalCalibRef[[x]], length(getTimeInfo(set)$TIC[[x]])))
     # names(spectrCalib)<-fileNames
-    spectrCalib <- getCalibrationInfo(set)$signalCalibRef
+    spectrCalib <- getCalibrationInfo(set)$signalCalibRef[fileNames]
     errorList <- getCalibrationInfo(set)$errorCalibPpm[fileNames]
     # get the extension of the file
     if (!is.null(pdfFile)) {
@@ -783,6 +784,7 @@ methods::setMethod(f = "plotRaw", signature = "ptrSet",
         # object data
         object <- rhdf5::h5read(file, name = "/FullSpectra/TofData", 
                                 index = list(index, NULL, NULL, NULL))
+        
         # time axis
         timeVn <- as.numeric(names(getTimeInfo(set)$TIC[[basename(file)]]))
         timeiNTER <- (timeVn[3] - timeVn[2])
@@ -793,8 +795,14 @@ methods::setMethod(f = "plotRaw", signature = "ptrSet",
                                timeVn <= timeRange.file[2])
         timeVn <- timeVn[indexTime]
         # calibrate mass axis
-        FirstcalibCoef <- rhdf5::h5read(file, "FullSpectra/MassCalibration", 
-                                        index = list(NULL,1))
+        
+        FirstcalibCoef <- try(rhdf5::h5read(file, "FullSpectra/MassCalibration", index = list(NULL, 
+                                                                                             1)))
+        attributCalib <- try(rhdf5::h5readAttributes(file, "/FullSpectra"))
+        if (!is.null(attr(FirstcalibCoef, "condition")) & is.null(attr(attributCalib, "condition"))) {
+            FirstcalibCoef <- matrix(c(attributCalib$`MassCalibration a`, attributCalib$`MassCalibration b`), 
+                                ncol = 1)
+        }
         tof <- sqrt(mz) * FirstcalibCoef[1, 1] + FirstcalibCoef[2, 1]
         # tof<- seq(0,length(mz))
         coefCalib <- getCalibrationInfo(set)$coefCalib[[basename(file)]][[1]]
@@ -967,8 +975,15 @@ methods::setMethod(f = "plotFeatures", signature = "ptrSet",
         rawMn <- matrix(raw, nrow = dim(raw)[1], ncol = prod(utils::tail(dim(raw), 
             2)))
         # * 0.2 ns / 2.9 (single ion signal) if convert to cps
-        FirstcalibCoef <- rhdf5::h5read(file, "FullSpectra/MassCalibration", 
-                                        index = list(NULL, 1))
+        
+        FirstcalibCoef <- try(rhdf5::h5read(file, "FullSpectra/MassCalibration", index = list(NULL, 
+                                                                                              1)))
+        attributCalib <- try(rhdf5::h5readAttributes(file, "/FullSpectra"))
+        if (!is.null(attr(FirstcalibCoef, "condition")) & is.null(attr(attributCalib, "condition"))) {
+            FirstcalibCoef <- matrix(c(attributCalib$`MassCalibration a`, attributCalib$`MassCalibration b`), 
+                                     ncol = 1)
+        }
+        
         tof <- sqrt(mzAxis.j) * FirstcalibCoef[1, 1] + FirstcalibCoef[2, 1]
         coefCalib <- getCalibrationInfo(set)$coefCalib[[basename(file)]][[1]]
         mzNew <- ((tof - coefCalib["b", ])/coefCalib["a", ])^2
@@ -1470,10 +1485,9 @@ rmPeakList <- function(object) {
 #' @export 
 methods::setMethod("show", "ptrSet", function(object) {
     dir <- getParameters(object)$dir
-    fileCheck <- getParameters(object)$listFile
+    fileCheck <- getTimeInfo(object)$TIC
     if (methods::is(dir, "expression")) {
         dir <- eval(dir)
-        fileCheck <- eval(fileCheck)
     }
     nFiles <- length(list.files(dir, recursive = TRUE, pattern = "\\.h5$"))
     nFilesCheck <- length(fileCheck)
@@ -1757,6 +1771,11 @@ methods::setMethod("mergedPtrSet", signature = "ptrSet",
     object@ptrTransmisison <- c(getPTRInfo(object)$ptrTransmisison, ptrSetNewfile$ptrTransmisison)[basename(orderedFile)]
     object@prtReaction <- c(getPTRInfo(object)$prtReaction, ptrSetNewfile$prtReaction)[basename(orderedFile)]
     object@date <- c(getDate(object), ptrSetNewfile$date)[basename(orderedFile)]
+    object@peakShape <- c(object@peakShape, ptrSetNewfile$peakShape)[basename(orderedFile)]
+    object@knots<-c(object@knots, ptrSetNewfile$knots)[basename(orderedFile)]
+    object@indexTimeCalib<-c(object@indexTimeCalib, ptrSetNewfile$indexTimeCalib)[basename(orderedFile)]
+    object@fctFit<-c(object@fctFit, ptrSetNewfile$fctFit)[basename(orderedFile)]
+    
     
     return(object)
     })
