@@ -1,3 +1,6 @@
+utils::globalVariables(c("time", "intensity", "sd", "filter"))
+
+
 plotPeakRaw<-function(set,file, mzRange, peaks, temporalEstim,fctFit,
                       ppm = 2000, 
                       palette = c("heat")[1]) {
@@ -60,7 +63,7 @@ plotPeakRaw<-function(set,file, mzRange, peaks, temporalEstim,fctFit,
         ggplot2::labs(x = NULL, y = NULL)+
         ggplot2::scale_x_continuous(expand = c(0, 0)) + 
         ggplot2::scale_y_continuous(expand = c(0, 0))+
-        ggplot2::scale_fill_gradientn(colours = rev(rainbow(100, end = 4/6)))
+        ggplot2::scale_fill_gradientn(colours = rev(grDevices::rainbow(100, end = 4/6)))
     
     
     ## ima: Image
@@ -73,7 +76,7 @@ plotPeakRaw<-function(set,file, mzRange, peaks, temporalEstim,fctFit,
     
     rawM <- ggplot2::ggplot() + 
         ggplot2::geom_tile(data=data, mapping=ggplot2::aes(time, mz, fill= intensity),show.legend =FALSE) +
-        ggplot2::scale_fill_gradientn(colours = rev(rainbow(100, end = 4/6)))+
+        ggplot2::scale_fill_gradientn(colours = rev(grDevices::rainbow(100, end = 4/6)))+
         ggplot2::theme_classic()+
         ggplot2::scale_x_continuous(expand = c(0, 0)) + 
         ggplot2::scale_y_continuous(expand = c(0, 0))+
@@ -284,7 +287,7 @@ score_plotly <- function(ropls.model,label.c = "sampleNames",color.c = "",info.v
       if (palette.c != "")
         p <- p + ggplot2::scale_colour_brewer(palette = palette.c)
     } else
-      p <- p + ggplot2::scale_colour_gradientn(colours = rev(rainbow(100, end = 4/6)))
+      p <- p + ggplot2::scale_colour_gradientn(colours = rev(grDevices::rainbow(100, end = 4/6)))
   }
   
   # display/saving [plotly::ggplotly, plotly::layout, htmlwidgets::saveWidget, plotly::as_widget]
@@ -370,7 +373,6 @@ ui <- shiny::navbarPage("ptairMS",
                           ),
                           shiny::mainPanel(                          
                             shiny::splitLayout(
-                              cellWidths = c("30%","70%"),
                             DT::dataTableOutput("tableTimeLimit"),
                             plotly::plotlyOutput("plotTimeLimit")
                             
@@ -503,7 +505,7 @@ server <- function(input, output) {
   rv <- shiny::reactiveValues( ptrset=NULL,dataTimeLimit=NULL,bgPoints=NULL)
   
   ## user interface 
-  output$param<-renderUI({
+  output$param<- shiny::renderUI({
     if(input$createOrLoad == "createPtrSet"){
       shiny::fluidPage(
         shiny::fluidRow(
@@ -540,11 +542,11 @@ server <- function(input, output) {
   })
   
   shiny::observeEvent(input$selectDir, {
-    pth <- choose.dir() #tk_choose.dir
+    pth <- utils::choose.dir() #tk_choose.dir
     paramRv$path<-pth
   })
   
-  output$showDirectorySelect<-renderPrint({
+  output$showDirectorySelect<-shiny::renderPrint({
     if(!is.null(paramRv$path)) print(paramRv$path)
   })
   
@@ -568,15 +570,15 @@ server <- function(input, output) {
   })
   
   
-  output$showPtrSet<-renderPrint(
+  output$showPtrSet<-shiny::renderPrint(
     if(!is.null(rv$ptrset)) print(rv$ptrset)
     )
     
-  output$plotPtrSet <- renderPlot({
+  output$plotPtrSet <- shiny::renderPlot({
     if(!is.null(rv$ptrset)) plot(rv$ptrset)
   })
   
-  output$update<-renderUI({
+  output$update<- shiny::renderUI({
     if(!is.null(rv$ptrset)) shiny::actionButton(inputId = "updatePtrSet",label = "Update ptrSet")
   })
   
@@ -589,7 +591,7 @@ server <- function(input, output) {
   
 
   
-  output$paramTimeLimit<-renderUI({
+  output$paramTimeLimit<-shiny::renderUI({
     if(!is.null(rv$ptrset)){
       shiny::fluidPage(
 
@@ -702,7 +704,7 @@ server <- function(input, output) {
    
   })
   
-  output$paramCalib<-renderUI({
+  output$paramCalib<- shiny::renderUI({
     if(!is.null(rv$ptrset)){
       shiny::fluidPage(
         shiny::fluidRow(
@@ -727,7 +729,7 @@ server <- function(input, output) {
   })
   
   
-  output$plotCalib<- renderPlot({
+  output$plotCalib<- shiny::renderPlot({
     if(!is.null(rv$ptrset)) plotCalib(rv$ptrset,file=input$fileNameCalib)
   })
   
@@ -768,7 +770,7 @@ server <- function(input, output) {
       }
   })
    
-   output$RawData<-renderPlot({
+   output$RawData<-shiny::renderPlot({
        if(!is.null(rv$ptrset)){
            if(!is.null(input$plotRawmz)){
                peakList<-Biobase::fData(getPeakList(rv$ptrset)[[input$plotRaw]])
@@ -823,7 +825,7 @@ server <- function(input, output) {
    })
    
   
-   output$nbPeak <- renderText({
+   output$nbPeak <- shiny::renderText({
      if(!is.null( rv$eset)){
      X<-Biobase::exprs(rv$eset)
      paste(nrow(X),"peaks aligned")
@@ -837,7 +839,7 @@ server <- function(input, output) {
      if(input$Transformation == "log2"){
        X<-log2(X)
      } else if (input$Transformation == "Centred reduced"){
-       X<-t(apply(X,1,function(x) (x-mean(x,na.rm=T))/sd(x,na.rm=T)))
+       X<-t(apply(X,1,function(x) (x-mean(x,na.rm=TRUE))/sd(x,na.rm=TRUE)))
      }
      #ropls::imageF(log2(Biobase::exprs(rv$eset)))
      plotly::plot_ly(z = X,
@@ -910,7 +912,7 @@ server <- function(input, output) {
            g<-g + ggplot2::ggtitle(mz,annotateVOC(as.numeric(mz),ppm=100)[3]) +
              ggplot2::labs(y= quanti, x = colTime )
            
-           
+           `%>%` <- plotly::`%>%`
            plotly::ggplotly(g) %>%
              plotly::layout(title = list(text = paste0(mz,
                                                        '<br>',
@@ -978,7 +980,7 @@ server <- function(input, output) {
      }
    })
    
-   output$getLoading<-renderTable({
+   output$getLoading<-shiny::renderTable({
      if(!is.null(rv$pca)){
        X<-Biobase::exprs(rv$eset)
        importance<-ropls::getLoadingMN(rv$pca)
