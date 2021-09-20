@@ -1,4 +1,5 @@
-utils::globalVariables(c("time", "intensity", "sd", "filter"))
+utils::globalVariables(c("time", "intensity", "sd", "filter","cps","x","z",
+                         "intensities","timeC","files"))
 
 
 plotPeakRaw<-function(set,file, mzRange, peaks, temporalEstim,fctFit,
