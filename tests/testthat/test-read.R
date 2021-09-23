@@ -1,17 +1,6 @@
 testthat::context("Test file reading.")
 
 
-test_data<-function(){
-  data("exhaledPtrset")
-  testthat::expect_is(exhaledPtrset,"ptrSet")
-  testthat::expect_equal(length(getFileNames(exhaledPtrset)),6)
-  testthat::expect_equal(length(getPeakList(exhaledPtrset)),6)
-  
-  data("mycobacteriaSet")
-  testthat::expect_is(mycobacteriaSet,"ptrSet")
-  testthat::expect_equal(length(getFileNames(mycobacteriaSet)),6)
-  testthat::expect_equal(length(getPeakList(mycobacteriaSet)),6)
-}
 
 test_readRaw <- function() {
 
@@ -87,7 +76,6 @@ test_knots<- function(){
   
   }
 
-testthat::test_that("data are loaded", test_data())
 testthat::test_that("we can read an input file.", test_readRaw())
 testthat::test_that("createPtrSet works", test_createSet())
 testthat::test_that("defineKnots works", test_knots())

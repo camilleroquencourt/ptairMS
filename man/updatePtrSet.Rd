@@ -21,7 +21,9 @@ used for the function \code{createPtrSet} who has created the object.
 \code{updatePtrSet} also delete from the ptrSet deleted files in the directory.
 }
 \examples{
-data(exhaledPtrset)
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 ##add or delete files in the directory 
 # exhaledPtrset<- updatePtrSet(exhaledPtrset)
 }

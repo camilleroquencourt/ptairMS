@@ -89,7 +89,12 @@ If you do not want to apply those filters, set \code{fracGroup} to 0 and
 \code{pValGreaterThres} to 1.
 }
 \examples{
-data(exhaledPtrset)
+library(ptairData)
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, 
+setName="exhaledPtrset", mzCalibRef = c(21.022, 60.0525),
+fracMaxTIC = 0.7, saveDir = NULL )
+exhaledPtrset<-detectPeak(exhaledPtrset,mzNominal=c(21,60,79))
 eset <- alignSamples(exhaledPtrset,pValGreaterThres=0.05)
 Biobase::exprs(eset)
 Biobase::fData(eset)

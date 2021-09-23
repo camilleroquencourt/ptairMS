@@ -36,7 +36,11 @@ intensity of the background.
 get the peak list of a ptrSet object
 }
 \examples{
-data(exhaledPtrset )
+library(ptairData)
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
+exhaledPtrset<-detectPeak(exhaledPtrset,mz=c(21,59))
 peakList<- getPeakList(exhaledPtrset )
 X<-Biobase::exprs(peakList[[1]])
 Y<- Biobase::fData(peakList[[1]])

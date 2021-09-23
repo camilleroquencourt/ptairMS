@@ -5,6 +5,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // findLimDensity
 Rcpp::List findLimDensity(Rcpp::NumericVector dens, int istart, int state);
 RcppExport SEXP _ptairMS_findLimDensity(SEXP densSEXP, SEXP istartSEXP, SEXP stateSEXP) {

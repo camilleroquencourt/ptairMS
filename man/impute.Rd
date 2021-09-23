@@ -28,8 +28,12 @@ peak shape function on the noise (or on the residuals signals if peaks have
 already been detected).
 }
 \examples{
-data(exhaledPtrset)
-getSampleMetadata(exhaledPtrset)
+library(ptairData)
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, 
+setName="exhaledPtrset", mzCalibRef = c(21.022, 60.0525),
+fracMaxTIC = 0.7, saveDir = NULL )
+exhaledPtrset<-detectPeak(exhaledPtrset,mz=c(21,52))
 eSet <- alignSamples(exhaledPtrset,pValGreaterThres=0.05,fracGroup=0)
 Biobase::exprs(eSet)
 eSet <- impute(eSet,exhaledPtrset)

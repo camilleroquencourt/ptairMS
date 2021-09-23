@@ -21,8 +21,10 @@ import a sampleMetadata from a tsv file to a ptrSet object
 }
 \examples{
 library(ptairData)
-data(exhaledPtrset )
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 saveFile<-file.path(getwd(),'sampleMetadata.tsv')
 #exportSampleMetada(exhaledPtrset ,saveFile)
-#mycobacteria<-importSampleMetadata(exhaledPtrset ,saveFile)
+#exhaledPtrset<-importSampleMetadata(exhaledPtrset ,saveFile)
 }

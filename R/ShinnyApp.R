@@ -1,7 +1,6 @@
 utils::globalVariables(c("time", "intensity", "sd", "filter","cps","x","z",
                          "intensities","timeC","files"))
 
-
 plotPeakRaw<-function(set,file, mzRange, peaks, temporalEstim,fctFit,
                       ppm = 2000, 
                       palette = c("heat")[1]) {
@@ -40,7 +39,7 @@ plotPeakRaw<-function(set,file, mzRange, peaks, temporalEstim,fctFit,
     # formate object matix
     rawSubMN <- matrix(object, nrow = dim(object)[1], 
                        ncol = prod(utils::tail(dim(object), 2)))
-    rawSubMN <- rawSubMN[,1:length(timeVn),drop=FALSE]
+    rawSubMN <- rawSubMN[,seq_len(length(timeVn)),drop=FALSE]
     
     imageMN<-rawSubMN
     dimnames(imageMN) <- list(mzVn, timeVn)
@@ -58,7 +57,7 @@ plotPeakRaw<-function(set,file, mzRange, peaks, temporalEstim,fctFit,
     
     
     ## sca: Color scale
-    df <- data.frame(x = 1, y = 1:236, z = 1:236)
+    df <- data.frame(x = 1, y = seq_len(236), z = seq_len(236))
     sca <- ggplot2::ggplot(df, ggplot2::aes(x, y)) + 
         ggplot2::geom_tile(ggplot2::aes(fill = z), size = 5) + 
         ggplot2::labs(x = NULL, y = NULL)+
@@ -332,6 +331,7 @@ score_plotly <- function(ropls.model,label.c = "sampleNames",color.c = "",info.v
 
 
 # Define UI for application that draws a histogram
+#' @importFrom shinyscreenshot screenshotButton
 ui <- shiny::navbarPage("ptairMS",
    
    # Application title
@@ -842,6 +842,7 @@ server <- function(input, output) {
      } else if (input$Transformation == "Centred reduced"){
        X<-t(apply(X,1,function(x) (x-mean(x,na.rm=TRUE))/sd(x,na.rm=TRUE)))
      }
+     Y<-Biobase::pData(rv$eset)
      #ropls::imageF(log2(Biobase::exprs(rv$eset)))
      plotly::plot_ly(z = X,
                      x = colnames(Biobase::exprs(rv$eset)),
@@ -985,8 +986,8 @@ server <- function(input, output) {
      if(!is.null(rv$pca)){
        X<-Biobase::exprs(rv$eset)
        importance<-ropls::getLoadingMN(rv$pca)
-       tx<-rownames(X)[order(importance[,input$x]^2,decreasing = TRUE)[1:input$maxRow]]
-       ty<-rownames(X)[order(importance[,input$y]^2,decreasing = TRUE)[1:input$maxRow]]
+       tx<-rownames(X)[order(importance[,input$x]^2,decreasing = TRUE)[seq_len(input$maxRow)]]
+       ty<-rownames(X)[order(importance[,input$y]^2,decreasing = TRUE)[seq_len(input$maxRow)]]
        data<-cbind(mz.tx=tx,annotation.tx=ptairMS::annotateVOC(as.numeric(tx))[,3],
                    mz.ty=ty,annotation.ty=ptairMS::annotateVOC(as.numeric(ty))[,3])
        

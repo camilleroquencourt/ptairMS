@@ -103,8 +103,8 @@ changeTimeLimits<-function(ptrSet){
     shiny::observeEvent(input$delete, {
         rowNum <- input$table_rows_selected
         if(length(rowNum) == nrow(rv$data)){
-          shiny::showNotification(warning("At least one period must be selected"),
-                                  duration = NULL,id="warnings" )
+          shiny::showNotification("At least one period must be selected",
+                                  duration = NULL, id="warnings" )
         }else {
           shiny::removeNotification("warnings")
           expirationTodelete<-rv$data[rowNum,,drop=FALSE]
@@ -320,7 +320,7 @@ changeTimeLimits<-function(ptrSet){
         changeName <- parse(text=paste0(name,"<- ptrSet "))
         eval(changeName)
         eval(parse(text =  paste0( "save(" ,name ,",file= paste0( saveDir,'/', '",name,".RData '))")))
-        message("ptrSet object save in: ", paste0( saveDir,'/', name,".RData"))
+        message("ptrSet object save in: ",  saveDir,'/', name,".RData")
       }
       shiny::stopApp(ptrSet)
     })

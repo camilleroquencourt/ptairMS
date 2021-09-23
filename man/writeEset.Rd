@@ -28,7 +28,11 @@ export (e.g., the samples are written column wise in the 'dataMatrix.tsv'
 exported file).
 }
 \examples{
-data(exhaledPtrset)
+library(ptairData)
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
+exhaledPtrset<-detectPeak(exhaledPtrset,mz=c(21,59,77))
 eset <- ptairMS::alignSamples(exhaledPtrset ) 
 writeEset(eset, dirName = file.path(getwd(), "processed_dataset"))
 unlink(file.path(getwd(), "processed_dataset"),recursive = TRUE)

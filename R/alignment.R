@@ -261,7 +261,12 @@ aggregateTemporalFile <- function(time, indTimeLim, matPeak, funAggreg, dbl = 4)
 #' (required for low masses)
 #' @return an \code{\link[Biobase]{ExpressionSet}} (Biobase object)
 #' @examples 
-#' data(exhaledPtrset)
+#' library(ptairData)
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, 
+#' setName="exhaledPtrset", mzCalibRef = c(21.022, 60.0525),
+#' fracMaxTIC = 0.7, saveDir = NULL )
+#' exhaledPtrset<-detectPeak(exhaledPtrset,mzNominal=c(21,60,79))
 #' eset <- alignSamples(exhaledPtrset,pValGreaterThres=0.05)
 #' Biobase::exprs(eset)
 #' Biobase::fData(eset)
@@ -458,9 +463,9 @@ fliterEset <- function(X, sampleMetadata, groupMat, groupList, peakList, group,
     X <- X[keepVar, , drop = FALSE]
     
     if (nrow(X) == 0) {
-        warning(paste("peakList is empty, there is no peak presents in 
+        warning("peakList is empty, there is no peak presents in 
                     more thant ", 
-            fracGroup, "% of samples"))
+            fracGroup, "% of samples")
         return(NULL)
     }
     
@@ -570,15 +575,15 @@ fliterEset <- function(X, sampleMetadata, groupMat, groupList, peakList, group,
                   X <- X[keepVar, , drop = FALSE]
                   Xbg <- Xbg[keepVar, , drop = FALSE]
                   if (nrow(X) == 0) {
-                    warning(paste("peakList is empty, there is no peak presents in 
+                    warning("peakList is empty, there is no peak presents in 
                             more thant ", 
-                      fracGroup, "% of samples"))
+                      fracGroup, "% of samples")
                     return(NULL)
                   }
                 }
                 
             } else {
-                warning(paste("peakList is empty"))
+                warning("peakList is empty")
                 return(NULL)
             }
             
@@ -762,8 +767,12 @@ imputeFunc <- function(file, missingValues, eSet, ptrSet) {
 #' in the assayData slot
 #' @export 
 #' @examples
-#' data(exhaledPtrset)
-#' getSampleMetadata(exhaledPtrset)
+#' library(ptairData)
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, 
+#' setName="exhaledPtrset", mzCalibRef = c(21.022, 60.0525),
+#' fracMaxTIC = 0.7, saveDir = NULL )
+#' exhaledPtrset<-detectPeak(exhaledPtrset,mz=c(21,52))
 #' eSet <- alignSamples(exhaledPtrset,pValGreaterThres=0.05,fracGroup=0)
 #' Biobase::exprs(eSet)
 #' eSet <- impute(eSet,exhaledPtrset)
@@ -823,10 +832,16 @@ impute <- function(eSet, ptrSet, parallelize = FALSE, nbCores = 2) {
 #' @return the same matrix as in input, with missing values imputing
 #' @export 
 #' @examples
-#' data(exhaledPtrset)
+#' library(ptairData)
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, 
+#' setName="exhaledPtrset", mzCalibRef = c(21.022, 60.0525),
+#' fracMaxTIC = 0.7, saveDir = NULL )
+#' exhaledPtrset<-detectPeak(exhaledPtrset,mz=c(21,52))
 #' eSet <- alignSamples(exhaledPtrset,pValGreaterThres=0.05,fracGroup=0)
 #' X <-Biobase::exprs(eSet)
 #' X <- imputeMat(X,exhaledPtrset,quantiUnit='ppb')
+#' plotFeatures(exhaledPtrset,mz = 52.047,typePlot = "ggplot",colorBy = "subfolder")
 imputeMat <- function(X, ptrSet, quantiUnit) {
     # peak func(ion)
     fctFit <- getPeaksInfo(ptrSet)$fctFit
@@ -932,21 +947,26 @@ imputeMat <- function(X, ptrSet, quantiUnit) {
                 (m * 50/10^6))]), 1), 0)
             
             
-            initMz <- matrix(c(mz, log(sqrt(2) + 1) * 2/delta, h), nrow = n.peak)
+            initMz <- matrix(c(mz, delta/2, h), nrow = n.peak)
             colnames(initMz) <- c("m", "delta1", "delta2", "h")
             
             lower.cons <- c(t(initMz * matrix(c(rep(1, n.peak), rep(0, n.peak * 2), 
-                rep(0.1, n.peak)), ncol = 4) - matrix(c(initMz[, "m"]/(resolution_mean * 
-                100), -resolution_lower * log(sqrt(2) + 1) * 2/initMz[, "m"], -resolution_lower * 
-                log(sqrt(2) + 1) * 2/initMz[, "m"], rep(0, n.peak)), ncol = 4)))
+                rep(0.1, n.peak)), ncol = 4) - 
+                    matrix(c(initMz[, "m"]/(resolution_mean * 100), 
+                -initMz[, "m"]/(resolution_upper*2), 
+                -initMz[, "m"]/(resolution_upper*2), 
+                rep(0, n.peak)), 
+                ncol = 4)))
             
             upper.cons <- c(t(initMz * matrix(c(rep(1, n.peak), rep(0, n.peak * 2), 
-                rep(Inf, n.peak)), ncol = 4) + matrix(c(initMz[, "m"]/(resolution_mean * 
-                100), resolution_upper * log(sqrt(2) + 1) * 2/initMz[, "m"], resolution_upper * 
-                log(sqrt(2) + 1) * 2/initMz[, "m"], rep(0, n.peak)), ncol = 4)))
+                rep(Inf, n.peak)), ncol = 4) + 
+                    matrix(c(initMz[, "m"]/(resolution_mean *100), 
+                             initMz[, "m"]/(resolution_lower*2), 
+                             initMz[, "m"]/(resolution_lower*2), 
+                rep(0, n.peak)), ncol = 4)))
             
             
-            fit <- fitPeak(initMz, spectrum, mzAxis.m, lower.cons, upper.cons, fctFit, 
+            fit <- fitPeak(initMz, spectrum, mzAxis.m, lower.cons, upper.cons, fctFit[[file]], 
                 l.shape = getPeaksInfo(ptrSet)$peakShape[[file]])
             
             fit.peak <- fit$fit.peak

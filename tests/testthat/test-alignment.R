@@ -25,7 +25,7 @@ test_alignSamples <- function(){
   directory <-  system.file("extdata/mycobacteria",  package = "ptairData")
   dirSet <- createPtrSet(directory, setName = "test", mzCalibRef =c(21.022,59.049))
   dirSet <- detectPeak(dirSet, mzNominal = c(21,59),smoothPenalty = 0)
-  eset <- alignSamples(dirSet,quanti="ppb",pValGreaterThres = 1)
+  eset <- alignSamples(X = dirSet,quanti="ppb",pValGreaterThres = 1)
   
   # output is expression set
   testthat::expect_is(eset,'ExpressionSet')
@@ -47,8 +47,11 @@ test_impute<-function(){
   dirSet <- detectPeak(dirSet,mz=c(21,63,77),minIntensity =50,smoothPenalty = 0)
   eset <- alignSamples(dirSet, pValGreaterThres = 1,fracGroup = 0,bgCorrected =FALSE)
   testthat::expect_equal(sum(is.na(Biobase::exprs(eset))),3)
+  X<-Biobase::exprs(eset)
   eset<-impute(eset,dirSet)
+  Ximpute<-Biobase::exprs(eset)
   testthat::expect_equal(sum(is.na(Biobase::exprs(eset))),0)
+  testthat::expect_equal(round(Ximpute[2,1],2),0.16)
 }
 
 testthat::test_that("findEqualGreater() works correctly.", test_findEqualGreater())

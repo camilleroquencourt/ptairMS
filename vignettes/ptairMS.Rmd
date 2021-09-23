@@ -106,12 +106,12 @@ To perform these steps and check the quality of the raw data, we first use the `
 
 * builds a default `sampleMetadata` table with the file names, date and possibly the subdirectories
 
-This function creates a unique `ptrSet` object for the whole study, which contains all necessary information about the files: calibration parameters, time limits, peak lists (at this step they are empty), and primary ion quantification. The two ptrSet objects corresponding to the example datasets used in this vignette are included in the _**ptairMS**_ package, and may be loaded with `r data(exhaledPtrset)` and `r data(mycobacteriaSet)`. The corresponding raw files are available in the _**ptairData**_ companion package.
+This function creates a unique `ptrSet` object for the whole study, which contains all necessary information about the files: calibration parameters, time limits, peak lists (at this step they are empty), and primary ion quantification. The corresponding raw files are available in the _**ptairData**_ companion package.
 
 Importantly, the `ptrSet` may be updated if new files are added or deleted from the directory, with the function `updatePtrSet` (see the *Updating the ptrSet* section).
 
 To create a `ptrSet` object form the raw data directory:
-```{r createPtrSet, message = FALSE}
+```{r createPtrSet}
 exhaledPtrset <- createPtrSet(dir=dirRaw,
                      setName="exhaledPtrset",
                      mzCalibRef = c(21.022, 60.0525),fracMaxTIC = 0.7,
@@ -430,7 +430,10 @@ plotFeatures(exhaledPtrset,mz = 67.0539,typePlot = "ggplot",colorBy = "individua
 The package can also be used to process data from headspace analysis (e.g., cell culture headspace). The acquisition phase is detected on the total ion trace, in a similar way as for exhaled air. The *mycobacteria* dataset contains two replicates from two bacterial species and one control (culture medium). The 6 corresponding raw files are available in the companion **ptairData** package.
 
 ```{r}
-data("mycobacteriaSet")
+dir <- system.file("extdata/mycobacteria",  package = "ptairData")
+mycobacteriaSet <- createPtrSet(dir = dir, setName = "test", 
+                         mzCalibRef = c(21.022,59.049))
+mycobacteriaSet <- detectPeak(mycobacteriaSet, smoothPenalty = 0)
 plotTIC(mycobacteriaSet,type="ggplot",showLimits = TRUE,file="Specie-a2.h5")
 eSet <- alignSamples(mycobacteriaSet)
 eSet<-impute(eSet,ptrSet = mycobacteriaSet)

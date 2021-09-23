@@ -56,7 +56,10 @@ the \code{mz} masses. The expiration average spectrum is in full lines,
 and background in dashed lines.
 }
 \examples{
-data(exhaledPtrset )
-plotF<-plotFeatures(exhaledPtrset ,mz=59.049,type="ggplot")
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, 
+setName="exhaledPtrset", mzCalibRef = c(21.022, 60.0525),
+fracMaxTIC = 0.7, saveDir = NULL )
+plotF<-plotFeatures(exhaledPtrset ,mz=59.049,type="ggplot",colorBy="subfolder")
 print(plotF)
 }

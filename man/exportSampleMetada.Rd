@@ -19,7 +19,9 @@ nothing
 export sampleMetadata
 }
 \examples{
-data(exhaledPtrset )
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 saveFile<-file.path(getwd(),'sampleMetadata.tsv')
 #exportSampleMetada(exhaledPtrset ,saveFile)
 }

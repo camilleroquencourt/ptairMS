@@ -18,6 +18,9 @@ peak function. First delete the peakList with \code{rmPeakList}, and apply
 \code{detectPeak}with the new parameters.
 }
 \examples{
-data(exhaledPtrset )
+library(ptairData)
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 exhaledPtrset <-rmPeakList(exhaledPtrset )
 }

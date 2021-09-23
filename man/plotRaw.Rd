@@ -81,7 +81,9 @@ Displays the image of the matrix of intensities, the TIC and the TIS,
 for the selected m/z and time ranges
 }
 \examples{
-data(exhaledPtrset)
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 ptairMS::plotRaw(exhaledPtrset ,mzRange=59,fileNames='ind1-1.h5')
 
 patientRaw <- ptairMS::readRaw(system.file('extdata/exhaledAir/ind1/ind1-1.h5',  

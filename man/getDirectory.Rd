@@ -16,6 +16,9 @@ the directory in absolute path as character
 get the files directory of a ptrSet
 }
 \examples{
-data(exhaledPtrset )
+library(ptairData)
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 getDirectory(exhaledPtrset )
 }

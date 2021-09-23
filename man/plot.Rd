@@ -24,7 +24,9 @@ plot
 plot a ptrSet object
 }
 \examples{
-data(exhaledPtrset )
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 plot(exhaledPtrset )
 plot(exhaledPtrset ,typePlot='calibError')
 plot(exhaledPtrset ,typePlot='resolution')

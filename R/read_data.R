@@ -25,7 +25,7 @@
 #' library(ptairData)
 #' filePathRaw <- system.file('extdata/exhaledAir/ind1', 'ind1-1.h5', 
 #' package = 'ptairData')
-#' raw <- readRaw(filePathRaw,mzCalibRef=c(21.022, 60.0525),calib=FALSE)
+#' raw <- readRaw(filePath=filePathRaw, mzCalibRef=c(21.022, 60.0525), calib=FALSE)
 #' @import bit64
 #' @export
 readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41.03858, 
@@ -222,10 +222,10 @@ createPtrSet <- function(dir, setName, mzCalibRef = c(21.022, 29.013424, 41.0385
     if (dir == "") 
         stop("dir is empty")
     if (!dir.exists(dir)) 
-        stop(paste(dir, " does not exist"))
+        stop(dir, " does not exist")
     if (!is.null(saveDir)) {
         if (!dir.exists(saveDir)) 
-            stop(paste(saveDir, " does not exist"))
+            stop(saveDir, " does not exist")
     }
     # setName a character
     if (!is.character(setName)) 
@@ -272,7 +272,8 @@ createPtrSet <- function(dir, setName, mzCalibRef = c(21.022, 29.013424, 41.0385
     }
     
     # checkSet
-    check <- checkSet(files = filesFullName, mzCalibRef, fracMaxTIC, mzBreathTracer, calibrationPeriod, 
+    check <- checkSet(files = filesFullName,mzCalibRef =  mzCalibRef, 
+                      fracMaxTIC, mzBreathTracer, calibrationPeriod, 
         knotsPeriod, mzPrimaryIon)
     
     if (length(check$failed) > 0) {
@@ -315,7 +316,9 @@ createPtrSet <- function(dir, setName, mzCalibRef = c(21.022, 29.013424, 41.0385
 #' and without deleted files in the directory
 #' @export
 #' @examples
-#' data(exhaledPtrset)
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+#' mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 #' ##add or delete files in the directory 
 #' # exhaledPtrset<- updatePtrSet(exhaledPtrset)
 updatePtrSet <- function(ptrset) {
@@ -371,7 +374,7 @@ updatePtrSet <- function(ptrset) {
         ptrset<- setParameters(ptrset,parameter)
         ptrset<-deleteFilePtrSet(ptrset,deletedFiles)
         ptrset<-setSampleMetadata(ptrset,sampleMetadata)
-        message(paste(deletedFiles, " deleted \n"))
+        message(deletedFiles, " deleted \n")
     }
     
     # if there is new files
@@ -461,7 +464,7 @@ checkSet <- function(files,
         # check reading and calibration of file
         raw <- try(readRaw(filePath = files[j], mzCalibRef = mzCalibRef, calibrationPeriod = calibrationPeriod))
         if (attr(raw, "class") == "try-error") {
-            message(paste(fileName[j], " opening or calibration failed"))
+            message(fileName[j], " opening or calibration failed")
             failed <- c(failed, fileName[j])
             next
         }
@@ -566,7 +569,7 @@ checkSet <- function(files,
         }
         primaryIon[[fileName[j]]] <- list(primaryIon = primaryIonV, waterCluster = waterCluster)
         
-        message(paste(fileName[j], " check"))
+        message(fileName[j], " check")
     }
     
     return(list(mzCalibRefList = mzCalibRefList, signalCalibRef = signalCalibRef, 

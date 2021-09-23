@@ -1,6 +1,6 @@
 Package: ptairMS
 Title: Pre-processing PTR-TOF-MS Data 
-Version: 1.1.3
+Version: 1.1.4
 Date: 2020-03-18
 Authors@R: person("camille", "Roquencourt", email = "camille.roquencourt@hotmail.fr", role = c("aut", "cre"))
 Description: This package implements a suite of methods to preprocess data from PTR-TOF-MS instruments (HDF5 format) and 
@@ -15,7 +15,7 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: false
 BugReports: https://github.com/camilleroquencourt/ptairMS/issues
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Imports:
     Biobase,
     bit64,

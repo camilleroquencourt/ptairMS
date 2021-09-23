@@ -14,7 +14,9 @@ utils::globalVariables(c("error", "name", "out", "intervalRef", "signal", "signa
 #' @rdname plot
 #' @export
 #' @examples 
-#' data(exhaledPtrset )
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+#' mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 #' plot(exhaledPtrset )
 #' plot(exhaledPtrset ,typePlot='calibError')
 #' plot(exhaledPtrset ,typePlot='resolution')
@@ -470,7 +472,9 @@ plotPtrReaction <- function(pSet) {
 #' @rdname plotCalib
 #' @examples 
 #' ## ptrSet
-#' data(exhaledPtrset )
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+#' mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 #' plotCalib(exhaledPtrset ,fileNames=getFileNames(exhaledPtrset )[1])
 #'
 #' ## ptrRaw 
@@ -569,7 +573,9 @@ methods::setMethod(f = "plotCalib", signature = "ptrSet", function(object, ppm =
 #' @importFrom grDevices dev.off pdf
 #' @export
 #' @examples
-#' data(exhaledPtrset )
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+#' mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 #' plotTIC(exhaledPtrset ,type='ggplot')
 methods::setMethod(f = "plotTIC", signature = "ptrSet", 
                     function(object, type, baselineRm,
@@ -720,7 +726,9 @@ methods::setMethod(f = "plotTIC", signature = "ptrSet",
 #' @param ... not used
 #' @rdname plotRaw
 #' @examples 
-#' data(exhaledPtrset)
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+#' mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 #' ptairMS::plotRaw(exhaledPtrset ,mzRange=59,fileNames='ind1-1.h5')
 #'
 #' patientRaw <- ptairMS::readRaw(system.file('extdata/exhaledAir/ind1/ind1-1.h5',  
@@ -1099,8 +1107,10 @@ methods::setMethod(f = "plotFeatures", signature = "ptrSet",
 #' @return a data.frame 
 #' @export
 #' @examples 
-#' data(exhaledPtrset )
-#' SMD<- resetSampleMetadata(exhaledPtrset )
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+#' mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
+#' SMD<- resetSampleMetadata(exhaledPtrset)
 resetSampleMetadata <- function(ptrset) {
     dir <- getParameters(ptrset)$dir
     fileNamesObject <- getParameters(ptrset)$listFile
@@ -1145,8 +1155,10 @@ resetSampleMetadata <- function(ptrset) {
 #' @return a data.frame 
 #' @export
 #' @examples 
-#' data(exhaledPtrset )
-#' SMD<-getSampleMetadata(exhaledPtrset )
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+#' mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL)
+#' SMD<-getSampleMetadata(exhaledPtrset)
 getSampleMetadata <- function(set) {
     if (!methods::is(set, "ptrSet")) 
         stop("set is not a ptrSet object")
@@ -1163,10 +1175,12 @@ getSampleMetadata <- function(set) {
 #' @return the ptrSet object in argument with the sampleMetadata modified
 #' @export
 #' @examples 
-#' data(exhaledPtrset )
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+#' mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 #' SMD<-getSampleMetadata(exhaledPtrset )
-#' colnames(SMD)[1]<-'species'
-#' mycobacteria<-setSampleMetadata(exhaledPtrset ,SMD)
+#' colnames(SMD)[1]<-'individual'
+#' exhaledPtrset<-setSampleMetadata(exhaledPtrset ,SMD)
 setSampleMetadata <- function(set, sampleMetadata) {
     # check if set is ptrSet
     if (!methods::is(set, "ptrSet")) 
@@ -1178,8 +1192,8 @@ setSampleMetadata <- function(set, sampleMetadata) {
     fileName <- basename(files)
     testFilesName <- fileName %in% row.names(sampleMetadata)
     if (!all(testFilesName)) {
-        stop(paste(fileName[!testFilesName], "not in sampleMetadata 
-                          row names, please complete theme \n"))
+        stop(fileName[!testFilesName], "not in sampleMetadata 
+                          row names, please complete theme \n")
     }
     set@sampleMetadata <- sampleMetadata
     ## save
@@ -1199,7 +1213,9 @@ setSampleMetadata <- function(set, sampleMetadata) {
 #' @return nothing
 #' @export
 #' @examples 
-#' data(exhaledPtrset )
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+#' mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 #' saveFile<-file.path(getwd(),'sampleMetadata.tsv')
 #' #exportSampleMetada(exhaledPtrset ,saveFile)
 exportSampleMetada <- function(set, saveFile) {
@@ -1223,10 +1239,12 @@ exportSampleMetada <- function(set, saveFile) {
 #' @export
 #' @examples 
 #' library(ptairData)
-#' data(exhaledPtrset )
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+#' mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 #' saveFile<-file.path(getwd(),'sampleMetadata.tsv')
 #' #exportSampleMetada(exhaledPtrset ,saveFile)
-#' #mycobacteria<-importSampleMetadata(exhaledPtrset ,saveFile)
+#' #exhaledPtrset<-importSampleMetadata(exhaledPtrset ,saveFile)
 importSampleMetadata <- function(set, file) {
     if (!methods::is(set, "ptrSet")) 
         stop("set is not a ptrSet object")
@@ -1241,8 +1259,8 @@ importSampleMetadata <- function(set, file) {
     fileName <- basename(files)
     testFilesName <- fileName %in% row.names(sampleMetadata)
     if (!all(testFilesName)) {
-        stop(paste(fileName[!testFilesName], "not in sampleMetadata 
-                            row names, please complete theme \n"))
+        stop(fileName[!testFilesName], "not in sampleMetadata 
+                            row names, please complete theme \n")
     }
     set<- setSampleMetadata(set = set,sampleMetadata = sampleMetadata)
     return(set)
@@ -1328,13 +1346,16 @@ methods::setMethod(f = "timeLimits", signature = "ptrSet",
 #' file in name of the list element
 #' @return a list with numeric vector of knots for each file
 #' @examples 
-#' data(exhaledPtrset)
+#' library(ptairData)
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+#' mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 #'
 #' #### placed knots every 2 times points
-#' mycobacteria <- defineKnots(exhaledPtrset ,knotsPeriod=2,method='uniform')
+#' exhaledPtrset <- defineKnots(exhaledPtrset ,knotsPeriod=2,method='uniform')
 #' 
 #' #### placed knots every 3 times points in the expiration (default)
-#' mycobacteria <- defineKnots(exhaledPtrset ,knotsPeriod=3,method='expiration')
+#' exhaledPtrset <- defineKnots(exhaledPtrset ,knotsPeriod=3,method='expiration')
 #' @rdname defineKnots
 #' @export
 methods::setMethod(f = "defineKnots", signature = "ptrSet", 
@@ -1357,9 +1378,9 @@ methods::setMethod(f = "defineKnots", signature = "ptrSet",
                   1))
             })
             if (any(!test)) 
-                stop(paste("knots are not contained in 
+                stop("knots are not contained in 
                                                    the time axis for file ", 
-                  names(knotsList)[which(!test)], "\n"))
+                  names(knotsList)[which(!test)], "\n")
             knots <- knotsList
         } else {
             knots <- lapply(names(getTimeInfo(object)$TIC), function(file) {
@@ -1447,7 +1468,10 @@ methods::setMethod(f = "calibration", signature = "ptrSet",
 #' @param ptrSet ptrSet object 
 #' @return the directory in absolute path as character
 #' @examples 
-#' data(exhaledPtrset )
+#' library(ptairData)
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+#' mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 #' getDirectory(exhaledPtrset )
 #' @export
 getDirectory <- function(ptrSet) {
@@ -1465,7 +1489,10 @@ getDirectory <- function(ptrSet) {
 #' @return a ptrSet
 #' @export
 #' @examples 
-#' data(exhaledPtrset )
+#' library(ptairData)
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+#' mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 #' exhaledPtrset <-rmPeakList(exhaledPtrset )
 rmPeakList <- function(object) {
     object@peakList <- list()
@@ -1524,7 +1551,11 @@ methods::setMethod("show", "ptrSet", function(object) {
 #'   }
 #'} 
 #' @examples 
-#' data(exhaledPtrset )
+#' library(ptairData)
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+#' mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
+#' exhaledPtrset<-detectPeak(exhaledPtrset,mz=c(21,59))
 #' peakList<- getPeakList(exhaledPtrset )
 #' X<-Biobase::exprs(peakList[[1]])
 #' Y<- Biobase::fData(peakList[[1]])
@@ -1539,7 +1570,10 @@ getPeakList <- function(set) {
 #' prepended to the file names.
 #' @return a vector of character that contains all file names
 #' @examples 
-#' data(exhaledPtrset )
+#' library(ptairData)
+#' dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+#' exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+#' mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 #' getFileNames(exhaledPtrset )
 #' @rdname getFileNames
 #' @export

@@ -8,8 +8,9 @@ Rcpp::NumericVector findEqualGreaterM( Rcpp::NumericVector x, Rcpp::NumericVecto
   Rcpp::NumericVector res(sizeres);
   
   for(int i = 0; i< sizeres ; i++){
-    while ( ( idx < x.size() ) &&  ( x[idx] < values[i] ) ) 
+    while ( ( idx < x.size() ) &&  ( x[idx] < values[i] ) ) {
       idx++;
+	}
     res[i]=idx+1;
   }
   

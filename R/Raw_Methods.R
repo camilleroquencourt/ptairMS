@@ -48,7 +48,7 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
     outMz <- which(vapply(mzCalibRef, function(x) !any(round(x) - width.window < 
         mz & mz < round(x) + width.window), FUN.VALUE = TRUE))
     if (length(outMz) != 0) {
-        message(paste(paste(mzCalibRef[outMz], collapse = " "), "excluded, not contains in the mass axis \n"))
+        message(paste(mzCalibRef[outMz], collapse = " "), "excluded, not contains in the mass axis \n")
         mzCalibRef <- mzCalibRef[-outMz]
     }
     # test if there is a only one peak on the TIS
@@ -63,7 +63,7 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
     object@calibMassRef <- mzCalibRef
     # determine average peak shape on calibration masses
     peakShape <- determinePeakShape(raw = object)$peakShapetof
-    object<-setPeakShape(object,peakShape)
+    object<-setPeakShape(object,peakShape) ####
     
     # performs calibration every steps second
     calib_List <- list(NULL)
@@ -174,7 +174,7 @@ calibrationFun <- function(sp, mz, mzCalibRef, calibCoef, peakShape, tol) {
         return(list(signal = signal, mz = mz))
     })
     if (any(abs(error) > tol)) 
-        message(paste("error greater than ", tol, "\n"))
+        message("error greater than ", tol, "\n")
     return(list(mzVnbis = mzVnbis, mzCalibRef = mzCalibRef, calibSpectr = calibSpectr, 
         error = error, coefs = coefs))
 }
@@ -638,7 +638,7 @@ methods::setMethod(f = "defineKnots", signature = "ptrRaw", function(object, kno
             t <- getRawInfo(object)$time
             if (knotsList[1] >= t[1] & utils::tail(knotsList, 1) <= utils::tail(t, 
                 1)) 
-                stop(paste("knots are not contained in the time axis \n"))
+                stop("knots are not contained in the time axis \n")
         } else {
             background <- timeLimit$backGround
             t <- getRawInfo(object)$time
@@ -658,12 +658,12 @@ defineKnotsFunc <- function(t, background, knotsPeriod, method, file = NULL) {
     test <- vapply(seq_along(knots[-1]), function(i) any(knots[i] < t & t < knots[i + 
         1]), FUN.VALUE = TRUE)
     if (!all(test)) {
-        warning(paste(file, "knotsPeriod is to short, knots set to NULL"))
+        warning(file, ",knotsPeriod is to short, knots set to NULL")
         knots <- NULL
     }
     if (length(knots) > 100) 
-        warning(paste(file, "K= ", length(knots), "we suggest to set a highter knots 
-                                      frequency \n"))
+        warning(file, " K= ", length(knots), " we suggest to set a highter knots 
+                                      frequency \n")
     return(knots)
 }
 defineKnotsExpiration <- function(t, background, knots) {

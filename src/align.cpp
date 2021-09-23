@@ -34,7 +34,9 @@ Rcpp::List findLimDensity(Rcpp::NumericVector dens, int istart, int state) {
             }
         }
         else if(difference == -2 && state == 1)
-            state=2;
+            {
+                state=2;
+            }
     }
 
     Rcpp::List ret = Rcpp::List::create(Rcpp::Named("linflex") = linflex + 1,

@@ -34,7 +34,9 @@ Plot the calibration peaks after calibration
 }
 \examples{
 ## ptrSet
-data(exhaledPtrset )
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 plotCalib(exhaledPtrset ,fileNames=getFileNames(exhaledPtrset )[1])
 
 ## ptrRaw 

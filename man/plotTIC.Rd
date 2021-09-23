@@ -76,6 +76,8 @@ package = 'ptairData')
 raw <- readRaw(filePath)
 p <- plotTIC(raw)
 p
-data(exhaledPtrset )
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 plotTIC(exhaledPtrset ,type='ggplot')
 }

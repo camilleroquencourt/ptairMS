@@ -80,17 +80,21 @@ Putatively annotate VOC mz by using the reference compilation from the
 literature, and porpose an isotope detetcion.
 }
 \examples{
-data(exhaledPtrset )
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, 
+setName="exhaledPtrset", mzCalibRef = c(21.022, 60.0525),
+fracMaxTIC = 0.7, saveDir = NULL )
+exhaledPtrset<-detectPeak(exhaledPtrset,mz=c(21,59,77))
 exhaled.eset <-alignSamples(exhaledPtrset ,pValGreaterThres=0.05)
 # Expression Set
 exhaled.eset <- annotateVOC(exhaled.eset)
-head(Biobase::fData(exhaled.eset)[, c("vocDB_ion_mass", "vocDB_ion_formula")])
+head(Biobase::fData(exhaled.eset))
 # Data frame
 exhaled_fdata.df <- Biobase::fData(exhaled.eset)
 exhaled_fdata.df <- annotateVOC(exhaled_fdata.df)
-head(exhaled_fdata.df[, c("vocDB_ion_mass", "vocDB_ion_formula")])
+head(exhaled_fdata.df)
 # Numeric
 ionMass.vn <- as.numeric(Biobase::featureNames(exhaled.eset))
 annotated_ions.df <- annotateVOC(ionMass.vn)
-head(annotated_ions.df[, c("vocDB_ion_mass", "vocDB_ion_formula")])
+head(annotated_ions.df)
 }

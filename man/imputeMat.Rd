@@ -22,8 +22,14 @@ Imputing missing values by returning back to the raw data and fitting the
 peak shape function on the noise / residuals
 }
 \examples{
-data(exhaledPtrset)
+library(ptairData)
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, 
+setName="exhaledPtrset", mzCalibRef = c(21.022, 60.0525),
+fracMaxTIC = 0.7, saveDir = NULL )
+exhaledPtrset<-detectPeak(exhaledPtrset,mz=c(21,52))
 eSet <- alignSamples(exhaledPtrset,pValGreaterThres=0.05,fracGroup=0)
 X <-Biobase::exprs(eSet)
 X <- imputeMat(X,exhaledPtrset,quantiUnit='ppb')
+plotFeatures(exhaledPtrset,mz = 52.047,typePlot = "ggplot",colorBy = "subfolder")
 }

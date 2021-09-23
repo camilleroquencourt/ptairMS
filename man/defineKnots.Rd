@@ -65,11 +65,14 @@ must be contained in the time axis
 }
 }
 \examples{
-data(exhaledPtrset)
+library(ptairData)
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 
 #### placed knots every 2 times points
-mycobacteria <- defineKnots(exhaledPtrset ,knotsPeriod=2,method='uniform')
+exhaledPtrset <- defineKnots(exhaledPtrset ,knotsPeriod=2,method='uniform')
 
 #### placed knots every 3 times points in the expiration (default)
-mycobacteria <- defineKnots(exhaledPtrset ,knotsPeriod=3,method='expiration')
+exhaledPtrset <- defineKnots(exhaledPtrset ,knotsPeriod=3,method='expiration')
 }

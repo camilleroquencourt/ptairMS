@@ -18,6 +18,8 @@ reset the default sampleMetadata, containing the suborders names and the
 acquisition dates as columns.
 }
 \examples{
-data(exhaledPtrset )
-SMD<- resetSampleMetadata(exhaledPtrset )
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
+SMD<- resetSampleMetadata(exhaledPtrset)
 }

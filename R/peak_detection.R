@@ -57,8 +57,7 @@ utils::globalVariables("::<-")
 #' exhaledPtrset<-createPtrSet(dir=directory,setName="exhaledPtrset",
 #' mzCalibRef=c(21.022,59.049),
 #' fracMaxTIC=0.9,saveDir= NULL)
-#' exhaledPtrset<-rmPeakList(exhaledPtrset)
-#' exhaledPtrset  <- detectPeak(exhaledPtrset ,mzNominal=c(59,60))
+#' exhaledPtrset  <- detectPeak(exhaledPtrset)
 #' peakListEset<-getPeakList(exhaledPtrset)
 #' Biobase::fData(peakListEset[[1]])
 #' Biobase::exprs(peakListEset[[1]])

@@ -20,8 +20,10 @@ Insert a samplemetada data.frame in a ptrSet object. The dataframe must
 have all file names in rownames.
 }
 \examples{
-data(exhaledPtrset )
+dirRaw <- system.file("extdata/exhaledAir", package = "ptairData")
+exhaledPtrset <- createPtrSet(dir=dirRaw, setName="exhaledPtrset", 
+mzCalibRef = c(21.022, 60.0525), fracMaxTIC = 0.7, saveDir = NULL )
 SMD<-getSampleMetadata(exhaledPtrset )
-colnames(SMD)[1]<-'species'
-mycobacteria<-setSampleMetadata(exhaledPtrset ,SMD)
+colnames(SMD)[1]<-'individual'
+exhaledPtrset<-setSampleMetadata(exhaledPtrset ,SMD)
 }
