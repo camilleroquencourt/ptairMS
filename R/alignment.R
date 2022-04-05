@@ -56,9 +56,12 @@ align <- function(peakTab, ppmGroup = 70, dmzGroup = 0.001) {
         
         # calculated the density Determining the base of the signal to skip for a
         # resolution.
-        bw <- max(massInter[i] * ppmGroup/(10^6), dmzGroup)
-        den <- stats::density(subpeakl[, "Mz"], bw, from = massInter[i] - bw, 
-                                to = massInter[i + 1] + bw, n = 1024)
+            bw <- max(massInter[i] * ppmGroup/(10^6), dmzGroup)
+            den <- stats::density(subpeakl[, "Mz"], bw, from = massInter[i] - bw, 
+                                    to = massInter[i + 1] + bw, n = 1024)
+        
+        
+
         maxy <- max(den$y)
         den$y[which(den$y <= bw * maxy)] <- 0
         plim <- list(linflex = -1, rinflex = 0, state = 0)
@@ -592,6 +595,154 @@ fliterEset <- function(X, sampleMetadata, groupMat, groupList, peakList, group,
     } else Xbg <- data.frame(row.names = rownames(X))
     
     return(list(X = X, Xbg = Xbg))
+}
+
+imputeRaw <- function(X, raw, timeLimit,quanti="ppb") {
+    
+    missingValues <- which(is.na(X), arr.ind = TRUE)
+    indexFilesMissingValues <- unique(missingValues[, "col"])
+    namesFilesMissingValues <- colnames(X)[indexFilesMissingValues]
+    
+    fctFit <- raw@fctFit
+    l.shape <-raw@peakShape
+    primaryIon <- raw@primaryIon
+    filesFullName <- raw@name
+    
+    if (methods::is(filesFullName, "expression")) 
+        filesFullName <- eval(filesFullName)
+    
+
+    filesFullName.j <- filesFullName
+    
+    # peak list raw
+    peakList<-raw@peakList
+    peakListRaw.j <- Biobase::fData(peakList)
+    quantiImpute <- list()
+    mzMissing <- as.numeric(rownames(missingValues))
+    
+    
+    # open mz Axis
+    mzAxis <- raw@mz 
+    indexMzList <- lapply(unique(round(mzMissing)), function(m) which(m - 0.6 < mzAxis & 
+                                                                          mzAxis < m + 0.6))
+    names(indexMzList) <- unique(round(mzMissing))
+    indexMz <- Reduce(union, indexMzList)
+    
+    # get index time
+    indexLim <- timeLimit$exp
+    indexTime <- Reduce(c, apply(indexLim, 2, function(x) seq(x["start"], x["end"])))
+    nbExp <- ncol(indexLim)
+    
+    # open raw data
+    #raw <- rhdf5::h5read(filesFullName.j, name = "/FullSpectra/TofData", 
+    #                     index = list(indexMz, NULL, NULL, NULL))
+    
+    rawMn <- raw@rawM 
+    # * 0.2 ns / 2.9 (single ion signal) if convert to cps
+    
+    # information for ppb convertion
+    reaction <- try(reaction <- rhdf5::h5read(filesFullName.j, "AddTraces/PTR-Reaction"))
+    transmission <- try(rhdf5::h5read(filesFullName.j, "PTR-Transmission"))
+    
+ 
+    
+    for (m in unique(round(mzMissing))) {
+        # exact missing mz
+        mz <- mzMissing[round(mzMissing) == m]
+        
+        # mzAxis around m
+        mzAxis.m <- mzAxis[which(m - 0.6 < mzAxis & 
+                                     mzAxis < m + 0.6)]
+        
+        indexExp <- Reduce(c, apply(indexLim, 2, function(x) seq(x[1], x[2])))
+        length.exp <- length(indexExp)
+        
+        quantiMat <- matrix(0, ncol = length(mz), nrow = nbExp)
+        
+        spectrum <- rowSums(rawMn[ which(m - 0.6 < mzAxis & 
+                                             mzAxis < m + 0.6), 
+                                  indexExp])/(length.exp * (diff(raw@time[c(1,2)])))
+        
+        spectrum <- spectrum - snipBase(spectrum)
+        
+        # substract fitted peak also find
+        peakAlsoDetected <- peakListRaw.j[round(peakListRaw.j$Mz) == m, ]
+        if (nrow(peakAlsoDetected) != 0) {
+            # cumFitPeak
+            
+            fitPeaks <- apply(peakAlsoDetected, 1, 
+                              function(x) eval(parse(text = fctFit))(x["Mz"], x["parameterPeak.delta1"], x["parameterPeak.delta2"], x["parameterPeak.heigh"], 
+                                                                     x = mzAxis.m, l.shape = l.shape))
+            if (nrow(peakAlsoDetected) > 1) 
+                cumFitPeak <- rowSums(fitPeaks) else cumFitPeak <- c(fitPeaks)
+                spectrum <- spectrum - cumFitPeak
+        }
+        
+        # fit on the missing values
+        resolutionrange<-raw@resolution
+        resolution_upper <- resolutionrange[3]
+        resolution_mean <- resolutionrange[2]
+        resolution_lower <- resolutionrange[1]
+        
+        n.peak <- length(mz)
+        delta <- rep(m/resolution_mean, 2 * n.peak)
+        h <- vapply(mz, function(m) max(max(spectrum[which(abs(mzAxis.m - m) < (m * 
+                                                                                    50/10^6))]), 1), 0)
+        
+        
+        initMz <- matrix(c(mz, delta, h), nrow = n.peak)
+        colnames(initMz) <- c("m", "delta1", "delta2", "h")
+        
+        
+        lower.cons <- c(t(initMz * matrix(c(rep(1, n.peak), rep(0, n.peak * 2), rep(0.1, 
+                                                                                    n.peak)), ncol = 4) - matrix(c(initMz[, "m"]/(resolution_mean * 100), 
+                                                                                                                   -initMz[, "m"]/(resolution_lower * 2), -initMz[, "m"]/(resolution_lower * 
+                                                                                                                                                                              2), rep(0, n.peak)), ncol = 4)))
+        
+        upper.cons <- c(t(initMz * matrix(c(rep(1, n.peak), rep(0, n.peak * 2), rep(Inf, 
+                                                                                    n.peak)), ncol = 4) + matrix(c(initMz[, "m"]/(resolution_mean * 100), 
+                                                                                                                   initMz[, "m"]/(resolution_upper * 2), initMz[, "m"]/(resolution_upper * 
+                                                                                                                                                                            2), rep(0, n.peak)), ncol = 4)))
+        
+        
+        fit <- fitPeak(initMz = initMz, sp = spectrum, mz.i = mzAxis.m, lower.cons, 
+                       upper.cons, funcName = fctFit, l.shape = l.shape)
+        
+        fit.peak <- fit$fit.peak
+        par_estimated <- fit$par_estimated
+        
+        
+        quanti.m <- apply(par_estimated, 2, function(x) {
+            th <- 10 * 0.5 * (log(sqrt(2) + 1)/x[2] + log(sqrt(2) + 1)/x[3])
+            mz.x <- mzAxis.m[x[1] - th < mz & mz < x[1] + th]
+            sum(eval(parse(text = fctFit))(x[1], x[2], x[3], x[4], mz.x, l.shape), 
+                na.rm = TRUE)
+        })
+        
+        list_peak <- cbind(Mz = mz, quanti = quanti.m/(primaryIon * 
+                                                           488))
+        
+        # convert to ppb or ncps if there is reaction ans transmission information
+        if (quanti == "ppb") {
+            U <- c(reaction$TwData[1, , ])
+            Td <- c(reaction$TwData[3, , ])
+            pd <- c(reaction$TwData[2, , ])
+            quanti.m <- ppbConvert(peakList = list_peak, transmission = transmission$Data, 
+                                   U = U[indexExp], Td = Td[indexExp], pd = pd[indexExp])
+            
+        }
+        if (quanti == "ncps") {
+            # normalize by primary ions
+            quanti.m <- quanti.m/(primaryIon * 488)
+        }
+        
+       
+            X[as.character(mz),] <- quanti.m
+        
+        
+        
+    }
+    return(X)
 }
 
 imputeFunc <- function(file, missingValues, eSet, ptrSet) {

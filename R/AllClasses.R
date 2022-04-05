@@ -20,6 +20,12 @@
 #' @slot prtReaction a list containing PTR reaction information: drift 
 #' temperature, pressure and voltage
 #' @slot date acquisition date and hour 
+#' @slot peakList individual peak list in \code{\link[Biobase]{eSet}} 
+#' @slot fctFit the peak function used for peak deconvolution for each file
+#' @slot resolution estimation of the resolution for each file based on the 
+#' calibration reference masses
+#' @slot primaryIon the quantity in count per acquisition time of the isotope 
+#' of primary ion for each file
 #' @name ptrRaw-class
 #' @rdname ptrRaw
 #' @docType class
@@ -42,7 +48,11 @@ setClass(
     peakShape = "list",
     ptrTransmisison = "matrix",
     prtReaction = "list",
-    date="character"
+    date="character",
+    fctFit="character",
+    peakList ="ExpressionSet",
+    resolution ="numeric",
+    primaryIon="numeric"
   )
 )
 

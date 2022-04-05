@@ -74,7 +74,7 @@ setMethod(f = "detectPeak", signature = "ptrSet",
     ptrset <- x
     
     # get infomration
-    knots <- getPeaksInfo(ptrset)$knots
+    knots <- ptairMS:::getPeaksInfo(ptrset)$knots
     massCalib <- getCalibrationInfo(ptrset)$mzCalibRef
     primaryIon <- getPTRInfo(ptrset)$primaryIon
     indTimeLim <- getTimeInfo(ptrset)$timeLimit
@@ -244,8 +244,8 @@ processFileTemporal <- function(fullNamefile, massCalib,
     
 
     
-    process <- lapply(mzNominal, 
-                      function(m) processFileTemporalNominalMass(m = m, 
+    
+    process <- lapply(mzNominal, function(m) ptairMS:::processFileTemporalNominalMass(m = m, 
         raw = raw, mzNominal = mzNominal, ppm = ppm, 
         resolutionRange = resolutionRange, 
         minIntensity = minIntensity, fctFit = fctFit, 
@@ -594,9 +594,9 @@ peakListNominalMass <- function(i, mz, sp, ppmPeakMinSep = 130, calibCoef, resol
         X <- data.frame(Mz = center_peak, quanti_cps = quanti, delta_mz = delta_mz, 
             resolution = center_peak/delta_mz, parameter = t(par_estimated[-1, ]))
         
-        #X <- X[quanti > 1, , drop = FALSE]
-        #par_estimated <- par_estimated[, quanti > 1, drop = FALSE]
-        #peaks <- peaks[, quanti > 1, drop = FALSE]
+        X <- X[quanti > 0, , drop = FALSE]
+        par_estimated <- par_estimated[, quanti > 0, drop = FALSE]
+        peaks <- peaks[, quanti > 0, drop = FALSE]
         peaks<-peaks[,order(X[, 1]),drop=FALSE]
         X <- X[order(X[, 1]), , drop = FALSE]
         par_estimated <- par_estimated[, order(par_estimated[1, ]), drop = FALSE]
@@ -606,6 +606,7 @@ peakListNominalMass <- function(i, mz, sp, ppmPeakMinSep = 130, calibCoef, resol
             x[4], x[4] * 0.02, l.shape))
         borne <- cbind(par_estimated[1, ], t(borne))
         colnames(borne) <- c("Mz", "lowerMz", "upperMz")
+        
         borne <- borne[order(borne[, "Mz"]), , drop = FALSE]
         borne <- overlapDedect(borne)
         R2glob <- 1 - sum(sp.i.fit^2)/sum((sp.i - mean(sp.i))^2)

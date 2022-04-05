@@ -775,6 +775,7 @@ methods::setMethod(f = "PeakList", signature = "ptrRaw",
     return(list(peak = peaklist, warning = warning, infoPlot = infoPlot, baseline = baseline))
 })
 ## TODO peakLIst method dor spectrum array
+
 ## detectpeak----
 #' @param knots numeric vector corresponding to the knot values, which used for 
 #' the two dimensional regression for each file. Should be provided 
@@ -792,17 +793,19 @@ methods::setMethod(f = "PeakList", signature = "ptrRaw",
 #' raw <- readRaw(filePath,mzCalibRef=c(21.022,59.049))
 #' timeLimit<-timeLimits(raw,fracMaxTIC=0.7)
 #' knots<-defineKnots(object = raw,timeLimit=timeLimit)
-#' peakList <- detectPeak(raw, timeLimit=timeLimit, mzNominal = c(21,59),
+#' raw <- detectPeak(raw, timeLimit=timeLimit, mzNominal = c(21,59),
 #' smoothPenalty=0,knots=knots)
-#' Biobase::fData(peakList)
 #' @export
 methods::setMethod(f = "detectPeak", signature = "ptrRaw", function(x, ppm = 130, 
     minIntensity = 10, minIntensityRate = 0.01, mzNominal = NULL, resolutionRange = NULL, 
-    fctFit = "averagePeak", smoothPenalty = NULL, timeLimit, knots = NULL, mzPrimaryIon = 21.022, 
+    fctFit = NULL, smoothPenalty = NULL, timeLimit, knots = NULL, mzPrimaryIon = 21.022, 
     ...) {
+    
     raw <- x
+    
     # get infomration
     massCalib <- getCalibrationInfo(raw)$calibMassRef
+    
     # resolution
     if (is.null(resolutionRange)) {
         calibSpectr <- alignCalibrationPeak(getCalibrationInfo(raw)$calibSpectr, calibMassRef = massCalib, 
@@ -811,10 +814,32 @@ methods::setMethod(f = "detectPeak", signature = "ptrRaw", function(x, ppm = 130
         resolutionRange <- c(floor(min(resolutionEstimated)/1000) * 1000, round(mean(resolutionEstimated)/1000) * 
             1000, ceiling(max(resolutionEstimated)/1000) * 1000)
     }
+    
+    
+    
     # peakShape
     peakShape <- determinePeakShape(raw)$peakShapemz
+    
+    # check best fit
+    sech2 <- mean(PeakList(raw, mzNominal = getCalibrationInfo(raw)$calibMassRef, 
+                           fctFit = "sech2", 
+                           maxIter = 1, ppm = 500, minIntensityRate = 0.2, 
+                           windowSize = 0.2, resolutionRange = resolutionRange, 
+                           peakShape = peakShape)$peak$R2)
+    
+    averagePeak <- mean(PeakList(raw, mzNominal = getCalibrationInfo(raw)$calibMassRef, fctFit = "averagePeak", 
+                                 resolutionRange = resolutionRange, maxIter = 1, peakShape = peakShape, 
+                                 ppm = 500, minIntensityRate = 0.2, windowSize = 0.2)$peak$R2)
+    asymGauss <- mean(PeakList(raw, mzNominal = getCalibrationInfo(raw)$calibMassRef, fctFit = "asymGauss", 
+                               resolutionRange = resolutionRange, maxIter = 1, peakShape = peakShape, 
+                               ppm = 500, minIntensityRate = 0.2, windowSize = 0.2)$peak$R2)
+    
+    fctFit <- c("sech2", "averagePeak", "asymGauss")[which.max(c(sech2,averagePeak, asymGauss))]
+    
     # primary ion
-    p <- PeakList(raw, mzNominal = round(21.022), ppm = 700, minIntensity = 50, maxIter = 1)
+    p <- PeakList(raw, mzNominal = round(21.022), ppm = 700, minIntensity = 50, maxIter = 1,
+                  fctFit = fctFit,resolutionRange =resolutionRange )
+    raw@primaryIon<-p$peak$quanti_cps
     primaryIon <- list(primaryIon = p$peak$quanti_cps)
     # knot
     peakLists <- processFileTemporal(fullNamefile = raw, massCalib = massCalib, primaryIon = primaryIon, 
@@ -832,8 +857,15 @@ methods::setMethod(f = "detectPeak", signature = "ptrRaw", function(x, ppm = 130
         drop = FALSE]), (x$aligned[, -1])))
     rownames(featuresMatrix) <- rownames(assayMatrix)
     peakLists <- Biobase::ExpressionSet(assayData = assayMatrix, featureData = Biobase::AnnotatedDataFrame(featuresMatrix))
-    return(peakLists)
+    
+    raw@peakList<-peakLists
+    raw@fctFit<-fctFit
+    raw@resolution<-resolutionRange
+    
+    return(raw)
 })
+
+
 estimateResol <- function(calibMassRef, calibSpectr) {
     m <- calibMassRef
     delta <- vapply(calibSpectr, function(x) {

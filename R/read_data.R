@@ -121,11 +121,12 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
     
     
     # write ptrRaw objet
-    raw <- methods::new(Class = "ptrRaw", name = basename(filePath), rawM = rawMn, 
+    raw <- methods::new(Class = "ptrRaw", name = filePath, rawM = rawMn, 
         mz = mzVn, time = timVn, calibCoef = list(calibCoef), calibMzToTof = calib_invFormula, 
         calibToftoMz = calib_formula, calibError = 0, calibMassRef = calibMassRef, 
         calibSpectr = list(NULL), peakShape = list(NULL), ptrTransmisison = transmission, 
-        prtReaction = reaction, date = date_heure)
+        prtReaction = reaction, date = date_heure,fctFit="", peakList= Biobase::ExpressionSet(), 
+        resolution= c(0,0,0),primaryIon=0)
     
     if (calib) {
         raw <- calibration(raw, mzCalibRef, calibrationPeriod = calibrationPeriod, 

@@ -1,3 +1,6 @@
+Changes in version 1.1.6 (2022-04-05)
++ imputation function from a data matrix and raw object
+
 Changes in version 1.1.4 (2021-09-23)
 + removal of the loaded prtset data to avoid any local path problems
 
