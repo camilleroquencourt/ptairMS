@@ -92,8 +92,8 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
     index_zero <- which(timVn == 0)[-1]
     rm(rawAn)
     if (length(index_zero) != 0) {
-        timVn <- timVn[-index_zero]
-        rawMn <- rawMn[, -index_zero]
+        timVn <- timVn[-index_zero,drop=FALSE]
+        rawMn <- rawMn[, -index_zero,drop=FALSE]
     }
     
     # count ion conversion 
@@ -277,6 +277,8 @@ createPtrSet <- function(dir, setName, mzCalibRef = c(21.022, 29.013424, 41.0385
                       fracMaxTIC, mzBreathTracer, calibrationPeriod, 
         knotsPeriod, mzPrimaryIon)
     
+  
+
     if (length(check$failed) > 0) {
         parameter$listFile <- parameter$listFile[-which(basename(parameter$listFile) %in% 
             check$failed)]
@@ -343,14 +345,16 @@ updatePtrSet <- function(ptrset) {
                                  recursive = TRUE, pattern=\".h5$\",
                                  full.names = TRUE)")
     } else {
-        filesDirFullName <- list.files(parameter$dir, recursive = TRUE, pattern = "\\.h5$", 
+        filesDirFullName <- list.files(parameter$dir, recursive = TRUE, pattern = "\\.h5$",
             full.names = TRUE)
         filesDirFullNameParam <- filesDirFullName
+       
+        
     }
     
     # files already processed
     filesProcessed <- rownames(sampleMetadata)
-    
+   
     # new files
     newFilesIndex <- which(!basename(filesDirFullName) %in% filesProcessed)
     newFilesFullNames <- filesDirFullName[newFilesIndex]
@@ -371,7 +375,7 @@ updatePtrSet <- function(ptrset) {
         
         # deleted in ptrSet
         parameter<-getParameters(ptrset)
-        parameter$listFile <- filesDirFullNameParam
+        parameter$listFile <- filesDirFullNameParam[]
         ptrset<- setParameters(ptrset,parameter)
         ptrset<-deleteFilePtrSet(ptrset,deletedFiles)
         ptrset<-setSampleMetadata(ptrset,sampleMetadata)
@@ -465,7 +469,7 @@ checkSet <- function(files,
         # check reading and calibration of file
         raw <- try(readRaw(filePath = files[j], mzCalibRef = mzCalibRef, calibrationPeriod = calibrationPeriod))
         if (attr(raw, "class") == "try-error") {
-            message(fileName[j], " opening or calibration failed")
+            message(fileName[j], " opening or calibration failed \n")
             failed <- c(failed, fileName[j])
             next
         }
@@ -481,7 +485,19 @@ checkSet <- function(files,
         calibSpectr <- alignCalibrationPeak(getCalibrationInfo(raw)$calibSpectr, getCalibrationInfo(raw)$calibMassRef, 
                                             length(getRawInfo(raw)$time))
         signalCalibRef[[fileName[j]]] <- calibSpectr
-        resolutionEstimated <- estimateResol(calibMassRef = getCalibrationInfo(raw)$calibMassRef, calibSpectr = calibSpectr)
+        resolutionEstimated <- try(estimateResol(calibMassRef = getCalibrationInfo(raw)$calibMassRef, calibSpectr = calibSpectr))
+        
+        if (!is.null(attr(resolutionEstimated, "class"))) {
+            message(fileName[j], "estimated resolution failed \n")
+            failed <- c(failed, fileName[j])
+            mzCalibRefList[[fileName[j]]] <- NULL
+            errorCalibPpm[[fileName[j]]] <- NULL
+            coefCalibList[[fileName[j]]] <- NULL
+            indexTimeCalib[[fileName[j]]] <- NULL
+            signalCalibRef[[fileName[j]]] <- NULL
+            next
+        }
+        
         resolution[[fileName[j]]] <- resolutionEstimated
         reaction[[fileName[j]]] <- getPTRInfo(raw)$prtReaction
         transmisison[[fileName[j]]] <- getPTRInfo(raw)$ptrTransmisison

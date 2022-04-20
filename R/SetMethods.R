@@ -1186,9 +1186,7 @@ setSampleMetadata <- function(set, sampleMetadata) {
     if (!methods::is(set, "ptrSet")) 
         stop("set is not a ptrSet object")
     # check if row names contains all files
-    files <- getParameters(set)$listFile
-    if (methods::is(files, "expression")) 
-        files <- eval(files)
+    files <- names(set@mzCalibRef)
     fileName <- basename(files)
     testFilesName <- fileName %in% row.names(sampleMetadata)
     if (!all(testFilesName)) {
