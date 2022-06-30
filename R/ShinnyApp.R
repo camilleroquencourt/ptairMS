@@ -863,7 +863,7 @@ server <- function(input, output) {
       background<-timeLimit[[fileName]]$backGround
       t<-as.numeric(names( getTimeInfo(rv$ptrset)$TIC[[fileName]]))
       
-      if(input$methodKnot == "around expiration") {
+      if(input$methodKnot == "Around expiration") {
         defineKnotsExpiration(t,background,input$knotsPeriod) 
       } else {
         unique(c(t[1],
