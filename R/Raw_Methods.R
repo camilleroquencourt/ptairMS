@@ -45,6 +45,7 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
     sp <- rowSums(getRawInfo(object)$rawM)/(dim(getRawInfo(object)$rawM)[2] * (time[3] - time[2]))
     width.window <- 0.4
     # check if mzCalibRef are in mz
+    mzCalibRef<-mzCalibRef[mzCalibRef>0]
     outMz <- which(vapply(mzCalibRef, function(x) !any(round(x) - width.window < 
         mz & mz < round(x) + width.window), FUN.VALUE = TRUE))
     if (length(outMz) != 0) {
@@ -116,6 +117,7 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
 #' @return list 
 #' @keywords internal
 calibrationFun <- function(sp, mz, mzCalibRef, calibCoef, peakShape, tol) {
+
     width.window <- 0.4
     mzToTofFunc <- function(mz) mzToTof(mz, calibCoef)
     # calculate tof axis
@@ -527,6 +529,8 @@ methods::setMethod(f = "timeLimits", signature = "ptrRaw", function(object, frac
         mzBreathTracer, minPoints, degreeBaseline, baseline, plotDel)
     return(indLim)
 })
+
+
 timeLimitFun <- function(TIC, fracMaxTIC = 0.5, fracMaxTICBg = 0.5, derivThresholdExp = 0.5, 
     derivThresholdBg = 0.01, mzBreathTracer = NULL, minPoints = 3, degreeBaseline = 1, 
     baseline = TRUE, plotDel = FALSE) {

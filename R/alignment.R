@@ -32,12 +32,12 @@ align <- function(peakTab, ppmGroup = 70, dmzGroup = 0.001) {
     # Cuts the mass axis into 1 Da size intervals around the nominal mass
     
     nPoints <- 1024
-    mzrange <- range(peaksL[, 1])
+    mzrange <- range(peaksL[, "Mz"])
     inter = 1
     massInter <- seq(floor(mzrange[1]) - 0.5, ceiling(mzrange[2]) + 0.5, inter)
     
     # Find the position of peaksL in massInter
-    masspos <- findEqualGreaterM(peaksL[, 1], massInter)
+    masspos <- findEqualGreaterM(peaksL[, "Mz"], massInter)
     
     # Initialize variables The list who will be return, contains each group of same
     # masses
@@ -309,13 +309,14 @@ alignSamplesFunc <- function(peakList, sampleMetadata, ppmGroup = 100,
                                 bgCorrected = TRUE) {
     
     
-    peakList <- lapply(peakList, 
+    peakList <- lapply(peakList,
                        function(x) {
-                           
+
                            x<-as.data.table(Biobase::fData(x)[, -c(2,3, 4)])
-                           
-                           
+
+
                            })
+    
     testquantiUnit <- Reduce(c, lapply(peakList, function(x) {
         x <- as.matrix(x)
         all(is.na(x[, paste0("quanti_", quantiUnit)]))
@@ -381,7 +382,7 @@ alignSamplesFunc <- function(peakList, sampleMetadata, ppmGroup = 100,
     
     
     # make subgroup of peak
-    groupList <- align(as.matrix(mat), ppmGroup, dmzGroup)
+    groupList <- align(peakTab = as.matrix(mat), ppmGroup, dmzGroup)
     
     # Get number of samples
     nSample <- length(peakList)
@@ -398,6 +399,7 @@ alignSamplesFunc <- function(peakList, sampleMetadata, ppmGroup = 100,
     
     # formatting the final matrix
     mat.final.Exp <- apply(groupMat[, c("quanti", "Samples")], MARGIN = 1, function(x) {
+        x<-as.matrix(x)
         output <- rep(NA, nSample)
         ch.Area <- x[1]
         ch.Area.split <- strsplit(ch.Area, split = "_")[[1]]
@@ -605,6 +607,7 @@ imputeRaw <- function(X, raw, timeLimit,quanti="ppb") {
     
     fctFit <- raw@fctFit
     l.shape <-raw@peakShape
+    
     primaryIon <- raw@primaryIon
     filesFullName <- raw@name
     
@@ -631,6 +634,7 @@ imputeRaw <- function(X, raw, timeLimit,quanti="ppb") {
     # get index time
     indexLim <- timeLimit$exp
     indexTime <- Reduce(c, apply(indexLim, 2, function(x) seq(x["start"], x["end"])))
+    
     nbExp <- ncol(indexLim)
     
     # open raw data
@@ -1021,6 +1025,8 @@ imputeMat <- function(X, ptrSet, quantiUnit) {
         mzAxis <- rhdf5::h5read(filesFullName.j, name = "FullSpectra/MassAxis")
         indexMzList <- lapply(unique(round(mzMissing)), function(m) which(m - 0.6 < 
             mzAxis & mzAxis < m + 0.6))
+        
+        
         names(indexMzList) <- unique(round(mzMissing))
         indexMz <- Reduce(union, indexMzList)
         
@@ -1082,15 +1088,56 @@ imputeMat <- function(X, ptrSet, quantiUnit) {
                                                                         x = mzAxis.m, 
                                                                         l.shape = getPeaksInfo(ptrSet)$peakShape[[file]])
                 fitPeaks <- apply(peakAlsoDetected, 1, funEVAL )
-                if (nrow(peakAlsoDetected) > 1) 
-                  cumFitPeak <- rowSums(fitPeaks) else cumFitPeak <- c(fitPeaks)
+                if(all(is.na(fitPeaks))){
+                    resolution_upper <- ceiling (max(ptrSet@resolution[[file]])/1000)*1000 +1000
+                    resolution_mean <- round(mean(ptrSet@resolution[[file]])/100)*100
+                    resolution_lower <- floor(min(ptrSet@resolution[[file]])/1000)*1000-500
+                    
+                    
+                    
+                    n.peak <- nrow(peakAlsoDetected)
+                    mass<-peakAlsoDetected$Mz
+                    delta <- rep(m/resolution_mean, 2 * n.peak)
+                    h <- vapply(mass, function(m) max(max(spectrum[which(abs(mzAxis.m - m) < 
+                                                                           (m * 50/10^6))]), 1), 0)
+                    
+                    
+                    initMz <- matrix(c(mass, delta/2, h), nrow = n.peak)
+                    colnames(initMz) <- c("m", "delta1", "delta2", "h")
+                    
+                    lower.cons <- c(t(initMz * matrix(c(rep(1, n.peak), rep(0, n.peak * 2), 
+                                                        rep(0.1, n.peak)), ncol = 4) - 
+                                          matrix(c(initMz[, "m"]/(resolution_mean * 100), 
+                                                   -initMz[, "m"]/(resolution_upper*2), 
+                                                   -initMz[, "m"]/(resolution_upper*2), 
+                                                   rep(0, n.peak)), 
+                                                 ncol = 4)))
+                    
+                    upper.cons <- c(t(initMz * matrix(c(rep(1, n.peak), rep(0, n.peak * 2), 
+                                                        rep(Inf, n.peak)), ncol = 4) + 
+                                          matrix(c(initMz[, "m"]/(resolution_mean *100), 
+                                                   initMz[, "m"]/(resolution_lower*2), 
+                                                   initMz[, "m"]/(resolution_lower*2), 
+                                                   rep(0, n.peak)), ncol = 4)))
+                    fit <- fitPeak(initMz, spectrum, mzAxis.m, lower.cons, upper.cons, fctFit[[file]], 
+                                   l.shape = getPeaksInfo(ptrSet)$peakShape[[file]])
+                    
+                    fitPeaks <- fit$fit.peak
+                    
+                }
+               
+                if (length(dim(fitPeaks)) > 1 ) 
+                    cumFitPeak <- rowSums(fitPeaks) else cumFitPeak <- c(fitPeaks)
                 spectrum <- spectrum - cumFitPeak
+                
+                spectrum[spectrum<0]<-0
             }
             
             # fit on the missing values
-            resolution_upper <- 8000
-            resolution_mean <- 5000
-            resolution_lower <- 3000
+            resolution_upper <- ceiling (max(ptrSet@resolution[[file]])/1000)*1000
+            resolution_mean <- round(mean(ptrSet@resolution[[file]])/100)*100
+            resolution_lower <- floor(min(ptrSet@resolution[[file]])/1000)*1000
+            
             
             n.peak <- length(mz)
             delta <- rep(m/resolution_mean, 2 * n.peak)

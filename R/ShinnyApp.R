@@ -329,6 +329,20 @@ score_plotly <- function(ropls.model,label.c = "sampleNames",color.c = "",info.v
   
 }               
 
+################# ui -----
+
+
+# Graphical interface of ptairMS workflow
+# 
+# The whole workflow of ptairMS can be run interactively through a graphical user interface,
+# which provides visualizations (expiration phases, peaks in the raw data, peak table, individual VOCs),
+# quality controls (calibration, resolution, peak shape and evolution of reagent ions depending on time),
+# and exploratory data analysis.
+# @return an \code{\link[Biobase]{ExpressionSet}} (Biobase object)
+# @examples
+# \dontrun{RunShinnyApp()}
+# @rdname RunShinnyApp
+# @export
 
 # Define UI for application that draws a histogram
 #' @importFrom shinyscreenshot screenshotButton
@@ -499,8 +513,8 @@ ui <- shiny::navbarPage("ptairMS",
    #)
 )
 
-# Define server logic required to draw a histogram
-server <- function(input, output) {
+    # Define server logic required to draw a histogram
+    server <- function(input, output) {
   
   paramRv<-shiny::reactiveValues(path=NULL)
   rv <- shiny::reactiveValues( ptrset=NULL,dataTimeLimit=NULL,bgPoints=NULL)
@@ -1001,7 +1015,10 @@ server <- function(input, output) {
   
 }
 
-shiny::shinyApp(ui = ui, server = server)
+
+    shiny::shinyApp(ui = ui, server = server) 
+
+
 
 
 

@@ -42,6 +42,16 @@ for each calibration period}
 temperature, pressure and voltage}
 
 \item{\code{date}}{acquisition date and hour}
+
+\item{\code{peakList}}{individual peak list in \code{\link[Biobase]{eSet}}}
+
+\item{\code{fctFit}}{the peak function used for peak deconvolution for each file}
+
+\item{\code{resolution}}{estimation of the resolution for each file based on the 
+calibration reference masses}
+
+\item{\code{primaryIon}}{the quantity in count per acquisition time of the isotope 
+of primary ion for each file}
 }}
 
 \references{
