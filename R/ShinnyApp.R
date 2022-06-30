@@ -711,7 +711,7 @@ server <- function(input, output) {
   # )
   
   ### Initialisation de ptrSetNew avec l'ancien ptrSet ----
-  #ptrSetNew <- shiny::reactiveVal(value= ptrSet)
+  # ptrSetNew <- shiny::reactiveVal(value= ptrSet)
   
   
   #rv <- shiny::reactiveValues( data = NULL , bgPoints=NULL, ptrset= ptrSet )
@@ -794,7 +794,7 @@ server <- function(input, output) {
     rv$bgPoints<- timeLimit$backGround
     rv$knots<-knots
     
-    rv$ptrset<-ptrSetNew()
+    # rv$ptrset<-ptrSetNew()
     timeLimitInput<-getTimeInfo(rv$ptrset)$timeLimit[[input$fileName]]
     
     timeLimitInput$exp <- t(rv$data)
@@ -814,7 +814,7 @@ server <- function(input, output) {
     parameter$knotsPeriod<-input$knotsPeriod
     parameter$timeLimit<-paramterTimeLimit
     rv$ptrset<- setParameters(rv$ptrset,parameter)
-    ptrSetNew(rv$ptrset)
+    # ptrSetNew(rv$ptrset)
     rv$new <-FALSE
     rv$newFile <-FALSE
   })
@@ -865,7 +865,7 @@ server <- function(input, output) {
     rv$bgPoints<- timeLimit[[input$fileName]]$backGround
     rv$knots<-knots[[input$fileName]]
     
-    rv$ptrset<-ptrSetNew()
+    # rv$ptrset<-ptrSetNew()
     
     rv$ptrset<-setTimeLimits(rv$ptrset,timeLimit)
     rv$ptrset<-setKnots(rv$ptrset,knots)
@@ -881,7 +881,7 @@ server <- function(input, output) {
     parameter$knotsPeriod<-input$knotsPeriod
     parameter$timeLimit<-paramterTimeLimit
     rv$ptrset<- setParameters(rv$ptrset,parameter)
-    ptrSetNew(rv$ptrset)
+    # ptrSetNew(rv$ptrset)
   })
   
   # display the expirations in data table ----
@@ -897,12 +897,12 @@ server <- function(input, output) {
                       {
                         rv$data[ input$tableTimeLimit_cell_edit$row , 
                                  input$tableTimeLimit_cell_edit$col] <- as.numeric(input$tableTimeLimit_cell_edit$value)
-                        rv$ptrset <- ptrSetNew()
+                        # rv$ptrset <- ptrSetNew()
                         timeLimitInput<-getTimeInfo(rv$ptrset)$timeLimit[[input$fileName]]
                         timeLimitInput$exp <- t(rv$data)
                         
                         rv$ptrset<-setTimeLimits(rv$ptrset,newTimeLimites =timeLimitInput,index = input$fileName )
-                        ptrSetNew(rv$ptrset)
+                        # ptrSetNew(rv$ptrset)
                       }
   )
   
@@ -1055,17 +1055,17 @@ server <- function(input, output) {
   # Reset Calib 
   shiny::observeEvent(input$resetCalib,{
     mzCalibRef = c()
-    # for (i in 1:8){
-    #   if (!is.null(eval(paste0("input$mz",i,"New")))){
-    #     mzCalibRef <-c(mzCalibRef,eval(paste0("input$mz",i,"New")))
-    #     print(mzCalibRef)
-    #   }
-    # }
-    # 
-    # rv$ptrset<-calibration(rv$ptrset,mzCalibRef)
+    for (i in 1:length(rv$ptrset@parameter$mzCalibRef)){
+      if (eval(parse(text=paste0("input$mz",i,"New!=0")))){
+        mzCalibRef <-c(mzCalibRef,eval(parse(text=paste0("input$mz",i,"New"))))
+        
+      }
+    }
+    
+    rv$ptrset<-calibration(rv$ptrset,mzCalibRef)
     
     
-    rv$ptrset<-calibration(rv$ptrset,mzCalibRef = c(input$mz1New,input$mz2New,input$mz3New,input$mz4New,input$mz5New,input$mz6New,input$mz7New,input$mz8New))
+    #rv$ptrset<-calibration(rv$ptrset,mzCalibRef = c(input$mz1New,input$mz2New,input$mz3New,input$mz4New,input$mz5New,input$mz6New,input$mz7New,input$mz8New))
     
   })
   
