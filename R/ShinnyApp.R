@@ -338,6 +338,7 @@ score_plotly <- function(ropls.model,label.c = "sampleNames",color.c = "",info.v
 #' which provides visualizations (expiration phases, peaks in the raw data, peak table, individual VOCs),
 #' quality controls (calibration, resolution, peak shape and evolution of reagent ions depending on time),
 #' and exploratory data analysis.
+#' @return Shinny app  
 #' @examples
 #' \dontrun{RunShinnyApp()}
 #' @rdname RunShinnyApp
@@ -653,7 +654,7 @@ server <- function(input, output) {
         
         #UI rentrer les valeurs des paramètres
         
-        shiny::fluidRow(shiny::h5(strong("Parameters :"))),
+        shiny::fluidRow(shiny::h5(shiny::strong("Parameters :"))),
         
         # if (rv$newFile) {
         # shiny::fluidRow(
@@ -710,7 +711,7 @@ server <- function(input, output) {
       )
     }
     
-  },quoted=F)
+  },quoted=FALSE)
   
   
   # output$nomFile<-shiny::renderUI({
@@ -1006,7 +1007,7 @@ server <- function(input, output) {
       
       lapply(1:length(rv$ptrset@parameter$mzCalibRef), function(i) {
         
-        output[[paste0('b', i)]] <- renderUI({
+        output[[paste0('b', i)]] <- shiny::renderUI({
           shiny::fluidRow(
             #Affichage des nouvelles masses
             shiny::numericInput(inputId = paste0("mz", i,"New"), label = paste("mz", i), value = rv$ptrset@parameter$mzCalibRef[i]),

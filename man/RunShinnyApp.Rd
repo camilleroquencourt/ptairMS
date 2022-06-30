@@ -6,6 +6,9 @@
 \usage{
 RunShinnyApp()
 }
+\value{
+Shinny app
+}
 \description{
 The whole workflow of ptairMS can be run interactively through a graphical user interface,
 which provides visualizations (expiration phases, peaks in the raw data, peak table, individual VOCs),

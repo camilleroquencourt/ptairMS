@@ -1,6 +1,6 @@
 ---
 title: "_**ptairMS**_: Processing and analysis of PTR-TOF-MS data"
-author: "Camille Roquencourt, Paul Zheng, Pierrick Roger and Etienne Thevenot"
+author: "Camille Roquencourt, Mélanie Bregou, Paul Zheng, Pierrick Roger and Etienne Thevenot"
 date: "`r doc_date()`"
 package: "`r pkg_ver('ptairMS')`"
 bibliography: "ptairMS.bib"
