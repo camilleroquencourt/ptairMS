@@ -77,7 +77,7 @@ library(ptairData)
 The whole workflow of ptairMS can be run interactively through a graphical user interface, which provides visualizations (expiration phases, peaks in the raw data, peak table, individual VOCs), quality controls (calibration, resolution, peak shape and evolution of reagent ions depending on time), and exploratory data analysis.
 
 ```{r, eval=FALSE}
-shiny::runApp(system.file('R/ShinnyApp.R', package = "ptairMS"))
+ptairMS::RunShinnyApp()
 ```
 
 Alternatively, the workflow can be run on the command line. We describe hereafter the main steps and parameters.

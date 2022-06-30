@@ -2,6 +2,7 @@
 
 export(LocalMaximaSG)
 export(PeakList)
+export(RunShinnyApp)
 export(alignSamples)
 export(annotateVOC)
 export(calibration)

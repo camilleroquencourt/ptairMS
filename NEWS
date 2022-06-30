@@ -1,3 +1,7 @@
+Changes in version 1.4.1 (2022-04-05)
++ update of shinny app: change the time limit and calibration masses
++ create RunShinnyApp() function
+
 Changes in version 1.2.1 (2022-04-05)
 + imputation function from a data matrix and raw object
 
