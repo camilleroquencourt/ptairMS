@@ -588,14 +588,6 @@ server <- function(input, output) {
   ### Création d'un directory si selection de createPtrSet ----
   shiny::observeEvent(input$createPtrSet, {
     if(!is.null(input$BoolExp)) fracMaxTIC<-0.7 else fracMaxTIC <- 0
-    
-    mzCalibRef = c()
-    for (i in 1:length(rv$ptrset@parameter$mzCalibRef)){
-        if (eval(parse(text=paste0("input$mz",i,"New!=0")))){
-            mzCalibRef <-c(mzCalibRef,eval(parse(text=paste0("input$mz",i,"New"))))
-            
-        }
-    }
     ptrSet<-createPtrSet(dir = paramRv$path , setName = input$ptrName,
                          mzCalibRef = c(input$mz1,input$mz2,input$mz3,input$mz4,input$mz5),
                          fracMaxTIC = fracMaxTIC,
@@ -807,7 +799,7 @@ server <- function(input, output) {
                             degreeBaseline = degreeBaselineNew)
     t<-as.numeric(names( getTimeInfo(rv$ptrset)$TIC[[input$fileName]]))
     background<-timeLimit$backGround
-    if(input$methodKnot ==  "around expiration") 
+    if(input$methodKnot ==  "Around expiration") 
       method<-"expiration" else method<- "uniform"
     knots<-try(defineKnotsFunc(t,background,input$knotsPeriod,method))
     
