@@ -5,7 +5,7 @@ test_annotateVOC_and_isotope <- function(){
   bacteria_dir.c <- system.file("extdata/mycobacteria",  package = "ptairData")
   bacteria.ptrset <- createPtrSet(bacteria_dir.c, setName = "bacteria",
                                   mzCalibRef = c(21.022,59.049), fracMaxTIC = 0.8, saveDir = NULL)
-  bacteria.ptrset <- detectPeak(bacteria.ptrset, mzNominal = c(21,59,60))
+  bacteria.ptrset <- detectPeak(bacteria.ptrset, mzNominal = c(21,59,60),resolutionRange = c(3000,5000,10000))
   bacteria.eset <-  alignSamples(bacteria.ptrset,pValGreaterThres = 0.05,quanti="ppb",fracExp = 1)
   
   # numeric vector

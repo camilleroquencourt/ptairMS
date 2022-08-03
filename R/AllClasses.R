@@ -27,6 +27,7 @@
 #' @slot primaryIon the quantity in count per acquisition time of the isotope 
 #' of primary ion for each file
 #' @name ptrRaw-class
+#' @import Biobase
 #' @rdname ptrRaw
 #' @docType class
 #' @references https://www.hdfgroup.org

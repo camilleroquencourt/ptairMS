@@ -525,6 +525,7 @@ methods::setMethod(f = "plotCalib", signature = "ptrSet", function(object, ppm =
         # plot in a window of 2000 ppm
         nb_plot <- length(massCalib[[i]])
         nb_col <- min(3, nb_plot)
+
         nb_row <- ceiling(nb_plot/nb_col)
         graphics::par(oma = c(0, 0, 3, 0))
         layout(matrix(seq(1, nb_row * nb_col), nrow = nb_row, ncol = nb_col, 
@@ -1200,7 +1201,7 @@ setSampleMetadata <- function(set, sampleMetadata) {
         eval(changeName)
         eval(parse(text = paste0("save(", getParameters(set)$name, ",file= 
                                          paste0( getParameters(set)$saveDir,'/', '", 
-                                 getParameters(set)$name, ".RData '))")))
+                                 getParameters(set)$name, ".RData'))")))
     }
     return(set)
 }
@@ -1246,9 +1247,7 @@ exportSampleMetada <- function(set, saveFile) {
 importSampleMetadata <- function(set, file) {
     if (!methods::is(set, "ptrSet")) 
         stop("set is not a ptrSet object")
-    sampleMetadata <- try(utils::read.table(file = file, sep = "\t", 
-                                            header = TRUE, 
-        row.names = 1, quote = ""))
+    sampleMetadata <- try(utils::read.table(file = file,check.names = FALSE))
     # check if row names contains all files
     dir <- getParameters(set)$dir
     if (methods::is(dir, "expression")) 

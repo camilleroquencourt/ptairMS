@@ -433,7 +433,7 @@ updatePtrSet <- function(ptrset) {
             eval(changeName)
             eval(parse(text = paste0("save(", objName, ",file= paste0(
                                  saveDir,'/', '", 
-                objName, ".RData '))")))
+                objName, ".RData'))")))
         } else save(ptrset, file = paste0(saveDir, "/ptrSet.RData"))
     }
     

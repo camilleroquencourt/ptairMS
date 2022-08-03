@@ -283,10 +283,13 @@ methods::setMethod(f = "plotRaw", signature = "ptrRaw", function(object, mzRange
         if (figure.pdf != "interactive") dev.off()
     }, plotly = {
         plotlyBuild <- function() {
-            p <- plotly::subplot(plotly::plot_ly(x = as.numeric(colnames(rawSubMN)), 
-                y = colSums(rawSubMN), type = "scatter", mode = "lines"), plotly::plotly_empty(), 
+            p <- plotly::subplot(
+              plotly::plot_ly(x = as.numeric(colnames(rawSubMN)), 
+                y = colSums(rawSubMN), type = "scatter", mode = "lines"), 
+                plotly::plotly_empty(), 
                 plotly::plot_ly(z = rawSubMN, x = as.numeric(colnames(rawSubMN)), 
-                  y = as.numeric(rownames(rawSubMN)), type = "heatmap"), plotly::plot_ly(x = rowSums(rawSubMN), 
+                  y = as.numeric(rownames(rawSubMN)), type = "heatmap"), 
+              plotly::plot_ly(x = rowSums(rawSubMN), 
                   y = as.numeric(rownames(rawSubMN)), type = "scatter", mode = "lines"), 
                 nrows = 2, heights = c(0.2, 0.8), widths = c(0.8, 0.2), shareX = TRUE, 
                 shareY = TRUE, titleX = FALSE, titleY = FALSE)
