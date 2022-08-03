@@ -410,7 +410,7 @@ score_plotly <- function(ropls.model,label.c = "sampleNames",color.c = "",info.v
 #' @export
 
 RunShinnyApp<-function(){
-    
+  
   
   
   #' @importFrom shinyscreenshot screenshotButton
@@ -541,8 +541,8 @@ RunShinnyApp<-function(){
                                               shiny::h3("Sample MetaData"),
                                               shiny::textInput('NewCol', 'Enter new column name :'),
                                               shiny::radioButtons("type", "Column type :",
-                                                           c("Integer" = "integer",
-                                                             "Text" = "character")),
+                                                                  c("Integer" = "integer",
+                                                                    "Text" = "character")),
                                               shiny::actionButton("addColumn", "Add column"),
                                               shiny::actionButton("updateButton", "Update Table"),
                                               shiny::actionButton('deleteMeta','Delete selected columns'),
