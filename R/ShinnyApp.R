@@ -1752,7 +1752,7 @@ RunShinnyApp<-function(){
               Y[,colTime] <- as.numeric(as.POSIXct(Y[,colTime], format="%d/%m/%Y %H:%M:%S", tz="GMT"))
             }
             
-            if (type(Y[,colTime])=="character"){
+            if (is.character(Y[,colTime])){
               Y[,colTime] <- as.factor(Y[,colTime])
               
             }
