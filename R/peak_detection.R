@@ -115,6 +115,7 @@ setMethod(f = "detectPeak", signature = "ptrSet",
     fileName <- fileName[fileToProcess]
     allFilesName <- basename(files) 
     files <- files[fileToProcess]
+    
     #to save the oder
     if (length(files) == 0) {
         message("All files have already been processed")
@@ -122,7 +123,7 @@ setMethod(f = "detectPeak", signature = "ptrSet",
     }
     
     if (is.null(paramOld)) {
-        ptrSet<-setParameters(ptrset,paramNew)
+        #ptrSet<-setParameters(ptrset,paramNew)
     } else {
         # we take parameters that already processed the other file
         mzNominal <- paramOld$mzNominal
@@ -162,7 +163,7 @@ setMethod(f = "detectPeak", signature = "ptrSet",
             minIntensity = minIntensity, fctFit = fctFit[[basename(x)]], 
             minIntensityRate = minIntensityRate, 
             knots = knots[[basename(x)]], smoothPenalty = smoothPenalty, 
-            peakShape = peakShape[[basename(x)]]),...)
+            peakShape = peakShape[[basename(x)]]))
         if (!is.null(attr(test, "condition"))) {
             return(list(raw = NULL, aligned = NULL))
         } else return(test)
@@ -243,8 +244,19 @@ processFileTemporal <- function(fullNamefile, massCalib,
     } else l.shape = list(NULL)
     
 
-    
-    
+    # p<-list()
+    # for(m in mzNominal){
+    # 
+    #     p[[m+1]]<-ptairMS:::processFileTemporalNominalMass(m = m,
+    #                                                          raw = raw, mzNominal = mzNominal, ppm = ppm,
+    #                                                          resolutionRange = resolutionRange,
+    #                                                          minIntensity = minIntensity, fctFit = fctFit,
+    #                                                          minIntensityRate = minIntensityRate,
+    #                                                          knots = knots, smoothPenalty = smoothPenalty, l.shape = l.shape,
+    #                                                          timeLimit = indTimeLim)
+    #     print(m)
+    # }
+
     process <- lapply(mzNominal, function(m) ptairMS:::processFileTemporalNominalMass(m = m, 
         raw = raw, mzNominal = mzNominal, ppm = ppm, 
         resolutionRange = resolutionRange, 
@@ -252,6 +264,8 @@ processFileTemporal <- function(fullNamefile, massCalib,
         minIntensityRate = minIntensityRate, 
         knots = knots, smoothPenalty = smoothPenalty, l.shape = l.shape, 
         timeLimit = indTimeLim))
+    
+    
     matPeak <- Reduce(rbind, process)
     ## agregate
     matPeakAg <- aggregateTemporalFile(time = getRawInfo(raw)$time, indTimeLim = indTimeLim, 
@@ -280,22 +294,22 @@ processFileTemporal <- function(fullNamefile, massCalib,
             matPeakAg[, "quanti_ppb"] <- ppbConvert(peakList = data.frame(Mz = matPeakAg$Mz,
                                                                           quanti = matPeakAg$quanti_ncps), 
                                                     transmission = getPTRInfo(raw)$ptrTransmisison, 
-                                                    U = c(getPTRInfo(raw)$prtReaction$TwData[1, , ])[indExp], 
-                                                    Td = c(getPTRInfo(raw)$prtReaction$TwData[3,, ])[indExp], 
-                                                    pd = c(getPTRInfo(raw)$prtReaction$TwData[2, , ])[indExp])
+                                                    U = c(getPTRInfo(raw)$prtReaction$TwData[1, ])[indExp], 
+                                                    Td = c(getPTRInfo(raw)$prtReaction$TwData[3,])[indExp], 
+                                                    pd = c(getPTRInfo(raw)$prtReaction$TwData[2,  ])[indExp])
             if (bg) {
                 matPeakAg[, "background_ppb"] <- ppbConvert(peakList = data.frame(Mz = matPeakAg$Mz,
                                                                                   quanti = matPeakAg$background_ncps), 
                                                             transmission = getPTRInfo(raw)$ptrTransmisison, 
-                                                            U = c(getPTRInfo(raw)$prtReaction$TwData[1, , ])[indBg], 
-                                                            Td = c(getPTRInfo(raw)$prtReaction$TwData[3,, ])[indBg], 
-                                                            pd = c(getPTRInfo(raw)$prtReaction$TwData[2, , ])[indBg])
+                                                            U = c(getPTRInfo(raw)$prtReaction$TwData[1, ])[indBg], 
+                                                            Td = c(getPTRInfo(raw)$prtReaction$TwData[3,])[indBg], 
+                                                            pd = c(getPTRInfo(raw)$prtReaction$TwData[2, ])[indBg])
                 matPeakAg[, "diffAbs_ppb"] <- ppbConvert(peakList = data.frame(Mz = matPeakAg$Mz,
                                                                                quanti = matPeakAg$diffAbs_ncps), 
                                                          transmission = getPTRInfo(raw)$ptrTransmisison, 
-                                                         U = c(getPTRInfo(raw)$prtReaction$TwData[1, , ])[indBg], 
-                                                         Td = c(getPTRInfo(raw)$prtReaction$TwData[3,, ])[indBg], 
-                                                         pd = c(getPTRInfo(raw)$prtReaction$TwData[2, , ])[indBg])
+                                                         U = c(getPTRInfo(raw)$prtReaction$TwData[1, ])[indBg], 
+                                                         Td = c(getPTRInfo(raw)$prtReaction$TwData[3, ])[indBg], 
+                                                         pd = c(getPTRInfo(raw)$prtReaction$TwData[2, ])[indBg])
             }
         }
     }
@@ -348,13 +362,12 @@ processFileTemporalNominalMass <- function(m, raw, mzNominal,
                                         calibCoef = getCalibrationInfo(raw)$calibCoef[[1]], 
         ppmPeakMinSep = ppm, resolutionRange = resolutionRange, 
         minPeakDetect = minIntensity, 
-        fitFunc = fctFit, minIntensityRate = minIntensityRate, l.shape = l.shape, 
-        ...)
+        fitFunc = fctFit, minIntensityRate = minIntensityRate, l.shape = l.shape)
     peak <- PeakListm$peak
     baseline<- PeakListm$baseline[[1]]
     if (is.null(peak)) 
         return(NULL) else {
-        # 2d déconvolution
+        # 2d deconvolution
         if (is.null(knots)) 
             deconvMethod <- deconv2d2linearIndependant else deconvMethod <- deconv2dLinearCoupled
         fileProccess <- computeTemporalFile(raw = raw, peak = peak, 
@@ -386,6 +399,7 @@ peakListNominalMass <- function(i, mz, sp, ppmPeakMinSep = 130, calibCoef, resol
     no_peak_return <- list(emptyData, warning_mat, infoPlot, baseline)
     # select spectrum around the nominal mass i
     index.large <- which(mz < i + windowSize + 0.2 & mz > i - windowSize - 0.2)
+    
     mz.i.large <- mz[index.large]
     sp.i.large <- sp[index.large]
     if (range(mz.i.large)[1] > i - windowSize | range(mz.i.large)[2] < i + windowSize) 
@@ -822,6 +836,8 @@ LocalMaximaSG <- function(sp, minPeakHeight = -Inf, noiseacf = 0.1, d = 3) {
         peak <- NULL
     peak
 }
+
+
 ### two dimensional modelization -----
 # quantity over time of VOC in a pre-defined peak list
 computeTemporalFile <- function(raw, peak, baseline, 
@@ -969,6 +985,8 @@ deconv2dLinearCoupled <- function(rawM, t, peak.detect, raw, fctFit,
     }
     SP <- apply(peak.detect, 1, function(z) eval(parse(text = paste0("sp", fctFit)))(m, 
         z, raw))
+    t[1]<-ceiling(t[1])
+    t[length(t)]<- floor(utils::tail(t,1))
     TIC <- splines::spline.des(knots = c(seq(-d, -1), knots, seq(utils::tail(knots, 
         1) + 1, utils::tail(knots, 1) + d)), x = t, ord = d + 1)$design  # add exterior knot
     X <- SP %x% TIC  #tensor product
@@ -987,7 +1005,7 @@ deconv2dLinearCoupled <- function(rawM, t, peak.detect, raw, fctFit,
                                                                           fctFit)))(mLarge, 
         z, raw))
     predRawLarge <- t(matrix(SPlarge %x% TIC %*% param, ncol = length(mLarge), nrow = length(t)))
-    # g<-g+ggplot2::geom_line(mapping = ggplot2::aes(time,EIC,colour=param),
+    # g<-ggplot()+ggplot2::geom_line(mapping = ggplot2::aes(time,EIC,colour=param),
     # data=data.frame(time=getTimeInfo(raw)$time,EIC=colSums(predRaw),
     # param=as.character(smoothPenalty)))
     # plot(colSums(rawM),main=paste(K,smoothPenalty))
@@ -1261,7 +1279,7 @@ fit_averagePeak <- function(initTof, l.shape, sp, bin, lower.cons, upper.cons) {
 #' @return A list of two vectors which are the reference peak normalized tof 
 #' and intensity.
 #' @keywords internal
-determinePeakShape <- function(raw, plotShape = FALSE) {
+determinePeakShape <- function(raw, plotShape = FALSE){
     # mass used for calibration
     massRef <- getCalibrationInfo(raw)$calibMassRef
     massRef.o <- massRef[order(massRef)]
@@ -1486,7 +1504,7 @@ width <- function(tof, peak, fracMaxTIC = 0.5) {
     sup1 <- findEqualGreaterM(peak[seq_len(which.max(peak))], hm)
     sup2 <- unname(which.max(peak)) + FindEqualLess(peak[(which.max(peak) + 1):length(peak)], 
         hm)
-    # équation intrepolation linéaire entre sup et sup-1 = hm
+    # equation intrepolation linéaire entre sup et sup-1 = hm
     delta_tof <- unname(vapply(c(sup1, sup2), function(x) {
         (hm * (tof[x] - tof[x - 1]) - (tof[x] * peak[x - 1] - tof[x - 1] * peak[x]))/(peak[x] - 
             peak[x - 1])

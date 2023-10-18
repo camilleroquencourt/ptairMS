@@ -10,21 +10,24 @@ calibration(
   x,
   mzCalibRef = c(21.022, 29.013424, 41.03858, 60.0525, 203.943, 330.8495),
   calibrationPeriod = 60,
-  tol = 70
+  tol = 70,
+  ...
 )
 
 \S4method{calibration}{ptrRaw}(
   x,
   mzCalibRef = c(21.022, 29.013424, 41.03858, 59.049141, 75.04406, 203.943, 330.8495),
   calibrationPeriod = 60,
-  tol = 70
+  tol = 70,
+  ...
 )
 
 \S4method{calibration}{ptrSet}(
   x,
   mzCalibRef = c(21.022, 29.013424, 41.03858, 75.04406, 203.943, 330.8495),
   calibrationPeriod = 60,
-  tol = 70
+  tol = 70,
+  fileNames = getParameters(x)$listFile
 )
 }
 \arguments{
@@ -39,6 +42,10 @@ each sum spectrum of \code{calibrationPeriod} seconds}
 
 \item{tol}{the maximum error tolerated in ppm. If more than \code{tol} 
 warnings.}
+
+\item{...}{" "}
+
+\item{fileNames}{file to recalibrate}
 }
 \value{
 the same ptrRaw or ptrSet as in input, with the following modified 

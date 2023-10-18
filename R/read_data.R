@@ -43,93 +43,197 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
         stop("The file is not in h5 format")
     
     # find the longer of acquisitionTime
-    file <- rhdf5::H5Fopen(filePath)
-    time <- rhdf5::H5Dopen(file, "/TimingData/BufTimes")
-    acTime <- rhdf5::H5Sget_simple_extent_dims(rhdf5::H5Dget_space(time))$size
-    nbrBuf <- acTime[1]
-    nbrWrite <- acTime[2]
     
-    if (nbrWrite == 0) {
-        stop("The file is empty (0 seconde of acquisition)")
-    }
+    name<-rhdf5::h5ls(filePath)
     
-    # acquiqision time limit to 900 spectra, indeed the rawAn is more than 3.4 GB
-    NbrWriteMax <- ceiling(maxTimePoint/nbrBuf)
-    rhdf5::h5closeAll()
-    
-    # read information needed
-    date_heure <- rhdf5::h5read(filePath, "/AcquisitionLog", bit64conversion = "bit64")$Log$timestring[1]
-    
-    timVn <- rhdf5::h5read(filePath, "/TimingData/BufTimes", bit64conversion = "bit64", 
-        index = list(NULL, seq_len(min(nbrWrite, NbrWriteMax))))
-    rawAn <- rhdf5::h5read(filePath, "/FullSpectra/TofData", index = list(NULL, NULL, 
-        NULL, seq_len(min(nbrWrite, NbrWriteMax))), bit64conversion = "bit64")
-    mzVn <- rhdf5::h5read(filePath, "FullSpectra/MassAxis", bit64conversion = "bit64")
-    reaction <- try(rhdf5::h5read(filePath, "AddTraces/PTR-Reaction"))
-    transmission <- try(rhdf5::h5read(filePath, "PTR-Transmission"))
-    calibCoef <- try(rhdf5::h5read(filePath, "FullSpectra/MassCalibration", index = list(NULL, 
-        1)))
-    attributCalib <- try(rhdf5::h5readAttributes(filePath, "/FullSpectra"))
-    if (!is.null(attr(calibCoef, "condition")) & is.null(attr(attributCalib, "condition"))) {
-        calibCoef <- matrix(c(attributCalib$`MassCalibration a`, attributCalib$`MassCalibration b`), 
-            ncol = 1)
-    }
-    
-    # singleIon<-attributCalib$`Single Ion Signal`
-    # sampleInterval<-attributCalib$SampleInterval
-    
-    if (!is.null(attr(transmission, "condition"))) 
-        transmission <- matrix(0) else transmission <- transmission$Data
-    if (!is.null(attr(reaction, "condition"))) 
-        reaction <- list()
-    
-    # re format
-    timVn <- c(timVn)
-    mzVn <- c(mzVn)
-    rawMn <- matrix(rawAn, nrow = dim(rawAn)[1], ncol = prod(utils::tail(dim(rawAn), 
-        2)), dimnames = list(mzVn, timVn))
-    # remove index where timVn =0 except the first time
-    index_zero <- which(timVn == 0)[-1]
-    rm(rawAn)
-    if (length(index_zero) != 0) {
-        timVn <- timVn[-index_zero,drop=FALSE]
-        rawMn <- rawMn[, -index_zero,drop=FALSE]
-    }
-    
-    # count ion conversion 
-    #factor<- sampleInterval*1e9 /singleIon 
-    #*(SampleInterval,ns) / (single ion signal mV.ns) for convert to number of ion
-    # rawMn<-rawMn*as.numeric(factor)
-    
-    # calibration infomration
-    if (is.null(attr(calibCoef, "condition"))) {
-        rownames(calibCoef) <- c("a", "b")
-        calib_formula <- function(tof, calibCoef) ((tof - calibCoef["b", ])/calibCoef["a", 
+    if(name$group[2] == "/AcquisitionLog"){
+        file <- rhdf5::H5Fopen(filePath)
+        time <- rhdf5::H5Dopen(file, "/TimingData/BufTimes")
+        acTime <- rhdf5::H5Sget_simple_extent_dims(rhdf5::H5Dget_space(time))$size
+        nbrBuf <- acTime[1]
+        nbrWrite <- acTime[2]
+        
+        if (nbrWrite == 0) {
+            stop("The file is empty (0 seconde of acquisition)")
+        }
+        
+        # acquiqision time limit to 900 spectra, indeed the rawAn is more than 3.4 GB
+        NbrWriteMax <- ceiling(maxTimePoint/nbrBuf)
+        rhdf5::h5closeAll()
+        
+        # read information needed
+        date_heure <- rhdf5::h5read(filePath, "/AcquisitionLog", bit64conversion = "bit64")$Log$timestring[1]
+        
+        timVn <- rhdf5::h5read(filePath, "/TimingData/BufTimes", bit64conversion = "bit64", 
+                               index = list(NULL, seq_len(min(nbrWrite, NbrWriteMax))))
+        rawAn <- rhdf5::h5read(filePath, "/FullSpectra/TofData", index = list(NULL, NULL, 
+                                                                              NULL, seq_len(min(nbrWrite, NbrWriteMax))), bit64conversion = "bit64")
+        mzVn <- rhdf5::h5read(filePath, "FullSpectra/MassAxis", bit64conversion = "bit64")
+        reaction <- try(rhdf5::h5read(filePath, "AddTraces/PTR-Reaction"))
+        transmission <- try(rhdf5::h5read(filePath, "PTR-Transmission"))
+        calibCoef <- try(rhdf5::h5read(filePath, "FullSpectra/MassCalibration", index = list(NULL, 
+                                                                                             1)))
+        attributCalib <- try(rhdf5::h5readAttributes(filePath, "/FullSpectra"))
+        if (!is.null(attr(calibCoef, "condition")) & is.null(attr(attributCalib, "condition"))) {
+            calibCoef <- matrix(c(attributCalib$`MassCalibration a`, attributCalib$`MassCalibration b`), 
+                                ncol = 1)
+        }
+        
+        #singleIon<-attributCalib$`Single Ion Signal` #2.9
+        #sampleInterval<-attributCalib$SampleInterval #2e-10
+        
+        if (!is.null(attr(transmission, "condition"))) 
+            
+            transmission <- matrix(0) else transmission <- transmission$Data
+        
+        if (!is.null(attr(reaction, "condition"))){
+            reaction <- list()
+        } else {
+            index<-grep(pattern = "Data",names(reaction))
+            reaction[[index]] <-  matrix(reaction[[index]], nrow = dim(reaction[[index]])[1], ncol = prod(utils::tail(dim(reaction[[index]]), 
+                                                                                           2)))
+            
+        }
+        
+        # re format
+        timVn <- c(timVn)
+        mzVn <- c(mzVn)
+        rawMn <- matrix(rawAn, nrow = dim(rawAn)[1], ncol = prod(utils::tail(dim(rawAn), 
+                                                                             2)), dimnames = list(mzVn, timVn))
+        # remove index where timVn =0 except the first time
+        index_zero <- which(timVn == 0)[-1]
+        
+        rm(rawAn)
+        if (length(index_zero) != 0) {
+            timVn <- timVn[-index_zero,drop=FALSE]
+            rawMn <- rawMn[, -index_zero,drop=FALSE]
+        }
+        #timVn<-sort(timVn)
+        #colnames(rawMn)<-timVn
+        
+        # count ion conversion 
+        #factor<- sampleInterval*1e9 /singleIon
+        #*(SampleInterval,ns) / (single ion signal mV.ns) for convert to number of ion
+        #rawMn <- rawMn*(factor)
+        
+        # calibration infomration
+        if (is.null(attr(calibCoef, "condition"))) {
+            calibCoef<-calibCoef[c(1,2),1,drop=FALSE]
+            rownames(calibCoef) <- c("a", "b")
+            calib_formula <- function(tof, calibCoef) ((tof - calibCoef["b", ])/calibCoef["a", 
             ])^2
-        calib_invFormula <- function(m, calibCoef) sqrt(m) * calibCoef["a", ] + calibCoef["b", 
+            calib_invFormula <- function(m, calibCoef) sqrt(m) * calibCoef["a", ] + calibCoef["b", 
             ]
-        calibMassRef = c(attributCalib$`MassCalibration m1`, attributCalib$`MassCalibration m2`)
-        if (is.null(calibMassRef)) 
+            calibMassRef = c(attributCalib$`MassCalibration m1`, attributCalib$`MassCalibration m2`)
+            if (is.null(calibMassRef)) 
+                calibMassRef <- 0
+        } else {
+            calibCoef <- matrix(0)
+            calib_formula <- function(tof, calibCoef) NULL
+            calib_invFormula <- function(m, calibCoef) NULL
             calibMassRef <- 0
-    } else {
-        calibCoef <- matrix(0)
-        calib_formula <- function(tof, calibCoef) NULL
-        calib_invFormula <- function(m, calibCoef) NULL
-        calibMassRef <- 0
+        }
+        calibCoef<-list(calibCoef)
+        
+        
+    } else if (name$group[2] == "/AddTraces"){
+        
+        file <- rhdf5::H5Fopen(filePath)
+        time <- rhdf5::H5Dopen(file, "/SPECdata/Times")
+        acTime <- rhdf5::H5Sget_simple_extent_dims(rhdf5::H5Dget_space(time))$size
+        nbrWrite <- acTime[2]
+        
+        if (nbrWrite == 0) {
+            stop("The file is empty (0 seconde of acquisition)")
+        }
+        
+        # acquiqision time limit to 900 spectra, indeed the rawAn is more than 3.4 GB
+        NbrWriteMax <- maxTimePoint
+        rhdf5::h5closeAll()
+        
+       
+        date_heure <- rhdf5::h5readAttributes(filePath,"/")$FileCreatedTimeSTR_LOCAL[1]
+        timVn <- rhdf5::h5read(filePath, "/SPECdata/Times", bit64conversion = "bit64", 
+                               index = list(NULL, seq_len(min(nbrWrite, NbrWriteMax))))[4,]
+        rawMn <- rhdf5::h5read(filePath, "/SPECdata/Intensities", bit64conversion = "bit64", 
+                               index = list(NULL, seq_len(min(nbrWrite, NbrWriteMax))))
+      
+        reaction <- try(rhdf5::h5read(filePath, "/AddTraces/PTR-Instrument"))
+        
+        index <- try(sapply(c("Udrift_Act","p-Drift_Act","T-Drift_Act","E/N_Act","Udrift[Act]","p-Drift","Temp: T-Drift[Act]","E/N[Act]"), function(x) grep(x = reaction$Info,pattern = x,fixed = TRUE))) 
+        index<-Reduce(c,index)
+        
+        if(length(index)==0){
+            reaction <- try(rhdf5::h5read(filePath, "/AddTraces/PTR-Reaction"))
+            
+            index <- try(sapply(c("Udrift","p-Drift","T-Drift","E/N"), function(x) grep(x = reaction$Info,pattern = x,fixed = TRUE))) 
+            index<-Reduce(c,index)
+            }
+        
+        if(length(index)==0){
+            warning("missing reaction info")    
+            reaction<- list()
+        }else {
+            reaction$Data<-reaction$Data[index, ]
+            
+            reaction$Info<-  c("Udrift[V]",         
+                               "p-Drift[mbar]",    
+                               "T-Drift[C]" ,      
+                               "E/N[Td]")
+            
+            names(reaction)<-c("TwData", "TwInfo")
+        }
+        
+        
+        transmission <- try(t(rhdf5::h5read(filePath, "PTR-Transmission")$Masses_Factors[,,1]))
+      
+        CalibInfo <-rhdf5::h5read(filePath, "/CALdata", index = list(NULL,1))
+        if(dim(CalibInfo$Spectrum)[1]!=0) calibCoefFirt<-as.matrix(CalibInfo$Spectrum[,1]) else{
+            mzRef <- CalibInfo$Mapping[1,]
+            tofRef <- CalibInfo$Mapping[2,]
+            a <- (tofRef[2] - tofRef[1]) / (sqrt(mzRef[2])-sqrt(mzRef[1]))
+            b<- tofRef[1] - sqrt(mzRef[1])*a
+            calibCoefFirt<-as.matrix(c(a,b))
+            
+        }
+        
+        rownames(calibCoefFirt)<-c("a","b")
+        mzVn <- ptairMS:::tofToMz(seq(0,(dim(rawMn)[1]-1)),calibCoef = calibCoefFirt)
+        colnames(rawMn)<-timVn
+        rownames(rawMn)<-mzVn
+        
+        if(dim(CalibInfo$Spectrum)[1]!=0)  calibCoef<-lapply(apply(CalibInfo$Spectrum,2,function(x){
+          y<-as.matrix(x,ncol=1,nrow=2)
+          rownames(y)<-c("a","b")
+           list(y)
+       } ),function(x) x[[1]]) else calibCoef<-list(calibCoefFirt)
+  
+        # singleIon<-attributCalib$`Single Ion Signal`
+        # sampleInterval<-attributCalib$SampleInterval
+        
+        if (!is.null(attr(transmission, "condition"))) 
+            transmission <- matrix(0) 
+       
+        # calibration infomration
+     
+            calib_formula <- function(tof, calibCoef) ((tof - calibCoef["b", ])/calibCoef["a", 
+            ])^2
+            calib_invFormula <- function(m, calibCoef) sqrt(m) * calibCoef["a", ] + calibCoef["b", 
+            ]
+            calibMassRef = CalibInfo$Mapping[1,]
+
     }
-    
-    
     
     # write ptrRaw objet
     raw <- methods::new(Class = "ptrRaw", name = filePath, rawM = rawMn, 
-        mz = mzVn, time = timVn, calibCoef = list(calibCoef), calibMzToTof = calib_invFormula, 
+        mz = mzVn, time = timVn, calibCoef = calibCoef, calibMzToTof = calib_invFormula, 
         calibToftoMz = calib_formula, calibError = 0, calibMassRef = calibMassRef, 
         calibSpectr = list(NULL), peakShape = list(NULL), ptrTransmisison = transmission, 
         prtReaction = reaction, date = date_heure,fctFit="", peakList= Biobase::ExpressionSet(), 
         resolution= c(0,0,0),primaryIon=0)
-    
+    rm(rawMn)
     if (calib) {
-        raw <- calibration(raw, mzCalibRef, calibrationPeriod = calibrationPeriod, 
+        raw <- calibration(x = raw, mzCalibRef, calibrationPeriod = calibrationPeriod, 
             tol = tolCalibPpm)
     }
     
@@ -339,7 +443,7 @@ updatePtrSet <- function(ptrset) {
     parameter <- getParameters(ptrset)
     sampleMetadata <- getSampleMetadata(ptrset)
     
-    # files in the diretcory
+    # files in the directory
     
     if (methods::is(parameter$dir, "expression")) {
         parameter$dir <- eval(parameter$dir)
@@ -399,7 +503,7 @@ updatePtrSet <- function(ptrset) {
         
         
         # checkset
-        check <- checkSet(newFilesFullNames, 
+        check <- checkSet(files = newFilesFullNames, 
                           mzCalibRef = parameter$mzCalibRef, 
                           fracMaxTIC = parameter$timeLimit$fracMaxTIC, 
                           calibrationPeriod = parameter$calibrationPeriod,
@@ -419,7 +523,6 @@ updatePtrSet <- function(ptrset) {
         parameter$listFile <- filesDirFullNameParam
         ptrset<- setParameters(ptrset,parameter)
         ptrset<- setSampleMetadata(ptrset, as.data.frame(sampleMetadata))
-        
         check$mzCalibRef<-check$mzCalibRefList
         ptrset <-mergedPtrSet(ptrset, check ,orderedFile = filesDirFullName)
        
@@ -569,8 +672,8 @@ checkSet <- function(files,
                 peakShape = l.shape, windowSize = 0.2))
             
             if(is.null(attr(p,"condition"))){
-                primaryIndex <- which.min(abs(p$peak - mzPrimaryIon))
-                if (primaryIndex) 
+                primaryIndex <- which.min(abs(p$peak$Mz - mzPrimaryIon))
+                if (length(primaryIndex) )
                     primaryIonV <- p$peak$quanti_cps[primaryIndex] else primaryIonV <- NA
             } else primaryIonV <- NA
             #primaryIndex <- which(abs(p$peak - mzPrimaryIon) * 10^6/21 < 200)
@@ -583,7 +686,7 @@ checkSet <- function(files,
                 peakShape = l.shape, windowSize = 0.2))
             
             if(is.null(attr(p,"condition"))){
-                clusterIndex <- which(abs(p$peak - 38.03) * 10^6/21 < 200)
+                clusterIndex <- which(abs(p$peak$Mz - 38.03) * 10^6/21 < 200)
                 if (length(clusterIndex) != 0) 
                     waterCluster <- p$peak$quanti_cps[clusterIndex] else waterCluster <- NA
             } else  waterCluster <- NA
@@ -592,6 +695,7 @@ checkSet <- function(files,
         primaryIon[[fileName[j]]] <- list(primaryIon = primaryIonV, waterCluster = waterCluster)
         
         message(fileName[j], " check")
+        rm(raw)
     }
     
     return(list(mzCalibRefList = mzCalibRefList, signalCalibRef = signalCalibRef, 
@@ -639,12 +743,12 @@ convert_to_mzML <- function(file) {
     hdr$peaksCount <- pk_count  #nombre de masse detecter par rt
     hdr$retentionTime <- timVn  #retention time
     hdr$totIonCurrent <- colSums(rawMN)  #TIC
-    # les mz des plus grande intensitées par rt
+    # les mz des plus grande intensitees par rt
     hdr$basePeakMZ <- apply(rawMN, 2, function(x) mzVn[which.max(x)])
-    hdr$basePeakIntensity <- apply(rawMN, 2, max)  # max des intensité par rt
-    # plus petite détécté mz par rt
+    hdr$basePeakIntensity <- apply(rawMN, 2, max)  # max des intensite par rt
+    # plus petite detecte mz par rt
     hdr$lowMZ <- vapply(mzML, function(x) min(x[, 1]), FUN.VALUE = 1)
-    # plus grande mz détécté par rt
+    # plus grande mz detecte par rt
     hdr$hightMZ <- vapply(mzML, function(x) max(x[, 1]), FUN.VALUE = 1)
     hdr$filterString <- rep("NA", dim(rawMN)[2])
     hdr$centroided <- rep(FALSE, dim(rawMN)[2])

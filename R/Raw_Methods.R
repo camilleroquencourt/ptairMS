@@ -37,7 +37,7 @@
 #' @export 
 methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibRef = c(21.022, 
     29.013424, 41.03858, 59.049141, 75.04406, 203.943, 330.8495), calibrationPeriod = 60, 
-    tol = 70) {
+    tol = 70,...) {
     object <- x
     # get mz axis and average spectrum
     mz <- getRawInfo(object)$mz
@@ -62,10 +62,10 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
         mzCalibRef <- mzCalibRef[-badMass]
     }
     object@calibMassRef <- mzCalibRef
+    
     # determine average peak shape on calibration masses
     peakShape <- determinePeakShape(raw = object)$peakShapetof
-    object<-setPeakShape(object,peakShape) ####
-    
+
     # performs calibration every steps second
     calib_List <- list(NULL)
     indexTime <- round(diff(time)[1], 3)
@@ -97,6 +97,8 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
                           calibError=matrixEror,
                           calibCoef=lapply(calib_List, function(x) x$coefs))
     object<-setCalibration(object,calibrationInfo)
+    #peakShape <- determinePeakShape(raw = object)$peakShapemz
+    object@peakShape<-peakShape
     
     
     return(object)
@@ -180,6 +182,7 @@ calibrationFun <- function(sp, mz, mzCalibRef, calibCoef, peakShape, tol) {
     return(list(mzVnbis = mzVnbis, mzCalibRef = mzCalibRef, calibSpectr = calibSpectr, 
         error = error, coefs = coefs))
 }
+
 alignCalibrationPeak <- function(calibSpectr, calibMassRef, ntimes) {
     lapply(seq(1, length(calibMassRef)), function(m) {
         mz1 <- calibSpectr[[1]][[m]]$mz
@@ -210,6 +213,7 @@ methods::setMethod(f = "plotRaw", signature = "ptrRaw", function(object, mzRange
     rawMN <- getRawInfo(object)$rawM
     if (length(mzRange) == 1) 
         mzRange <- mzRange + c(-1, 1) * mzRange * ppm * 1e-06
+    
     mzRange[1] <- max(min(mzVn), mzRange[1], na.rm = TRUE)
     mzRange[2] <- min(max(mzVn), mzRange[2], na.rm = TRUE)
     timeRange[1] <- max(min(timeVn), timeRange[1], na.rm = TRUE)
@@ -514,8 +518,7 @@ methods::setMethod(f = "timeLimits", signature = "ptrRaw", function(object, frac
     if (is.null(dim(rawM))) 
         stop("rawM must be a matrix")
     if (fracMaxTIC < 0 || fracMaxTIC > 1) 
-        stop("fracMaxTIC must be between 
-                                                     0 and 1")
+        stop("fracMaxTIC must be between 0 and 1")
     if (is.null(mzBreathTracer)) {
         TIC <- colSums(rawM)
     } else {
@@ -651,6 +654,7 @@ methods::setMethod(f = "defineKnots", signature = "ptrRaw", function(object, kno
     }
     return(knots)
 })
+
 defineKnotsFunc <- function(t, background, knotsPeriod, method, file = NULL) {
     # knot equally spaced
     duration <- utils::tail(t, 1)
@@ -794,11 +798,11 @@ methods::setMethod(f = "PeakList", signature = "ptrRaw",
 #' library(ptairData)
 #' filePath <- system.file('extdata/exhaledAir/ind1', 'ind1-1.h5', 
 #' package = 'ptairData')
-#' raw <- readRaw(filePath,mzCalibRef=c(21.022,59.049))
+#' raw <- readRaw(filePath,mzCalibRef=c(21.022,59.049),calib=TRUE)
 #' timeLimit<-timeLimits(raw,fracMaxTIC=0.7)
 #' knots<-defineKnots(object = raw,timeLimit=timeLimit)
 #' raw <- detectPeak(raw, timeLimit=timeLimit, mzNominal = c(21,59),
-#' smoothPenalty=0,knots=knots)
+#' smoothPenalty=0,knots=knots,resolutionRange=c(2000,5000,8000))
 #' @export
 methods::setMethod(f = "detectPeak", signature = "ptrRaw", function(x, ppm = 130, 
     minIntensity = 10, minIntensityRate = 0.01, mzNominal = NULL, resolutionRange = NULL, 
@@ -891,6 +895,7 @@ estimateResol <- function(calibMassRef, calibSpectr) {
     names(resol) <- m
     return(resol)
 }
+
 ## show ----
 #' show a ptrRaw object 
 #' 
@@ -910,6 +915,7 @@ methods::setMethod("show", "ptrRaw", function(object) {
         print(round(getCalibrationInfo(object)$calibError, 2))
     }
 })
+
 #### dead time correction -----
 #'Dead time correction on raw data
 #'@param raw ptrRaw object

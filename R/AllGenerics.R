@@ -23,7 +23,7 @@ setGeneric("detectPeak",
 setGeneric(name = "calibration", 
            function(x,mzCalibRef = c(21.022, 29.013424,41.03858, 
                                      60.0525,203.943, 330.8495), 
-                    calibrationPeriod=60,tol=70) {
+                    calibrationPeriod=60,tol=70,...) {
              standardGeneric("calibration")
              })
 

@@ -387,51 +387,58 @@ plotPeakShapeTof <- function(set) {
 }
 
 plotPtrReaction <- function(pSet) {
-    U <- Reduce(c, lapply(getPTRInfo(pSet)$prtReaction, function(x) {
-        y <- c(x$TwData[1, , ])
-        mean(y[y != 0])
-    }))
-    PD <- Reduce(c, lapply(getPTRInfo(pSet)$prtReaction, function(x) {
-        y <- c(x$TwData[2, , ])
-        mean(y[y != 0])
-    }))
-    TD <- Reduce(c, lapply(getPTRInfo(pSet)$prtReaction, function(x) {
-        y <- c(x$TwData[3, , ])
-        mean(y[y != 0])
-    }))
-    EN <- Reduce(c, lapply(getPTRInfo(pSet)$prtReaction, function(x) {
-        y <- c(x$TwData[4, , ])
-        mean(y[y != 0])
-    }))
+    # U <- Reduce(c, lapply(getPTRInfo(pSet)$prtReaction, function(x) {
+    #     y <- c(x$TwData[1, , ])
+    #     mean(y[y != 0])
+    # }))
+    # PD <- Reduce(c, lapply(getPTRInfo(pSet)$prtReaction, function(x) {
+    #     y <- c(x$TwData[2, , ])
+    #     mean(y[y != 0])
+    # }))
+    # TD <- Reduce(c, lapply(getPTRInfo(pSet)$prtReaction, function(x) {
+    #     y <- c(x$TwData[3, , ])
+    #     mean(y[y != 0])
+    # }))
+    # EN <- Reduce(c, lapply(getPTRInfo(pSet)$prtReaction, function(x) {
+    #     y <- c(x$TwData[4, , ])
+    #     mean(y[y != 0])
+    # }))
     primaryIon <- Reduce(c, lapply(getPTRInfo(pSet)$primaryIon, function(x) x$primaryIon))
     date <- Reduce(c, getDate(pSet))
-    date <- vapply(date, function(x) chron::chron(dates. = strsplit(x, " ")[[1]][1], 
-        times. = strsplit(x, " ")[[1]][2], format = c("d/m/y", "h:m:s")), 
-        FUN.VALUE = chron::chron(1))
-    
-    Udrift <- ggplot2::ggplot() + 
-        ggplot2::geom_point(mapping = ggplot2::aes(x = .data$date,y = .data$U), 
-                            data = data.frame(date = as.Date(chron::as.dates(date)), 
-                                                U = U)) + 
-        ggplot2::ggtitle("Drift voltage") + ggplot2::ylab("V") + 
-        ggplot2::theme_classic() + 
-        ggplot2::theme(title = ggplot2::element_text(size = 9))
-    
-    Tdrift <- ggplot2::ggplot() + 
-        ggplot2::geom_point(mapping = ggplot2::aes(x = .data$date,y = .data$TD), 
-                            data = data.frame(date = as.Date(chron::as.dates(date)), TD = TD)) + 
-        ggplot2::ggtitle("Drift temperature") + 
-        ggplot2::ylab("degree") + 
-        ggplot2::theme_classic() + 
-        ggplot2::theme(title = ggplot2::element_text(size = 9))
-    
-    Pdrift <- ggplot2::ggplot() + ggplot2::geom_point(mapping = ggplot2::aes(x = .data$date, 
-        y = .data$PD), data = data.frame(date = as.Date(chron::as.dates(date)), PD = PD)) + 
-        ggplot2::ggtitle("Drift pressure") + 
-        ggplot2::ylab("mbar") + 
-        ggplot2::theme_classic() + 
-        ggplot2::theme(title = ggplot2::element_text(size = 9))
-    
+   
+    date <- try(vapply(date, function(x) chron::chron(dates. = strsplit(x, " ")[[1]][1],
+        times. = strsplit(x, " ")[[1]][2], format = c("d/m/y", "h:m:s")),
+        FUN.VALUE = chron::chron(1)),silent = TRUE)
+    if(!is.null(attr(date,"condition"))){
+        date <- Reduce(c, getDate(pSet))
+        date <- vapply(date, function(x) chron::chron(dates. = strsplit(x, " ")[[1]][1],
+                                                      times. = substring(gsub("[[:lower:]]",":", paste(strsplit(x, " ")[[1]][2:4],collapse = "")),first = 1,last = 8), format = c("d/m/y", "h:m:s")),
+                       FUN.VALUE = chron::chron(1))
+        
+    } 
+    # Udrift <- ggplot2::ggplot() + 
+    #     ggplot2::geom_point(mapping = ggplot2::aes(x = .data$date,y = .data$U), 
+    #                         data = data.frame(date = as.Date(chron::as.dates(date)), 
+    #                                             U = U)) + 
+    #     ggplot2::ggtitle("Drift voltage") + ggplot2::ylab("V") + 
+    #     ggplot2::theme_classic() + 
+    #     ggplot2::theme(title = ggplot2::element_text(size = 9))
+    # 
+    # Tdrift <- ggplot2::ggplot() + 
+    #     ggplot2::geom_point(mapping = ggplot2::aes(x = .data$date,y = .data$TD), 
+    #                         data = data.frame(date = as.Date(chron::as.dates(date)), TD = TD)) + 
+    #     ggplot2::ggtitle("Drift temperature") + 
+    #     ggplot2::ylab("degree") + 
+    #     ggplot2::theme_classic() + 
+    #     ggplot2::theme(title = ggplot2::element_text(size = 9))
+    # 
+    # Pdrift <- ggplot2::ggplot() + ggplot2::geom_point(mapping = ggplot2::aes(x = .data$date, 
+    #     y = .data$PD), data = data.frame(date = as.Date(chron::as.dates(date)), PD = PD)) + 
+    #     ggplot2::ggtitle("Drift pressure") + 
+    #     ggplot2::ylab("mbar") + 
+    #     ggplot2::theme_classic() + 
+    #     ggplot2::theme(title = ggplot2::element_text(size = 9))
+    # 
     primaryIonPlot <- ggplot2::ggplot() + 
         ggplot2::geom_point(mapping = ggplot2::aes(x = .data$date, y = .data$cps), 
         data = data.frame(date = as.Date(chron::as.dates(date)),
@@ -440,18 +447,18 @@ plotPtrReaction <- function(pSet) {
         ggplot2::xlab("Date") + ggplot2::theme_classic() + 
         ggplot2::theme(title = ggplot2::element_text(size = 9))
     
-    blank<-ggplot2::element_blank()
-    reaction <- ggpubr::ggarrange(Udrift + 
-                                      ggplot2::theme(axis.ticks.x =blank , 
-                                                     axis.text.x = blank, 
-                                                     axis.title.x = blank),
-                                  Tdrift + ggplot2::theme(axis.ticks.x =blank, 
-                                                          axis.text.x = blank,
-                                                          axis.title.x = blank), 
-                                  Pdrift + ggplot2::theme(axis.ticks.x = blank,
-                                                          axis.text.x = blank, 
-                                                          axis.title.x = blank), 
-        primaryIonPlot, ncol = 1, heights = c(0.23, 0.23, 0.23, 0.31), align = "v")
+    # blank<-ggplot2::element_blank()
+    # reaction <- ggpubr::ggarrange(Udrift + 
+    #                                   ggplot2::theme(axis.ticks.x =blank , 
+    #                                                  axis.text.x = blank, 
+    #                                                  axis.title.x = blank),
+    #                               Tdrift + ggplot2::theme(axis.ticks.x =blank, 
+    #                                                       axis.text.x = blank,
+    #                                                       axis.title.x = blank), 
+    #                               Pdrift + ggplot2::theme(axis.ticks.x = blank,
+    #                                                       axis.text.x = blank, 
+    #                                                       axis.title.x = blank), 
+    #     primaryIonPlot, ncol = 1, heights = c(0.23, 0.23, 0.23, 0.31), align = "v")
     return(primaryIonPlot)
 }
 
@@ -784,14 +791,42 @@ methods::setMethod(f = "plotRaw", signature = "ptrSet",
         graphics::par(ask = TRUE)
     for (file in fileNames) {
         # open a mz range
-        mz <- rhdf5::h5read(file, name = "FullSpectra/MassAxis")
+        name<-rhdf5::h5ls(file)
+        if(name$group[2] == "/AcquisitionLog"){
+            mz <- rhdf5::h5read(file, name = "FullSpectra/MassAxis")
+            FirstcalibCoef <- try(rhdf5::h5read(file, "FullSpectra/MassCalibration", index = list(NULL, 
+                                                                                                  1)))
+            attributCalib <- try(rhdf5::h5readAttributes(file, "/FullSpectra"))
+            if (!is.null(attr(FirstcalibCoef, "condition")) & is.null(attr(attributCalib, "condition"))) {
+                FirstcalibCoef <- matrix(c(attributCalib$`MassCalibration a`, attributCalib$`MassCalibration b`), 
+                                         ncol = 1)
+            }
+        } else if (name$group[2] == "/AddTraces"){
+            CalibInfo <-rhdf5::h5read(file, "/CALdata", index = list(NULL,1))
+            if(dim(CalibInfo$Spectrum)[1]!=0) FirstcalibCoef<-as.matrix(CalibInfo$Spectrum[,1]) else{
+                mzRef <- CalibInfo$Mapping[1,]
+                tofRef <- CalibInfo$Mapping[2,]
+                a <- (tofRef[2] - tofRef[1]) / (sqrt(mzRef[2])-sqrt(mzRef[1]))
+                b<- tofRef[1] - sqrt(mzRef[1])*a
+                FirstcalibCoef<-as.matrix(c(a,b))}
+            rownames(FirstcalibCoef)<-c("a","b")
+            mz <- ptairMS:::tofToMz(seq(0,
+                                        as.numeric(name[name$name=="AverageSpec" ,"dim"])-1),
+                                    calibCoef = FirstcalibCoef)
+        }
+        
         mzRange[1] <- max(min(mz), mzRange[1], na.rm = TRUE)
         mzRange[2] <- min(max(mz), mzRange[2], na.rm = TRUE)
         # get the index of the aroud mzRange
         index <- which(mzRange[1] < mz & mz < mzRange[2])
+        
         # object data
-        object <- rhdf5::h5read(file, name = "/FullSpectra/TofData", 
+        if(name$group[2] == "/AcquisitionLog"){object <- rhdf5::h5read(file, name = "/FullSpectra/TofData", 
                                 index = list(index, NULL, NULL, NULL))
+        } else if(name$group[2] == "/AddTraces") {
+            object <- rhdf5::h5read(file, name = "/SPECdata/Intensities",
+                                    index = list(index, NULL))
+                                }
         
         # time axis
         timeVn <- as.numeric(names(getTimeInfo(set)$TIC[[basename(file)]]))
@@ -803,14 +838,6 @@ methods::setMethod(f = "plotRaw", signature = "ptrSet",
                                timeVn <= timeRange.file[2])
         timeVn <- timeVn[indexTime]
         # calibrate mass axis
-        
-        FirstcalibCoef <- try(rhdf5::h5read(file, "FullSpectra/MassCalibration", index = list(NULL, 
-                                                                                             1)))
-        attributCalib <- try(rhdf5::h5readAttributes(file, "/FullSpectra"))
-        if (!is.null(attr(FirstcalibCoef, "condition")) & is.null(attr(attributCalib, "condition"))) {
-            FirstcalibCoef <- matrix(c(attributCalib$`MassCalibration a`, attributCalib$`MassCalibration b`), 
-                                ncol = 1)
-        }
         tof <- sqrt(mz) * FirstcalibCoef[1, 1] + FirstcalibCoef[2, 1]
         # tof<- seq(0,length(mz))
         coefCalib <- getCalibrationInfo(set)$coefCalib[[basename(file)]][[1]]
@@ -1414,15 +1441,15 @@ methods::setMethod(f = "defineKnots", signature = "ptrSet",
 })
 
 ## calibration----
+#' @param fileNames file to recalibrate
+#' @param ... " "
 #' @rdname calibration
 #' @export 
 methods::setMethod(f = "calibration", signature = "ptrSet", 
                    function(x, mzCalibRef = c(21.022, 
     29.013424, 41.03858, 75.04406, 203.943, 330.8495), 
-    calibrationPeriod = 60, tol = 70) {
+    calibrationPeriod = 60, tol = 70,fileNames=getParameters(x)$listFile) {
                        
-    fileNames <- getParameters(x)$listFile
-    
     if (methods::is(fileNames, "expression")) 
         fileNames <- eval(fileNames)
     
@@ -1442,11 +1469,14 @@ methods::setMethod(f = "calibration", signature = "ptrSet",
                         indexTimeCalib=raw@indexTimeCalib)
         
         x<-setCalibration(x,calibList,index=basename(file))
+        x@peakShape[[basename(file)]]<-raw@peakShape
     }
     
     parameter<-getParameters(x)
-    parameter$mzCalibRef <- mzCalibRef
-    x<-setParameters(x,parameter)
+    if(length(fileNames) == length(x@mzCalibRef)){
+        parameter$mzCalibRef <- mzCalibRef
+        x<-setParameters(x,parameter)
+    }
     saveDir <- parameter$saveDir
     objName <- parameter$name
     if (!is.null(saveDir)) {

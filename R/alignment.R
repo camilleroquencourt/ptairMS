@@ -306,14 +306,14 @@ alignSamplesFunc <- function(peakList, sampleMetadata, ppmGroup = 100,
                                 pValGreaterThres = 0.005, pValLessThres = 0, 
                                 fracExp = 0.3, 
                                 quantiUnit = c("ppb", "ncps", "cps")[1], 
-                                bgCorrected = TRUE) {
+                                bgCorrected = FALSE) {
     
     
     peakList <- lapply(peakList,
                        function(x) {
 
-                           x<-as.data.table(Biobase::fData(x)[, -c(2,3, 4)])
-
+                          # x<-as.data.table(Biobase::fData(x)[, -c(2,3, 4)])
+                           x<-as.data.table(Biobase::fData(x))
 
                            })
     
@@ -372,12 +372,12 @@ alignSamplesFunc <- function(peakList, sampleMetadata, ppmGroup = 100,
     
     
     ## add column group with Samples group number
-    mat <- NULL
+    mat <- data.frame(NULL)
     peakList <- lapply(peakList, function(x) as.matrix(x))
     
     for (i in seq_along(peakList)) {
         mat_temp <- cbind(peakList[[i]], group = i)
-        mat <- rbind(mat, mat_temp)
+        mat <- plyr::rbind.fill(mat, as.data.frame(mat_temp))
     }
     
     
@@ -768,13 +768,22 @@ imputeFunc <- function(file, missingValues, eSet, ptrSet) {
     
     mzMissing <- as.numeric(rownames(missingValues[missingValues[, "col"] == j, , 
         drop = FALSE]))
+   
     
     # open mz Axis
     mzAxis <- rhdf5::h5read(filesFullName.j, name = "FullSpectra/MassAxis")
+    mzlim <-  range(mzAxis)
+    mzMissingOut<- which(mzMissing> mzlim[2] | mzMissing< mzlim[1]) 
+    if(length(mzMissingOut) !=0) mzMissing<- mzMissing[-mzMissingOut]
+    
     indexMzList <- lapply(unique(round(mzMissing)), function(m) which(m - 0.6 < mzAxis & 
         mzAxis < m + 0.6))
     names(indexMzList) <- unique(round(mzMissing))
     indexMz <- Reduce(union, indexMzList)
+    
+    
+  
+    
     
     # get index time
     indexLim <- getTimeInfo(ptrSet)$timeLimit[[file]]$exp
@@ -796,12 +805,14 @@ imputeFunc <- function(file, missingValues, eSet, ptrSet) {
     FirstcalibCoef <- try(rhdf5::h5read(filesFullName.j, "FullSpectra/MassCalibration", 
         index = list(NULL, 1)))
     attributCalib <- try(rhdf5::h5readAttributes(filesFullName.j, "/FullSpectra"))
+    
     if (!is.null(attr(FirstcalibCoef, "condition")) & is.null(attr(attributCalib, "condition"))) {
         FirstcalibCoef <- matrix(c(attributCalib$`MassCalibration a`, attributCalib$`MassCalibration b`), 
                             ncol = 1)
     }
     tof <- sqrt(mzAxis) * FirstcalibCoef[1, 1] + FirstcalibCoef[2, 1]
     coefCalib <- getCalibrationInfo(ptrSet)$coefCalib[[file]][[1]]
+    
     mzAxis <- ((tof - coefCalib["b", ])/coefCalib["a", ])^2
     
     # peak list raw
@@ -999,8 +1010,7 @@ impute <- function(eSet, ptrSet, parallelize = FALSE, nbCores = 2) {
 #' plotFeatures(exhaledPtrset,mz = 52.047,typePlot = "ggplot",colorBy = "subfolder")
 imputeMat <- function(X, ptrSet, quantiUnit) {
     # peak func(ion)
-    fctFit <- getPeaksInfo(ptrSet)$fctFit
-    
+
     # get index of missing values
     missingValues <- which(is.na(X), arr.ind = TRUE)
     indexFilesMissingValues <- unique(missingValues[, "col"])
@@ -1015,6 +1025,7 @@ imputeMat <- function(X, ptrSet, quantiUnit) {
         filesFullName <- eval(filesFullName)
     
     for (file in namesFilesMissingValues) {
+        fctFit <- getPeaksInfo(ptrSet)$fctFit[[file]]
         j <- which(file == colnames(X))
         filesFullName.j <- filesFullName[which(basename(filesFullName) == file)]
         
@@ -1047,7 +1058,10 @@ imputeMat <- function(X, ptrSet, quantiUnit) {
         
         # information for ppb convertion
         reaction <- try(reaction <- rhdf5::h5read(filesFullName.j, "AddTraces/PTR-Reaction"))
+        ### format Ionicon
+        
         transmission <- try(rhdf5::h5read(filesFullName.j, "PTR-Transmission"))
+        ### format Ionicon
         
         # calibrate mass axis
         FirstcalibCoef <- rhdf5::h5read(filesFullName.j, "FullSpectra/MassCalibration", 
@@ -1066,7 +1080,7 @@ imputeMat <- function(X, ptrSet, quantiUnit) {
             
             # mzAxis around m
             mzAxis.m <- mzAxis[indexMzList[[as.character(m)]]]
-            
+            if(length(mzAxis.m)==0) next
             indexExp <- Reduce(c, apply(indexLim, 2, function(x) seq(x[1], x[2])))
             length.exp <- length(indexExp)
             quantiMat <- matrix(0, ncol = length(mz), nrow = nbExp)
@@ -1081,7 +1095,7 @@ imputeMat <- function(X, ptrSet, quantiUnit) {
             peakAlsoDetected <- peakListRaw.j[round(peakListRaw.j$Mz) == m, ]
             if (nrow(peakAlsoDetected) != 0) {
                 # cumFitPeak
-                funEVAL<-function(x) eval(parse(text = fctFit[[file]]))(x["Mz"], 
+                funEVAL<-function(x) eval(parse(text = fctFit))(x["Mz"], 
                                                                         x["parameterPeak.delta1"], 
                                                                         x["parameterPeak.delta2"], 
                                                                         x["parameterPeak.height"], 
@@ -1119,7 +1133,7 @@ imputeMat <- function(X, ptrSet, quantiUnit) {
                                                    initMz[, "m"]/(resolution_lower*2), 
                                                    initMz[, "m"]/(resolution_lower*2), 
                                                    rep(0, n.peak)), ncol = 4)))
-                    fit <- fitPeak(initMz, spectrum, mzAxis.m, lower.cons, upper.cons, fctFit[[file]], 
+                    fit <- fitPeak(initMz, spectrum, mzAxis.m, lower.cons, upper.cons, fctFit, 
                                    l.shape = getPeaksInfo(ptrSet)$peakShape[[file]])
                     
                     fitPeaks <- fit$fit.peak
@@ -1164,7 +1178,7 @@ imputeMat <- function(X, ptrSet, quantiUnit) {
                 rep(0, n.peak)), ncol = 4)))
             
             
-            fit <- fitPeak(initMz, spectrum, mzAxis.m, lower.cons, upper.cons, fctFit[[file]], 
+            fit <- fitPeak(initMz, spectrum, mzAxis.m, lower.cons, upper.cons, fctFit, 
                 l.shape = getPeaksInfo(ptrSet)$peakShape[[file]])
             
             fit.peak <- fit$fit.peak
@@ -1199,6 +1213,7 @@ imputeMat <- function(X, ptrSet, quantiUnit) {
             
             
             # add to peak table
+            
             X[as.character(mz), file] <- quanti.m
         }
         message(basename(file), " done")

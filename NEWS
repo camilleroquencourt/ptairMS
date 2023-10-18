@@ -1,4 +1,7 @@
 Changes in version 1.4.1 (2022-04-05)
++ oppen new version of hdf5 file from Ionicon (PTR-TOF-MS 10k)
+
+Changes in version 1.4.1 (2022-04-05)
 + updating shinny app: possibility to change the expiration and calibration masses
 + create RunShinnyApp() function
 
