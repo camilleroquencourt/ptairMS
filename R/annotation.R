@@ -399,7 +399,7 @@ findIsotope<-function(eSet,ppm=100){
   for (i in seq_along(mz)){
       iso <- isotopeMzMatching(mz[i], mz[(i+1):length(mz)],ppm)
       if(length(iso)){
-        testIso<-validateGroup(c(mz[i],iso),X)
+        testIso<-validateGroup(groupIso = c(mz[i],iso),X = X)
         if(any(testIso)){
           fDATA[i,"isotope"]<- paste(iso[testIso],collapse = "/")
         }
@@ -450,10 +450,11 @@ validateGroup<-function(groupIso,X){
                                quote = "\"",
                                sep = "\t",
                                stringsAsFactors = FALSE)
+  #isotopes<-isotopes[!apply(isotopes,1,function(x) all(is.na(x[c(3,4,5)]))),]
   if(anno[,"vocDB_ion_formula"] != ""){
     formula<-anno[,"vocDB_ion_formula"]
     isoDistrib<-enviPat::isopattern(isotopes,chemforms = formula,threshold = 1,
-                                    verbose = FALSE)[[1]]
+                                    verbose = FALSE,charge=FALSE,emass=0.00054858)[[1]]
     testRatio<- vapply(seq_len(nrow(ratio)),function(x){
       index<-which(abs(isoDistrib[,"m/z"]-groupIso[x+1])*10^6/
                      round(groupIso[x+1]) < 100)

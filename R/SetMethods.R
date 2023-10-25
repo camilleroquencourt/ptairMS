@@ -810,7 +810,7 @@ methods::setMethod(f = "plotRaw", signature = "ptrSet",
                 b<- tofRef[1] - sqrt(mzRef[1])*a
                 FirstcalibCoef<-as.matrix(c(a,b))}
             rownames(FirstcalibCoef)<-c("a","b")
-            mz <- ptairMS:::tofToMz(seq(0,
+            mz <- tofToMz(seq(0,
                                         as.numeric(name[name$name=="AverageSpec" ,"dim"])-1),
                                     calibCoef = FirstcalibCoef)
         }

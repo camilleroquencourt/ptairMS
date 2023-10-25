@@ -74,7 +74,7 @@ setMethod(f = "detectPeak", signature = "ptrSet",
     ptrset <- x
     
     # get infomration
-    knots <- ptairMS:::getPeaksInfo(ptrset)$knots
+    knots <-getPeaksInfo(ptrset)$knots
     massCalib <- getCalibrationInfo(ptrset)$mzCalibRef
     primaryIon <- getPTRInfo(ptrset)$primaryIon
     indTimeLim <- getTimeInfo(ptrset)$timeLimit
@@ -257,7 +257,7 @@ processFileTemporal <- function(fullNamefile, massCalib,
     #     print(m)
     # }
 
-    process <- lapply(mzNominal, function(m) ptairMS:::processFileTemporalNominalMass(m = m, 
+    process <- lapply(mzNominal, function(m) processFileTemporalNominalMass(m = m, 
         raw = raw, mzNominal = mzNominal, ppm = ppm, 
         resolutionRange = resolutionRange, 
         minIntensity = minIntensity, fctFit = fctFit, 

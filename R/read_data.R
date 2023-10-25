@@ -198,7 +198,7 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
         }
         
         rownames(calibCoefFirt)<-c("a","b")
-        mzVn <- ptairMS:::tofToMz(seq(0,(dim(rawMn)[1]-1)),calibCoef = calibCoefFirt)
+        mzVn <- tofToMz(seq(0,(dim(rawMn)[1]-1)),calibCoef = calibCoefFirt)
         colnames(rawMn)<-timVn
         rownames(rawMn)<-mzVn
         

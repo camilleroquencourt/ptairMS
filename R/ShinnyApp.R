@@ -19,7 +19,7 @@ plotPeakRaw<-function(set,file, mzRange, peaks, temporalEstim,fctFit,
   
   
   # time axis
-  timeVn <- as.numeric(names(ptairMS:::getTimeInfo(set)$TIC[[basename(file)]]))
+  timeVn <- as.numeric(names(getTimeInfo(set)$TIC[[basename(file)]]))
   
   # calibrate mass axis
   FirstcalibCoef <- try(rhdf5::h5read(file, "FullSpectra/MassCalibration", 
@@ -32,7 +32,7 @@ plotPeakRaw<-function(set,file, mzRange, peaks, temporalEstim,fctFit,
   
   tof <- sqrt(mz) * FirstcalibCoef[1, 1] + FirstcalibCoef[2, 1]
   # tof<- seq(0,length(mz))
-  coefCalib <- ptairMS:::getCalibrationInfo(set)$coefCalib[[basename(file)]][[1]]
+  coefCalib <- getCalibrationInfo(set)$coefCalib[[basename(file)]][[1]]
   mzVn <- ((tof - coefCalib["b", ])/coefCalib["a", ])^2
   mzVn <- mzVn[index]
   
@@ -1158,7 +1158,7 @@ server <- function(input, output) {
   output$RawData<-shiny::renderPlot({
     if(!is.null(rv$ptrset)){
       if(!is.null(input$plotRawmz)){
-        peakList<-Biobase::fData(ptairMS:::getPeakList(rv$ptrset)[[input$plotRaw]])
+        peakList<-Biobase::fData(getPeakList(rv$ptrset)[[input$plotRaw]])
         
         peaksParam <- peakList[as.character(input$plotRawmz),
                                c("Mz","parameterPeak.delta1", 
@@ -1173,7 +1173,7 @@ server <- function(input, output) {
                                                                               mz, 
                                                                               peakShape)
         
-        temporalEstim<- Biobase::exprs(ptairMS:::getPeakList(rv$ptrset)[[input$plotRaw]])[as.character(input$plotRawmz),]
+        temporalEstim<- Biobase::exprs(getPeakList(rv$ptrset)[[input$plotRaw]])[as.character(input$plotRawmz),]
         
         
         fileFullName<- getFileNames(rv$ptrset,fullNames =TRUE )[ getFileNames(rv$ptrset)==input$plotRaw]

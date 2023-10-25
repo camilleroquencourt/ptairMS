@@ -29,7 +29,6 @@
 #' @name ptrRaw-class
 #' @rdname ptrRaw
 #' @docType class
-#' @import Biobase
 #' @references https://www.hdfgroup.org
 #' @exportClass ptrRaw
 setClass(
