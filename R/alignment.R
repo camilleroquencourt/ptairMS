@@ -771,7 +771,26 @@ imputeFunc <- function(file, missingValues, eSet, ptrSet) {
    
     
     # open mz Axis
-    mzAxis <- rhdf5::h5read(filesFullName.j, name = "FullSpectra/MassAxis")
+    name<-rhdf5::h5ls(filesFullName.j)
+    if(name$group[2] == "/AcquisitionLog"){
+        mzAxis <- rhdf5::h5read(filesFullName.j, "FullSpectra/MassAxis", bit64conversion = "bit64")
+        } else if (name$group[2] == "/AddTraces"){
+            CalibInfo <-rhdf5::h5read(filesFullName.j, "/CALdata", index = list(NULL,1))
+            if(dim(CalibInfo$Spectrum)[1]!=0) FirstcalibCoef<-as.matrix(CalibInfo$Spectrum[,1]) else{
+                mzRef <- CalibInfo$Mapping[1,]
+                tofRef <- CalibInfo$Mapping[2,]
+                a <- (tofRef[2] - tofRef[1]) / (sqrt(mzRef[2])-sqrt(mzRef[1]))
+                b<- tofRef[1] - sqrt(mzRef[1])*a
+                FirstcalibCoef<-as.matrix(c(a,b))
+                
+            }
+            
+            rownames(FirstcalibCoef)<-c("a","b")
+            dim<- rhdf5::h5ls(filesFullName.j)
+            dim<-as.numeric(dim[dim$group=="/SPECdata","dim"][1])
+            mzAxis <- tofToMz(seq(0,(dim-1)),calibCoef = FirstcalibCoef)   
+        }
+    
     mzlim <-  range(mzAxis)
     mzMissingOut<- which(mzMissing> mzlim[2] | mzMissing< mzlim[1]) 
     if(length(mzMissingOut) !=0) mzMissing<- mzMissing[-mzMissingOut]
@@ -781,35 +800,46 @@ imputeFunc <- function(file, missingValues, eSet, ptrSet) {
     names(indexMzList) <- unique(round(mzMissing))
     indexMz <- Reduce(union, indexMzList)
     
-    
-  
-    
-    
     # get index time
     indexLim <- getTimeInfo(ptrSet)$timeLimit[[file]]$exp
     indexTime <- Reduce(c, apply(indexLim, 2, function(x) seq(x["start"], x["end"])))
     nbExp <- ncol(indexLim)
     
     # open raw data
+    if(name$group[2] == "/AcquisitionLog"){
     raw <- rhdf5::h5read(filesFullName.j, name = "/FullSpectra/TofData", 
                             index = list(indexMz, NULL, NULL, NULL))
     
     rawMn <- matrix(raw, nrow = dim(raw)[1], ncol = prod(utils::tail(dim(raw), 2)))
+    }else if (name$group[2] == "/AddTraces"){
+        rawMn <- rhdf5::h5read(filesFullName.j, "/SPECdata/Intensities", bit64conversion = "bit64", 
+                               index = list(indexMz, NULL))
+        }
+    
+    
     # * 0.2 ns / 2.9 (single ion signal) if convert to cps
     
     # information for ppb convertion
-    reaction <- try(reaction <- rhdf5::h5read(filesFullName.j, "AddTraces/PTR-Reaction"))
-    transmission <- try(rhdf5::h5read(filesFullName.j, "PTR-Transmission"))
+    #reaction <- try(reaction <- rhdf5::h5read(filesFullName.j, "AddTraces/PTR-Reaction"))
+    #transmission <- try(rhdf5::h5read(filesFullName.j, "PTR-Transmission"))
+    
+    reaction<- ptrSet@prtReaction[[file]]
+    transmission<- ptrSet@ptrTransmisison[[file]]
     
     # calibrate mass axis
+    
+    if(name$group[2] == "/AcquisitionLog"){
     FirstcalibCoef <- try(rhdf5::h5read(filesFullName.j, "FullSpectra/MassCalibration", 
         index = list(NULL, 1)))
     attributCalib <- try(rhdf5::h5readAttributes(filesFullName.j, "/FullSpectra"))
     
     if (!is.null(attr(FirstcalibCoef, "condition")) & is.null(attr(attributCalib, "condition"))) {
         FirstcalibCoef <- matrix(c(attributCalib$`MassCalibration a`, attributCalib$`MassCalibration b`), 
-                            ncol = 1)
+                                 ncol = 1)
     }
+    }
+    
+
     tof <- sqrt(mzAxis) * FirstcalibCoef[1, 1] + FirstcalibCoef[2, 1]
     coefCalib <- getCalibrationInfo(ptrSet)$coefCalib[[file]][[1]]
     
@@ -895,10 +925,10 @@ imputeFunc <- function(file, missingValues, eSet, ptrSet) {
         
         # convert to ppb or ncps if there is reaction ans transmission information
         if (Biobase::annotation(eSet) == "ppb") {
-            U <- c(reaction$TwData[1, , ])
-            Td <- c(reaction$TwData[3, , ])
-            pd <- c(reaction$TwData[2, , ])
-            quanti.m <- ppbConvert(peakList = list_peak, transmission = transmission$Data, 
+            U <- c(reaction$TwData[1, ])
+            Td <- c(reaction$TwData[3,  ])
+            pd <- c(reaction$TwData[2,  ])
+            quanti.m <- ppbConvert(peakList = list_peak, transmission = transmission, 
                 U = U[indexExp], Td = Td[indexExp], pd = pd[indexExp])
             
         }
