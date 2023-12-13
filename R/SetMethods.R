@@ -190,6 +190,7 @@ plotPeakShape <- function(set, showAverage = FALSE) {
             interpolation <- stats::spline(interval.n[[i]], interval[[i]]$signal, 
                 xout = interval.ref)
             # baseline correction
+            
             interpolation$y <- interpolation$y - snipBase(interpolation$y, widthI = 4)
             # normalization
             indexPeakRef <- which(massRef == massRef[i])

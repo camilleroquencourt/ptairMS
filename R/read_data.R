@@ -71,11 +71,11 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
         mzVn <- rhdf5::h5read(filePath, "FullSpectra/MassAxis", bit64conversion = "bit64")
         reaction <- try(rhdf5::h5read(filePath, "AddTraces/PTR-Reaction"))
         transmission <- try(rhdf5::h5read(filePath, "PTR-Transmission"))
-        calibCoef <- try(rhdf5::h5read(filePath, "FullSpectra/MassCalibration", index = list(NULL, 
-                                                                                             1)))
+        calibCoef <- try(rbind(rhdf5::h5read(filePath, "FullSpectra/MassCalibration", index = list(NULL, 
+                                                                                             1)),2))
         attributCalib <- try(rhdf5::h5readAttributes(filePath, "/FullSpectra"))
         if (!is.null(attr(calibCoef, "condition")) & is.null(attr(attributCalib, "condition"))) {
-            calibCoef <- matrix(c(attributCalib$`MassCalibration a`, attributCalib$`MassCalibration b`), 
+            calibCoef <- matrix(c(attributCalib$`MassCalibration a`, attributCalib$`MassCalibration b`,2), 
                                 ncol = 1)
         }
         
@@ -85,6 +85,7 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
         if (!is.null(attr(transmission, "condition"))) 
             
             transmission <- matrix(0) else transmission <- transmission$Data
+        
         
         if (!is.null(attr(reaction, "condition"))){
             reaction <- list()
@@ -118,8 +119,8 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
         
         # calibration infomration
         if (is.null(attr(calibCoef, "condition"))) {
-            calibCoef<-calibCoef[c(1,2),1,drop=FALSE]
-            rownames(calibCoef) <- c("a", "b")
+            calibCoef<-calibCoef[c(1,2,3),1,drop=FALSE]
+            rownames(calibCoef) <- c("a", "b","q")
             calib_formula <- function(tof, calibCoef) ((tof - calibCoef["b", ])/calibCoef["a", 
             ])^2
             calib_invFormula <- function(m, calibCoef) sqrt(m) * calibCoef["a", ] + calibCoef["b", 
@@ -188,23 +189,29 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
         transmission <- try(t(rhdf5::h5read(filePath, "PTR-Transmission")$Masses_Factors[,,1]))
       
         CalibInfo <-rhdf5::h5read(filePath, "/CALdata", index = list(NULL,1))
-        if(dim(CalibInfo$Spectrum)[1]!=0) calibCoefFirt<-as.matrix(CalibInfo$Spectrum[,1]) else{
+        if(dim(CalibInfo$Spectrum)[1]!=0){
+            
+            calibCoefFirt<-as.matrix(CalibInfo$Spectrum[,1])
+            calibCoefFirt<-rbind(calibCoefFirt,2)
+        } else{
             mzRef <- CalibInfo$Mapping[1,]
             tofRef <- CalibInfo$Mapping[2,]
             a <- (tofRef[2] - tofRef[1]) / (sqrt(mzRef[2])-sqrt(mzRef[1]))
             b<- tofRef[1] - sqrt(mzRef[1])*a
-            calibCoefFirt<-as.matrix(c(a,b))
+            q<-2
+            calibCoefFirt<-as.matrix(c(a,b,q))
             
         }
         
-        rownames(calibCoefFirt)<-c("a","b")
+        rownames(calibCoefFirt)<-c("a","b","q")
         mzVn <- tofToMz(seq(0,(dim(rawMn)[1]-1)),calibCoef = calibCoefFirt)
         colnames(rawMn)<-timVn
         rownames(rawMn)<-mzVn
         
         if(dim(CalibInfo$Spectrum)[1]!=0)  calibCoef<-lapply(apply(CalibInfo$Spectrum,2,function(x){
           y<-as.matrix(x,ncol=1,nrow=2)
-          rownames(y)<-c("a","b")
+          y<-rbind(y,2)
+          rownames(y)<-c("a","b","q")
            list(y)
        } ),function(x) x[[1]]) else calibCoef<-list(calibCoefFirt)
   

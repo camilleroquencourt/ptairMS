@@ -78,9 +78,9 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
                 length(time)) 
                 index <- c(index, seq(utils::tail(index, 1) + 1, length(getRawInfo(object)$time)))
             sp.i <- rowSums(getRawInfo(object)$rawM[, index])
-            calib_List[[i + 1]] <- c(calibrationFun(sp.i, mz, mzCalibRef, 
+            calib_List[[i + 1]] <- c(calibrationFun(sp = sp.i, mz, mzCalibRef, 
                                                     calibCoef = getCalibrationInfo(object)$calibCoef[[1]], 
-                peakShape, tol), list(index = index))
+                            peakShape, tol), list(index = index))
         }
     }
     # use the mz axis of the first calibration
@@ -159,8 +159,8 @@ calibrationFun <- function(sp, mz, mzCalibRef, calibCoef, peakShape, tol) {
         return(tofMax)
     }, FUN.VALUE = 0.1)
     # re estimated calibration coefficient with reference masses
-    regression <- stats::nls(rep(1, length(mzCalibRef)) ~ I(((tofMax - b)/a)^2/mzCalibRef), 
-        start = list(a = calibCoef["a", ], b = calibCoef["b", ]), algorithm = "port")
+    regression <- stats::nls(rep(1, length(mzCalibRef)) ~ I(((tofMax - b)/a)^q/mzCalibRef), 
+        start = list(a = calibCoef["a", ], b = calibCoef["b", ],q=2), algorithm = "port")
     coefs <- stats::coefficients(regression)
     coefs <- as.matrix(coefs)
     # the new mass axis calibrated
@@ -195,10 +195,10 @@ alignCalibrationPeak <- function(calibSpectr, calibMassRef, ntimes) {
     })
 }
 tofToMz <- function(tof, calibCoef) {
-    ((tof - calibCoef["b", ])/calibCoef["a", ])^2
+    ((tof - calibCoef["b", ])/calibCoef["a", ])^calibCoef["q", ]
 }
 mzToTof <- function(m, calibCoef) {
-    sqrt(m) * calibCoef["a", ] + calibCoef["b", ]
+    m^(1/calibCoef["q", ]) * calibCoef["a", ] + calibCoef["b", ]
 }
 ## plotRaw ----
 #' @rdname plotRaw

@@ -781,11 +781,11 @@ imputeFunc <- function(file, missingValues, eSet, ptrSet) {
                 tofRef <- CalibInfo$Mapping[2,]
                 a <- (tofRef[2] - tofRef[1]) / (sqrt(mzRef[2])-sqrt(mzRef[1]))
                 b<- tofRef[1] - sqrt(mzRef[1])*a
-                FirstcalibCoef<-as.matrix(c(a,b))
+                FirstcalibCoef<-as.matrix(c(a,b,2))
                 
             }
             
-            rownames(FirstcalibCoef)<-c("a","b")
+            rownames(FirstcalibCoef)<-c("a","b","q")
             dim<- rhdf5::h5ls(filesFullName.j)
             dim<-as.numeric(dim[dim$group=="/SPECdata","dim"][1])
             mzAxis <- tofToMz(seq(0,(dim-1)),calibCoef = FirstcalibCoef)   
@@ -843,7 +843,7 @@ imputeFunc <- function(file, missingValues, eSet, ptrSet) {
     tof <- sqrt(mzAxis) * FirstcalibCoef[1, 1] + FirstcalibCoef[2, 1]
     coefCalib <- getCalibrationInfo(ptrSet)$coefCalib[[file]][[1]]
     
-    mzAxis <- ((tof - coefCalib["b", ])/coefCalib["a", ])^2
+    mzAxis <- ((tof - coefCalib["b", ])/coefCalib["a", ])^coefCalib["q",]
     
     # peak list raw
     peakList<-getPeakList(ptrSet)
@@ -1098,7 +1098,7 @@ imputeMat <- function(X, ptrSet, quantiUnit) {
             index = list(NULL, 1))
         tof <- sqrt(mzAxis) * FirstcalibCoef[1, 1] + FirstcalibCoef[2, 1]
         coefCalib <- getCalibrationInfo(ptrSet)$coefCalib[[file]]
-        mzAxis <- ((tof - coefCalib[[1]]["b", ])/coefCalib[[1]]["a", ])^2
+        mzAxis <- ((tof - coefCalib[[1]]["b", ])/coefCalib[[1]]["a", ])^coefCalib[[1]]["q", ]
         
         # peak list raw
         peakList<-getPeakList(ptrSet)
