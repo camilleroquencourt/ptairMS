@@ -776,7 +776,7 @@ imputeFunc <- function(file, missingValues, eSet, ptrSet) {
         mzAxis <- rhdf5::h5read(filesFullName.j, "FullSpectra/MassAxis", bit64conversion = "bit64")
         } else if (name$group[2] == "/AddTraces"){
             CalibInfo <-rhdf5::h5read(filesFullName.j, "/CALdata", index = list(NULL,1))
-            if(dim(CalibInfo$Spectrum)[1]!=0) FirstcalibCoef<-as.matrix(CalibInfo$Spectrum[,1]) else{
+            if(dim(CalibInfo$Spectrum)[1]!=0) FirstcalibCoef<-as.matrix(c(CalibInfo$Spectrum[,1],2)) else{
                 mzRef <- CalibInfo$Mapping[1,]
                 tofRef <- CalibInfo$Mapping[2,]
                 a <- (tofRef[2] - tofRef[1]) / (sqrt(mzRef[2])-sqrt(mzRef[1]))

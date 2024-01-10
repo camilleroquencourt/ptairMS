@@ -39,11 +39,10 @@ setMethod("annotateVOC", "ExpressionSet",
             
             Biobase::fData(x) <- fdataDF
 
-            xIso<-try(findIsotope(x))
-            if(!is.null(attr(xIso,"condition"))) 
-              return(x) 
+            xIso<-try(findIsotope(eSet = x,ppm=ppm))
+            if(!is.null(attr(xIso,"condition"))) return(x) else return(xIso)
 
-            x <- findIsotope(x)
+            #x <- findIsotope(x)
             
             
           })
@@ -399,7 +398,7 @@ findIsotope<-function(eSet,ppm=100){
   for (i in seq_along(mz)){
       iso <- isotopeMzMatching(mz[i], mz[(i+1):length(mz)],ppm)
       if(length(iso)){
-        testIso<-validateGroup(groupIso = c(mz[i],iso),X = X)
+        testIso<-validateGroup(groupIso = c(mz[i],iso),X = X,ppm)
         if(any(testIso)){
           fDATA[i,"isotope"]<- paste(iso[testIso],collapse = "/")
         }
@@ -429,7 +428,7 @@ isotopeMzMatching<-function(m,mzSub,ppm,max=1){
 }
 
 #validate isotope group
-validateGroup<-function(groupIso,X){
+validateGroup<-function(groupIso,X,ppm){
   
   #correlation inter sample
   testCorPval<-vapply(as.character(groupIso)[-1], 
@@ -443,7 +442,7 @@ validateGroup<-function(groupIso,X){
           length(as.character(groupIso)[-1])),
       nrow=length(as.character(groupIso)[-1]),byrow=TRUE)
   
-  anno<-annotateVOC(groupIso[1])
+  anno<-annotateVOC(groupIso[1],ppm=ppm)
   isotopes <- utils::read.table(system.file("extdata/reference_tables/atomic_isotopes.tsv",
                                            package = "ptairMS"),
                                header = TRUE,

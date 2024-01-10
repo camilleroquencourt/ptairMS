@@ -804,13 +804,13 @@ methods::setMethod(f = "plotRaw", signature = "ptrSet",
             }
         } else if (name$group[2] == "/AddTraces"){
             CalibInfo <-rhdf5::h5read(file, "/CALdata", index = list(NULL,1))
-            if(dim(CalibInfo$Spectrum)[1]!=0) FirstcalibCoef<-as.matrix(CalibInfo$Spectrum[,1]) else{
+            if(dim(CalibInfo$Spectrum)[1]!=0) FirstcalibCoef<-as.matrix(c(CalibInfo$Spectrum[,1],2),ncol=1) else{
                 mzRef <- CalibInfo$Mapping[1,]
                 tofRef <- CalibInfo$Mapping[2,]
                 a <- (tofRef[2] - tofRef[1]) / (sqrt(mzRef[2])-sqrt(mzRef[1]))
                 b<- tofRef[1] - sqrt(mzRef[1])*a
-                FirstcalibCoef<-as.matrix(c(a,b))}
-            rownames(FirstcalibCoef)<-c("a","b")
+                FirstcalibCoef<-as.matrix(c(a,b,2),ncol=1)}
+            rownames(FirstcalibCoef)<-c("a","b","q")
             mz <- tofToMz(seq(0,
                                         as.numeric(name[name$name=="AverageSpec" ,"dim"])-1),
                                     calibCoef = FirstcalibCoef)
@@ -842,7 +842,7 @@ methods::setMethod(f = "plotRaw", signature = "ptrSet",
         tof <- sqrt(mz) * FirstcalibCoef[1, 1] + FirstcalibCoef[2, 1]
         # tof<- seq(0,length(mz))
         coefCalib <- getCalibrationInfo(set)$coefCalib[[basename(file)]][[1]]
-        mzVn <- ((tof - coefCalib["b", ])/coefCalib["a", ])^2
+        mzVn <- ((tof - coefCalib["b", ])/coefCalib["a", ])^coefCalib["q", ]
         mzVn <- mzVn[index]
         # formate object matix
         rawSubMN <- matrix(object, nrow = dim(object)[1], 
@@ -993,36 +993,59 @@ methods::setMethod(f = "plotFeatures", signature = "ptrSet",
     j <- 0
     for (file in fileNames) {
         j <- j + 1
+        
+        name<-rhdf5::h5ls(file)
+        if(name$group[2] == "/AcquisitionLog"){
+            mzAxis <- rhdf5::h5read(file, name = "FullSpectra/MassAxis")
+            thLarge <- max(0.4, mz * (ppm/2)/10^6)
+            indexMz <- which(mz - thLarge < mzAxis & mzAxis < mz + thLarge)
+            raw <- rhdf5::h5read(file, name = "/FullSpectra/TofData", 
+                                 index = list(indexMz, NULL, NULL, NULL))
+            time <- c(rhdf5::h5read(file, name = "/TimingData/BufTimes"))
+            index_zero <- which(time == 0)[-1]
+            if (length(index_zero)) 
+                time <- time[-index_zero]
+            rawMn <- matrix(raw, nrow = dim(raw)[1], ncol = prod(utils::tail(dim(raw), 
+                                                                             2)))
+            FirstcalibCoef <- try(rhdf5::h5read(file, "FullSpectra/MassCalibration", index = list(NULL, 1)))
+            attributCalib <- try(rhdf5::h5readAttributes(file, "/FullSpectra"))
+            if (!is.null(attr(FirstcalibCoef, "condition")) & is.null(attr(attributCalib, "condition"))) {
+                FirstcalibCoef <- matrix(c(attributCalib$`MassCalibration a`, attributCalib$`MassCalibration b`), 
+                                         ncol = 1)
+            }
+        } else if (name$group[2] == "/AddTraces"){
+            CalibInfo <-rhdf5::h5read(file, "/CALdata", index = list(NULL,1))
+            if(dim(CalibInfo$Spectrum)[1]!=0) FirstcalibCoef<-as.matrix(c(CalibInfo$Spectrum[,1],2),ncol=1) else{
+                mzRef <- CalibInfo$Mapping[1,]
+                tofRef <- CalibInfo$Mapping[2,]
+                a <- (tofRef[2] - tofRef[1]) / (sqrt(mzRef[2])-sqrt(mzRef[1]))
+                b<- tofRef[1] - sqrt(mzRef[1])*a
+                FirstcalibCoef<-as.matrix(c(a,b,2),ncol=1)}
+            rownames(FirstcalibCoef)<-c("a","b","q")
+            mzAxis <- tofToMz(seq(0,
+                              as.numeric(name[name$name=="AverageSpec" ,"dim"])-1),
+                          calibCoef = FirstcalibCoef)
+            thLarge <- max(0.4, mz * (ppm/2)/10^6)
+            indexMz <- which(mz - thLarge < mzAxis & mzAxis < mz + thLarge)
+            
+            time <- rhdf5::h5read(file, "/SPECdata/Times", bit64conversion = "bit64", 
+                                   index = list(NULL, NULL))[4,]
+            rawMn <- rhdf5::h5read(file, "/SPECdata/Intensities", bit64conversion = "bit64", 
+                                   index = list(indexMz, NULL))
+            
+        }
         # get the mass axis, must be the same for all files
-        mzAxis <- rhdf5::h5read(file, name = "FullSpectra/MassAxis")
         # get the index of the mzAxis
-        thLarge <- max(0.4, mz * (ppm/2)/10^6)
-        indexMz <- which(mz - thLarge < mzAxis & mzAxis < mz + thLarge)
+      
         indLim <- getTimeInfo(set)$timeLimit[[basename(file)]]$exp
         indLimBg <- getTimeInfo(set)$timeLimit[[basename(file)]]$backGround
         n.limit <- dim(indLim)[2]
-        raw <- rhdf5::h5read(file, name = "/FullSpectra/TofData", 
-                            index = list(indexMz, NULL, NULL, NULL))
-        time <- c(rhdf5::h5read(file, name = "/TimingData/BufTimes"))
-        index_zero <- which(time == 0)[-1]
-        if (length(index_zero)) 
-            time <- time[-index_zero]
         mzAxis.j <- mzAxis[indexMz]
-        rawMn <- matrix(raw, nrow = dim(raw)[1], ncol = prod(utils::tail(dim(raw), 
-            2)))
+ 
         # * 0.2 ns / 2.9 (single ion signal) if convert to cps
-        
-        FirstcalibCoef <- try(rhdf5::h5read(file, "FullSpectra/MassCalibration", index = list(NULL, 
-                                                                                              1)))
-        attributCalib <- try(rhdf5::h5readAttributes(file, "/FullSpectra"))
-        if (!is.null(attr(FirstcalibCoef, "condition")) & is.null(attr(attributCalib, "condition"))) {
-            FirstcalibCoef <- matrix(c(attributCalib$`MassCalibration a`, attributCalib$`MassCalibration b`), 
-                                     ncol = 1)
-        }
-        
         tof <- sqrt(mzAxis.j) * FirstcalibCoef[1, 1] + FirstcalibCoef[2, 1]
         coefCalib <- getCalibrationInfo(set)$coefCalib[[basename(file)]][[1]]
-        mzNew <- ((tof - coefCalib["b", ])/coefCalib["a", ])^2
+        mzNew <- ((tof - coefCalib["b", ])/coefCalib["a", ])^coefCalib["q", ]
         # get smaller windows
         th <- mz * (ppm/2)/10^6
         indexSub <- which(mz - th < mzNew & mzNew < mz + th)
