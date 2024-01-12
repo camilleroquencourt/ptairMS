@@ -389,14 +389,19 @@ formula2mass <- function(formula.vc,
   
 }
 
-findIsotope<-function(eSet,ppm=100){
+
+## To label as isotope: 
+## - difference un ion mass < ppm for atomic in "extdata/reference_tables/atomic_isotopes.tsv"
+## - Correlation inter patient >0.8
+## - ratio < 20 % or to the corresponding isotopic ratio if annotated formula
+findIsotope<-function(eSet,ppm=50){
   X<-Biobase::exprs(eSet)
   fDATA<-Biobase::fData(eSet)
   mz<-as.numeric(row.names(X))
   
   #FIND AND VALIDE ISOTOPE GROUP
   for (i in seq_along(mz)){
-      iso <- isotopeMzMatching(mz[i], mz[(i+1):length(mz)],ppm)
+      iso <- isotopeMzMatching(m = mz[i], mzSub = mz[(i+1):length(mz)],ppm = ppm)
       if(length(iso)){
         testIso<-validateGroup(groupIso = c(mz[i],iso),X = X,ppm)
         if(any(testIso)){
@@ -418,11 +423,17 @@ isotopeMzMatching<-function(m,mzSub,ppm,max=1){
                                 sep = "\t",
                                 stringsAsFactors = FALSE)
   
+  
+  isotopes<-isotopes[isotopes$abundance>0.001,]
+  anno<-annotateVOC(m,ppm=ppm)
+  if(anno[,"vocDB_ion_formula"] != ""){
+      element<-unique(isotopes$element)[vapply(unique(isotopes$element),function(e) grepl(pattern = e,x = anno[,"vocDB_ion_formula"]),FUN.VALUE = TRUE)]
+     isotopes<-isotopes[isotopes$element %in% element,]
+  }
   diff<-lapply(split(isotopes, isotopes$element),function(x) {
     if(nrow(x)>1) x$mass[-1]-x$mass[1] else return(NULL) })
   diff<-Reduce(c,diff)
-  Iso <- Reduce(c,lapply(diff,
-                         function(d) mzSub[which(abs(mzSub-(m+d))*10^6/m < 50)]))
+  Iso <- Reduce(c,lapply(diff,function(d) mzSub[which(abs(mzSub-(m+d))*10^6/m < ppm*1.3)]))
   iso<-unique(Iso)
   return(iso)
 }
@@ -432,8 +443,10 @@ validateGroup<-function(groupIso,X,ppm){
   
   #correlation inter sample
   testCorPval<-vapply(as.character(groupIso)[-1], 
-                      function(y) stats::cor.test(X[as.character(groupIso)[1],],                                                                    X[y,],alternative = c("greater"))$p.value,1.1)
-  testCor<- testCorPval < 0.01
+                      function(y) stats::cor.test(X[as.character(groupIso)[1],],
+                                                  X[y,],alternative = c("greater"))$estimate,1.1)
+  
+  testCor<- testCorPval > 0.78
   
   #ratio
   ratio<-X[as.character(groupIso)[-1],]/
@@ -441,7 +454,6 @@ validateGroup<-function(groupIso,X,ppm){
       rep(X[as.character(groupIso)[1],,drop=FALSE],
           length(as.character(groupIso)[-1])),
       nrow=length(as.character(groupIso)[-1]),byrow=TRUE)
-  
   anno<-annotateVOC(groupIso[1],ppm=ppm)
   isotopes <- utils::read.table(system.file("extdata/reference_tables/atomic_isotopes.tsv",
                                            package = "ptairMS"),
@@ -452,20 +464,22 @@ validateGroup<-function(groupIso,X,ppm){
   #isotopes<-isotopes[!apply(isotopes,1,function(x) all(is.na(x[c(3,4,5)]))),]
   if(anno[,"vocDB_ion_formula"] != ""){
     formula<-anno[,"vocDB_ion_formula"]
-    isoDistrib<-enviPat::isopattern(isotopes,chemforms = formula,threshold = 1,
+    isoDistrib<-enviPat::isopattern(isotopes,chemforms = formula,threshold = 0.1,
                                     verbose = FALSE,charge=FALSE,emass=0.00054858)[[1]]
     testRatio<- vapply(seq_len(nrow(ratio)),function(x){
       index<-which(abs(isoDistrib[,"m/z"]-groupIso[x+1])*10^6/
-                     round(groupIso[x+1]) < 100)
+                     round(groupIso[x+1]) < ppm)
+      if(length(index>1)) index<- which.min(abs(isoDistrib[,"m/z"]-groupIso[x+1]))
       if(length(index)!=0){
-        testRatio<- stats::median(ratio[x,],na.rm = TRUE)*100 <= 
-          max(isoDistrib[index,"abundance"]*1.02,50)
+         # testRatio<-abs(stats::median(ratio[x,],na.rm = TRUE)*100-isoDistrib[index,"abundance"])< 0.3*isoDistrib[index,"abundance"] # difference de ratio <30 %
+        testRatio<- round(stats::median(ratio[x,],na.rm = TRUE)*100) <=
+          max(ceiling(isoDistrib[index,"abundance"])+1,5)
     }else {
-      testRatio<- stats::median(ratio[x,],na.rm = TRUE) < 0.5
+      testRatio<- stats::median(ratio[x,],na.rm = TRUE) < 0.2
     }
       },FUN.VALUE = TRUE) 
   }else {
-    testRatio<- apply(ratio,1,function(x) stats::median(x,na.rm = TRUE)) < 0.5
+    testRatio<- apply(ratio,1,function(x) stats::median(x,na.rm = TRUE)) < 0.2
   }
 
   return(apply(cbind(testCor,testRatio),1,all))
