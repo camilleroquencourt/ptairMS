@@ -410,6 +410,16 @@ plotPtrReaction <- function(pSet) {
     date <- try(vapply(date, function(x) chron::chron(dates. = strsplit(x, " ")[[1]][1],
         times. = strsplit(x, " ")[[1]][2], format = c("d/m/y", "h:m:s")),
         FUN.VALUE = chron::chron(1)),silent = TRUE)
+    
+    if(all(is.na(date) )) {
+        date <- Reduce(c, getDate(pSet))
+        
+        date <- try(vapply(date, function(x) chron::chron(dates. = strsplit(x, " ")[[1]][1],
+                                                          times. = strsplit(x, " ")[[1]][2], format = c("m/d/y", "h:m:s")),
+                           FUN.VALUE = chron::chron(1)),silent = TRUE)
+        
+        
+    }
     if(!is.null(attr(date,"condition"))){
         date <- Reduce(c, getDate(pSet))
         date <- vapply(date, function(x) chron::chron(dates. = strsplit(x, " ")[[1]][1],

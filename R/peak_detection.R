@@ -254,7 +254,6 @@ processFileTemporal <- function(fullNamefile, massCalib,
     #                                                          minIntensityRate = minIntensityRate,
     #                                                          knots = knots, smoothPenalty = smoothPenalty, l.shape = l.shape,
     #                                                          timeLimit = indTimeLim)
-    #     print(m)
     # }
 
     process <- lapply(mzNominal, function(m) processFileTemporalNominalMass(m = m, 
@@ -357,6 +356,7 @@ processFileTemporalNominalMass <- function(m, raw, mzNominal,
     rawMCorr <- rawMCorr[!apply(rawMCorr, 1, function(x) any(is.na(x))), ]
     # peak detection on the average spectrum
     sp <- rowSums(rawMCorr)/ncol(rawMCorr)
+    sp[which(sp<0)]<-0
     mz <- as.numeric(rownames(rawMCorr))
     PeakListm <- peakListNominalMass(i = m, mz = mz, sp = sp, 
                                         calibCoef = getCalibrationInfo(raw)$calibCoef[[1]], 
