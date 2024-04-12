@@ -22,6 +22,7 @@ setMethod("annotateVOC", "ExpressionSet",
             
             ionMassColnameI <- which(colnames(fdataDF) == ionMassColname)
             
+            
             if (length(ionMassColnameI) != 1)
               stop("No or multiple columns found in the fdataDF with the '", 
                    ionMassColname, "' name.",
@@ -145,6 +146,7 @@ setMethod("annotateVOC", "numeric",
   names(fielddbVl) <- fields
   
   if (sum(!fielddbVl) > 0)
+    
     warnings("The following fields were not found in the vocDB database and 
              will be ignored:\n", paste(fields[!fielddbVl], collapse = ", "))
   
@@ -162,7 +164,7 @@ setMethod("annotateVOC", "numeric",
     vocVi <- which(abs(massN - vocdbDF[, "ion_mass"]) < ppm * 1e-6 * massN)
     
     if (length(vocVi) > 0) {
-      
+      if(length(vocVi)>1)  vocVi <- which.min(abs(massN - vocdbDF[, "ion_mass"]))
       for (fieldC in fields) {
         
         vocFieldVc <- character()
@@ -185,6 +187,13 @@ setMethod("annotateVOC", "numeric",
         
       }
       
+    } else {
+        
+        formula<-MassTools::calcMF(massN, z=1,ppm=ppm,top=1) # M+H+
+        if(!is.null(formula)){
+            annotateDF[i, paste0(prefix, "ion_mass")]<- paste(round(formula$mz,5),collapse = "/")
+            annotateDF[i, paste0(prefix, "ion_formula")]<- paste0("[",formula$MF,"+H]+")
+        }
     }
     
   }
@@ -406,6 +415,7 @@ findIsotope<-function(eSet,ppm=50){
         testIso<-validateGroup(groupIso = c(mz[i],iso),X = X,ppm)
         if(any(testIso)){
           fDATA[i,"isotope"]<- paste(iso[testIso],collapse = "/")
+            #fDATA[as.character(iso[testIso]),"isotope"]<- mz[i]
         }
       }
     }
@@ -454,7 +464,7 @@ validateGroup<-function(groupIso,X,ppm){
       rep(X[as.character(groupIso)[1],,drop=FALSE],
           length(as.character(groupIso)[-1])),
       nrow=length(as.character(groupIso)[-1]),byrow=TRUE)
-  anno<-annotateVOC(groupIso[1],ppm=ppm)
+  anno<-.annotate(groupIso[1],ppm=ppm)
   isotopes <- utils::read.table(system.file("extdata/reference_tables/atomic_isotopes.tsv",
                                            package = "ptairMS"),
                                header = TRUE,
@@ -468,12 +478,12 @@ validateGroup<-function(groupIso,X,ppm){
                                     verbose = FALSE,charge=FALSE,emass=0.00054858)[[1]]
     testRatio<- vapply(seq_len(nrow(ratio)),function(x){
       index<-which(abs(isoDistrib[,"m/z"]-groupIso[x+1])*10^6/
-                     round(groupIso[x+1]) < ppm)
+                     round(groupIso[x+1]) < ppm*1.3)
       if(length(index>1)) index<- which.min(abs(isoDistrib[,"m/z"]-groupIso[x+1]))
       if(length(index)!=0){
          # testRatio<-abs(stats::median(ratio[x,],na.rm = TRUE)*100-isoDistrib[index,"abundance"])< 0.3*isoDistrib[index,"abundance"] # difference de ratio <30 %
         testRatio<- round(stats::median(ratio[x,],na.rm = TRUE)*100) <=
-          max(ceiling(isoDistrib[index,"abundance"])+1,5)
+          max(ceiling(isoDistrib[index,"abundance"])+1,7)
     }else {
       testRatio<- stats::median(ratio[x,],na.rm = TRUE) < 0.2
     }
@@ -483,4 +493,19 @@ validateGroup<-function(groupIso,X,ppm){
   }
 
   return(apply(cbind(testCor,testRatio),1,all))
+}
+
+
+adduct<- function(eSet,ppm=50){
+    X<- Biobase::exprs(eSet)
+    Cormat<- cor(t(X))
+    
+    list<-list(NULL)
+    for( i in seq(1,nrow(X))){
+        list[[i]]<-rownames(X)[which(apply(X,1,function(x) cor(x,X[i,],method = "spearman")) >0.9)]
+        
+    }  
+    
+    names(list)<-rownames(X)
+    groups<- list[which(unlist(lapply(list,length))>1)]
 }

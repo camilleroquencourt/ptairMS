@@ -243,18 +243,18 @@ processFileTemporal <- function(fullNamefile, massCalib,
         raw<-setPeakShape(raw,peakShape)
     } else l.shape = list(NULL)
     
-
-    # p<-list()
-    # for(m in mzNominal){
-    # 
-    #     p[[m+1]]<-ptairMS:::processFileTemporalNominalMass(m = m,
-    #                                                          raw = raw, mzNominal = mzNominal, ppm = ppm,
-    #                                                          resolutionRange = resolutionRange,
-    #                                                          minIntensity = minIntensity, fctFit = fctFit,
-    #                                                          minIntensityRate = minIntensityRate,
-    #                                                          knots = knots, smoothPenalty = smoothPenalty, l.shape = l.shape,
-    #                                                          timeLimit = indTimeLim)
-    # }
+# 
+#     p<-list()
+#     for(m in mzNominal){
+# 
+#         p[[m+1]]<-ptairMS:::processFileTemporalNominalMass(m = m,
+#                                                              raw = raw, mzNominal = mzNominal, ppm = ppm,
+#                                                              resolutionRange = resolutionRange,
+#                                                              minIntensity = minIntensity, fctFit = fctFit,
+#                                                              minIntensityRate = minIntensityRate,
+#                                                              knots = knots, smoothPenalty = smoothPenalty, l.shape = l.shape,
+#                                                              timeLimit = indTimeLim)
+#     }
 
     process <- lapply(mzNominal, function(m) processFileTemporalNominalMass(m = m, 
         raw = raw, mzNominal = mzNominal, ppm = ppm, 
