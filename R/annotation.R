@@ -188,12 +188,12 @@ setMethod("annotateVOC", "numeric",
       }
       
     } else {
-        
-        formula<-MassTools::calcMF(massN, z=1,ppm=ppm,top=1) # M+H+
-        if(!is.null(formula)){
-            annotateDF[i, paste0(prefix, "ion_mass")]<- paste(round(formula$mz,5),collapse = "/")
-            annotateDF[i, paste0(prefix, "ion_formula")]<- paste0("[",formula$MF,"+H]+")
-        }
+        # 
+        # formula<-MassTools::calcMF(massN, z=1,ppm=ppm,top=1) # M+H+
+        # if(!is.null(formula)){
+        #     annotateDF[i, paste0(prefix, "ion_mass")]<- paste(round(formula$mz,5),collapse = "/")
+        #     annotateDF[i, paste0(prefix, "ion_formula")]<- paste0("[",formula$MF,"+H]+")
+        # }
     }
     
   }
