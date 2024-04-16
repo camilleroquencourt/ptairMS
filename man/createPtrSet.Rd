@@ -13,7 +13,8 @@ createPtrSet(
   mzBreathTracer = NULL,
   knotsPeriod = 3,
   mzPrimaryIon = 21.022,
-  saveDir = NULL
+  saveDir = NULL,
+  maxTimePoint = 900
 )
 }
 \arguments{
@@ -49,6 +50,8 @@ the two dimensional modeling}
 
 \item{saveDir}{Directory where the ptrSet object will be saved as 
 .RData. If \code{NULL}, nothing will be saved.}
+
+\item{maxTimePoint}{readRaw parameter, number maximal of time point to read}
 }
 \value{
 a ptrSet object with slots :

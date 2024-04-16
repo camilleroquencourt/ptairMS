@@ -292,6 +292,7 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
 #' @param mzPrimaryIon Exact mass of the primary ion isotope
 #' @param saveDir Directory where the ptrSet object will be saved as 
 #' .RData. If \code{NULL}, nothing will be saved.
+#' @param maxTimePoint readRaw parameter, number maximal of time point to read 
 #' @return a ptrSet object with slots :
 #' \itemize{
 #' \item Parameter: list containing the parameters used for 
@@ -328,7 +329,7 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
 #' fracMaxTIC=0.9,saveDir= NULL)
 createPtrSet <- function(dir, setName, mzCalibRef = c(21.022, 29.013424, 41.03858, 
     60.0525, 203.943, 330.8495), calibrationPeriod = 60, fracMaxTIC = 0.8, mzBreathTracer = NULL, 
-    knotsPeriod = 3, mzPrimaryIon = 21.022, saveDir = NULL) {
+    knotsPeriod = 3, mzPrimaryIon = 21.022, saveDir = NULL,maxTimePoint = 900) {
     
     # test on parameter dir exist
     if (dir == "") 
@@ -391,7 +392,7 @@ createPtrSet <- function(dir, setName, mzCalibRef = c(21.022, 29.013424, 41.0385
     # checkSet
     check <- checkSet(files = filesFullName,mzCalibRef =  mzCalibRef, 
                       fracMaxTIC, mzBreathTracer, calibrationPeriod, 
-        knotsPeriod, mzPrimaryIon)
+        knotsPeriod, mzPrimaryIon,maxTimePoint=maxTimePoint)
     
   
 
@@ -555,7 +556,7 @@ checkSet <- function(files,
                      fracMaxTIC, 
                      mzBreathTracer, 
                      calibrationPeriod, 
-                     knotsPeriod, mzPrimaryIon) {
+                     knotsPeriod, mzPrimaryIon,maxTimePoint) {
     
     # init output list
     mzCalibRefList <- list()
@@ -582,7 +583,9 @@ checkSet <- function(files,
     for (j in seq_along(files)) {
         
         # check reading and calibration of file
-        raw <- try(readRaw(filePath = files[j], mzCalibRef = mzCalibRef, calibrationPeriod = calibrationPeriod))
+        raw <- try(readRaw(filePath = files[j], mzCalibRef = mzCalibRef, 
+                           calibrationPeriod = calibrationPeriod,
+                           maxTimePoint=maxTimePoint))
         if (attr(raw, "class") == "try-error") {
             message(fileName[j], " opening or calibration failed \n")
             failed <- c(failed, fileName[j])
