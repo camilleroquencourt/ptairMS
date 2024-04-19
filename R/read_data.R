@@ -371,6 +371,7 @@ createPtrSet <- function(dir, setName, mzCalibRef = c(21.022, 29.013424, 41.0385
         knotsPeriod = knotsPeriod, 
         mzPrimaryIon=mzPrimaryIon,
         calibrationPeriod=calibrationPeriod,
+        maxTimePoint=maxTimePoint,
         saveDir = saveDir)
     
     # create sampleMetadata test if there is subfolder if there is no subfolder
@@ -517,7 +518,8 @@ updatePtrSet <- function(ptrset) {
                           calibrationPeriod = parameter$calibrationPeriod,
                           knotsPeriod =  parameter$knotsPeriod,
                           mzPrimaryIon = parameter$mzPrimaryIon,
-                          mzBreathTracer = parameter$mzBreathTracer)
+                          mzBreathTracer = parameter$mzBreathTracer,
+                          maxTimePoint=parameter$maxTimePoint)
         if (length(check$failed) > 0) {
             filesDirFullName <- filesDirFullName[-which(basename(filesDirFullName) %in% 
                 check$failed)]
