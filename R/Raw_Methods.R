@@ -159,10 +159,22 @@ calibrationFun <- function(sp, mz, mzCalibRef, calibCoef, peakShape, tol) {
         return(tofMax)
     }, FUN.VALUE = 0.1)
     # re estimated calibration coefficient with reference masses
-    regression <- stats::nls(rep(1, length(mzCalibRef)) ~ I(((tofMax - b)/a)^q/mzCalibRef), 
-        start = list(a = calibCoef["a", ], b = calibCoef["b", ],q=2), algorithm = "port")
-    coefs <- stats::coefficients(regression)
-    coefs <- as.matrix(coefs)
+    if(length(mzCalibRef)==2){
+        regression <- stats::nls(rep(1, length(mzCalibRef)) ~ I(((tofMax - b)/a)^2/mzCalibRef), 
+                                 start = list(a = calibCoef["a", ], b = calibCoef["b", ]), algorithm = "port")
+        coefs <- stats::coefficients(regression)
+        coefs <- rbind(as.matrix(coefs),q=2)
+        message("only two masses used for calibration")
+    }else {
+        regression <- stats::nls(rep(1, length(mzCalibRef)) ~ I(((tofMax - b)/a)^q/mzCalibRef), 
+                                 start = list(a = calibCoef["a", ], b = calibCoef["b", ],q=2), algorithm = "port")
+    
+        coefs <- stats::coefficients(regression)
+        coefs <- as.matrix(coefs)
+        
+        }
+    
+    
     # the new mass axis calibrated
     mzVnbis <- tofToMz(tof, coefs)
     # the new position of reference masses
