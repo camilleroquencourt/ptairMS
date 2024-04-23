@@ -725,7 +725,7 @@ initializeFit <- function(i, sp.i.fit, sp.i, mz.i, calibCoef, resmean,
             # get the mass and the intenisty
             prePeak <- cbind(mz = mz.i[prePeak], 
                              intensity = vapply(prePeak, 
-                                                function(x) max(sp.i[(x - 1):(x + 1)]), FUN.VALUE = 1.1))  #the maximum auround the index find
+                                                function(x) max(sp.i[ max(1,(x - 1)) : min((x + 1),length(sp.i))]), FUN.VALUE = 1.1))  #the maximum auround the index find
             # delete peak to close
             if (nrow(prePeak) > 1) {
                 # chexk proximity
