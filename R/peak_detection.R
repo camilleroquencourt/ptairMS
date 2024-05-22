@@ -45,6 +45,7 @@ utils::globalVariables("::<-")
 #' \code{setName} parameter of the \code{createPtrSet} function
 #' @param saveDir The directory where the ptrSet object will be saved as .RData. 
 #' If NULL, nothing will be saved
+#' @param funAggreg aggregation function for temporal profile
 #' @param ... may be used to pass parameters to the processFileTemporal function
 #' @return an S4 ptrSet object, that contains the input ptrSet completed with the 
 #' peakLists.
@@ -69,7 +70,7 @@ setMethod(f = "detectPeak", signature = "ptrSet",
                      minIntensityRate = 0.01, mzNominal = NULL, 
                      resolutionRange = NULL,fctFit = NULL, smoothPenalty = 0, 
                      parallelize = FALSE, nbCores = 2, saving = TRUE, 
-                     saveDir = getParameters(x)$saveDir, ...){
+                     saveDir = getParameters(x)$saveDir, funAggreg = mean,...){
                 
     ptrset <- x
     
@@ -163,7 +164,8 @@ setMethod(f = "detectPeak", signature = "ptrSet",
             minIntensity = minIntensity, fctFit = fctFit[[basename(x)]], 
             minIntensityRate = minIntensityRate, 
             knots = knots[[basename(x)]], smoothPenalty = smoothPenalty, 
-            peakShape = peakShape[[basename(x)]]))
+            peakShape = peakShape[[basename(x)]],
+            funAggreg = funAggreg))
         if (!is.null(attr(test, "condition"))) {
             return(list(raw = NULL, aligned = NULL))
         } else return(test)

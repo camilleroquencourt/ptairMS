@@ -13,7 +13,8 @@ setGeneric("detectPeak",
                     parallelize=FALSE,
                     nbCores=2,
                     saving=TRUE,
-                    saveDir=getParameters(x)$saveDir,...){
+                    saveDir=getParameters(x)$saveDir, 
+                    funAggreg = mean,...){
              standardGeneric("detectPeak")
            })
 

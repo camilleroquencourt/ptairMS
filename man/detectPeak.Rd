@@ -20,6 +20,7 @@ detectPeak(
   nbCores = 2,
   saving = TRUE,
   saveDir = getParameters(x)$saveDir,
+  funAggreg = mean,
   ...
 )
 
@@ -51,6 +52,7 @@ detectPeak(
   nbCores = 2,
   saving = TRUE,
   saveDir = getParameters(x)$saveDir,
+  funAggreg = mean,
   ...
 )
 }
@@ -92,6 +94,8 @@ generalized cross validation (GCV) criteria}
 
 \item{saveDir}{The directory where the ptrSet object will be saved as .RData. 
 If NULL, nothing will be saved}
+
+\item{funAggreg}{aggregation function for temporal profile}
 
 \item{...}{may be used to pass parameters to the processFileTemporal function}
 
