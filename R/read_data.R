@@ -283,7 +283,11 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
 #' Total Ion Current (TIC) amplitude after baseline removal. 
 #' Only the part of the spectrum where the TIC intensity is higher than 
 #' `fracMaxTIC * max(TIC) ` will be analyzed. If you want to analyze the entire 
-#' spectrum,  set this parameter to 0. 
+#' spectrum,  set this parameter to 0.
+#' @param fracMaxTICBg Fraction (between 0 and 1) of the maximum of the 
+#' Total Ion Current (TIC) amplitude after baseline removal. 
+#'  Part of the spectrum where the TIC intensity is less than 
+#' `fracMaxTIC * max(TIC) ` is considered as background.
 #' @param mzBreathTracer integer: nominal mass of the 
 #' Extracted Ion Current (EIC) used to compute the expiration time limits. 
 #' If \code{NULL}, the limits will be computed on the Total Ion Current (TIC).
@@ -328,7 +332,7 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
 #' ,mzCalibRef=c(21.022,59.049),
 #' fracMaxTIC=0.9,saveDir= NULL)
 createPtrSet <- function(dir, setName, mzCalibRef = c(21.022, 29.013424, 41.03858, 
-    60.0525, 203.943, 330.8495), calibrationPeriod = 60, fracMaxTIC = 0.8, mzBreathTracer = NULL, 
+    60.0525, 203.943, 330.8495), calibrationPeriod = 60, fracMaxTIC = 0.8, fracMaxTICBg = 0.5, mzBreathTracer = NULL, 
     knotsPeriod = 3, mzPrimaryIon = 21.022, saveDir = NULL,maxTimePoint = 900) {
     
     # test on parameter dir exist
@@ -362,7 +366,7 @@ createPtrSet <- function(dir, setName, mzCalibRef = c(21.022, 29.013424, 41.0385
                       name = setName, 
                       mzCalibRef = mzCalibRef, 
         timeLimit = list(fracMaxTIC=fracMaxTIC,
-                         fracMaxTICBg = 0.5, 
+                         fracMaxTICBg = fracMaxTICBg, 
                          derivThresholdExp = 0.5, 
                          derivThresholdBg = 0.01, 
                          minPoints = 3, 
@@ -392,8 +396,13 @@ createPtrSet <- function(dir, setName, mzCalibRef = c(21.022, 29.013424, 41.0385
     
     # checkSet
     check <- checkSet(files = filesFullName,mzCalibRef =  mzCalibRef, 
-                      fracMaxTIC, mzBreathTracer, calibrationPeriod, 
-        knotsPeriod, mzPrimaryIon,maxTimePoint=maxTimePoint)
+                      fracMaxTIC=fracMaxTIC,
+                      fracMaxTICBg=fracMaxTICBg,
+                      mzBreathTracer, 
+                      calibrationPeriod,
+                      knotsPeriod,
+                      mzPrimaryIon,
+                      maxTimePoint=maxTimePoint)
     
   
 
@@ -556,6 +565,7 @@ updatePtrSet <- function(ptrset) {
 checkSet <- function(files, 
                      mzCalibRef, 
                      fracMaxTIC, 
+                     fracMaxTICBg,
                      mzBreathTracer, 
                      calibrationPeriod, 
                      knotsPeriod, mzPrimaryIon,maxTimePoint) {
@@ -641,7 +651,7 @@ checkSet <- function(files,
         }
         # timeLimit
         
-        indLim <- timeLimits(raw, fracMaxTIC = fracMaxTIC, mzBreathTracer = mzBreathTracer)
+        indLim <- timeLimits(raw, fracMaxTIC = fracMaxTIC, fracMaxTICBg=fracMaxTICBg,mzBreathTracer = mzBreathTracer)
         timeLimit[[fileName[j]]] <- indLim
         t <- getRawInfo(raw)$time
         

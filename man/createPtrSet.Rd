@@ -10,6 +10,7 @@ createPtrSet(
   mzCalibRef = c(21.022, 29.013424, 41.03858, 60.0525, 203.943, 330.8495),
   calibrationPeriod = 60,
   fracMaxTIC = 0.8,
+  fracMaxTICBg = 0.5,
   mzBreathTracer = NULL,
   knotsPeriod = 3,
   mzPrimaryIon = 21.022,
@@ -38,6 +39,11 @@ Total Ion Current (TIC) amplitude after baseline removal.
 Only the part of the spectrum where the TIC intensity is higher than 
 `fracMaxTIC * max(TIC) ` will be analyzed. If you want to analyze the entire 
 spectrum,  set this parameter to 0.}
+
+\item{fracMaxTICBg}{Fraction (between 0 and 1) of the maximum of the 
+Total Ion Current (TIC) amplitude after baseline removal. 
+ Part of the spectrum where the TIC intensity is less than 
+`fracMaxTIC * max(TIC) ` is considered as background.}
 
 \item{mzBreathTracer}{integer: nominal mass of the 
 Extracted Ion Current (EIC) used to compute the expiration time limits. 
