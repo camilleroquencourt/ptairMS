@@ -524,6 +524,7 @@ updatePtrSet <- function(ptrset) {
         check <- checkSet(files = newFilesFullNames, 
                           mzCalibRef = parameter$mzCalibRef, 
                           fracMaxTIC = parameter$timeLimit$fracMaxTIC, 
+                          fracMaxTICBg =  parameter$timeLimit$fracMaxTICBg,
                           calibrationPeriod = parameter$calibrationPeriod,
                           knotsPeriod =  parameter$knotsPeriod,
                           mzPrimaryIon = parameter$mzPrimaryIon,

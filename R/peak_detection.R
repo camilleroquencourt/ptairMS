@@ -1087,7 +1087,7 @@ deconv2d2linearIndependant <- function(rawM, time, peak.detect, raw, fctFit,
             model <- apply(param, 1, function(x) 1/(cosh((log(sqrt(2) + 1)/x["lf"]) * 
                 (mzAxis - x["mz"]))^2 * (mzAxis <= x["mz"]) + cosh((log(sqrt(2) + 
                 1)/x["lr"]) * (mzAxis - x["mz"]))^2 * (mzAxis > x["mz"])))
-        } else if (fctFit == "assymGauss") {
+        } else if (fctFit == "asymGauss") {
             model <- apply(param, 1, function(x) 1 * (exp(-(mzAxis - x["mz"])^2/(2 * 
                 x["lf"]^2)) * (mzAxis <= x["mz"]) + exp(-(mzAxis - x["mz"])^2/(2 * 
                 x["lr"]^2)) * (mzAxis > x["mz"])))

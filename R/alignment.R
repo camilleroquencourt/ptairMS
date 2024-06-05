@@ -270,7 +270,7 @@ aggregateTemporalFile <- function(time, indTimeLim, matPeak, funAggreg, dbl = 4)
 #' setName="exhaledPtrset", mzCalibRef = c(21.022, 60.0525),
 #' fracMaxTIC = 0.7, saveDir = NULL )
 #' exhaledPtrset<-detectPeak(exhaledPtrset,mzNominal=c(21,60,79))
-#' eset <- alignSamples(exhaledPtrset,pValGreaterThres=0.05)
+#' eset <- alignSamples(exhaledPtrset,pValGreaterThres=0.05,bgCorrected=TRUE)
 #' Biobase::exprs(eset)
 #' Biobase::fData(eset)
 #' Biobase::pData(eset)
@@ -283,7 +283,7 @@ setMethod(f = "alignSamples", signature = "ptrSet",
           function(X, ppmGroup = 70, fracGroup = 0.8,
                     group = NULL, fracExp = 0.3, pValGreaterThres = 0.001,
                     pValLessThres = 0, quantiUnit = c("ppb", "ncps", "cps")[1], 
-                    bgCorrected = TRUE, dmzGroup = 0.001) {
+                    bgCorrected = FALSE, dmzGroup = 0.001) {
     
     sampleMetadata <- getSampleMetadata(X)
     peakList <- getPeakList(X)
@@ -352,12 +352,12 @@ alignSamplesFunc <- function(peakList, sampleMetadata, ppmGroup = 100,
                 if (bgCorrected) {
                     quanti <- diff[which(grepl(quantiUnit, colnames(x)[diff]))]
                 } else quanti <- quanti[which(grepl(quantiUnit, colnames(x)[quanti]))]
-                colnames(x)[quanti] <- paste("quanti", quantiUnit, sep = "_")
+                #colnames(x)[quanti] <- paste("quanti", quantiUnit, sep = "_")
                 bg <- bg[which(grepl(quantiUnit, colnames(x)[bg]))]
                 
                
                 x <- x[, .SD, .SD = colnames(x)[c(other, quanti, bg)]]
-                
+                if (bgCorrected) colnames(x)<-gsub(pattern = "diffAbs",replacement = "quanti",x = colnames(x))
                 
                 x 
             }else {

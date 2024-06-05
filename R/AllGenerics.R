@@ -281,7 +281,7 @@ setGeneric("alignSamples",function(X,
                                    fracExp=0.3,
                                    pValGreaterThres= 0.001,pValLessThres=0,
                                    quantiUnit=c("ppb","ncps","cps")[1],
-                                   bgCorrected=TRUE,
+                                   bgCorrected=FALSE,
                                    dmzGroup = 0.001){
   standardGeneric("alignSamples")})
 
