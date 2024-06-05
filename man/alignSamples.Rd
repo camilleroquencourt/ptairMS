@@ -14,7 +14,7 @@ alignSamples(
   pValGreaterThres = 0.001,
   pValLessThres = 0,
   quantiUnit = c("ppb", "ncps", "cps")[1],
-  bgCorrected = TRUE,
+  bgCorrected = FALSE,
   dmzGroup = 0.001
 )
 
@@ -27,7 +27,7 @@ alignSamples(
   pValGreaterThres = 0.001,
   pValLessThres = 0,
   quantiUnit = c("ppb", "ncps", "cps")[1],
-  bgCorrected = TRUE,
+  bgCorrected = FALSE,
   dmzGroup = 0.001
 )
 }
@@ -95,7 +95,7 @@ exhaledPtrset <- createPtrSet(dir=dirRaw,
 setName="exhaledPtrset", mzCalibRef = c(21.022, 60.0525),
 fracMaxTIC = 0.7, saveDir = NULL )
 exhaledPtrset<-detectPeak(exhaledPtrset,mzNominal=c(21,60,79))
-eset <- alignSamples(exhaledPtrset,pValGreaterThres=0.05)
+eset <- alignSamples(exhaledPtrset,pValGreaterThres=0.05,bgCorrected=TRUE)
 Biobase::exprs(eset)
 Biobase::fData(eset)
 Biobase::pData(eset)

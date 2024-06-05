@@ -11,6 +11,7 @@ calibration(
   mzCalibRef = c(21.022, 29.013424, 41.03858, 60.0525, 203.943, 330.8495),
   calibrationPeriod = 60,
   tol = 70,
+  checkAroundPeakCalib = FALSE,
   ...
 )
 
@@ -19,6 +20,7 @@ calibration(
   mzCalibRef = c(21.022, 29.013424, 41.03858, 59.049141, 75.04406, 203.943, 330.8495),
   calibrationPeriod = 60,
   tol = 70,
+  checkAroundPeakCalib = FALSE,
   ...
 )
 
@@ -42,6 +44,9 @@ each sum spectrum of \code{calibrationPeriod} seconds}
 
 \item{tol}{the maximum error tolerated in ppm. If more than \code{tol} 
 warnings.}
+
+\item{checkAroundPeakCalib}{If FALSE it autorises that a pic could be close to less 
+than200 ppm for the calibration peaks}
 
 \item{...}{" "}
 

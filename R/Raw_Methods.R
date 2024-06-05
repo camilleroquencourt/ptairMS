@@ -14,6 +14,8 @@
 #' each sum spectrum of \code{calibrationPeriod} seconds
 #' @param tol the maximum error tolerated in ppm. If more than \code{tol} 
 #' warnings. 
+#' @param checkAroundPeakCalib If FALSE it autorises that a pic could be close to less 
+#' than200 ppm for the calibration peaks 
 #' @return the same ptrRaw or ptrSet as in input, with the following modified 
 #' element:
 #' \itemize{
@@ -36,8 +38,9 @@
 #' @rdname calibration
 #' @export 
 methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibRef = c(21.022, 
-    29.013424, 41.03858, 59.049141, 75.04406, 203.943, 330.8495), calibrationPeriod = 60, 
-    tol = 70,...) {
+    29.013424, 41.03858, 59.049141, 75.04406, 203.943, 330.8495), 
+    calibrationPeriod = 60, 
+    tol = 70,checkAroundPeakCalib=FALSE,...) {
     object <- x
     # get mz axis and average spectrum
     mz <- getRawInfo(object)$mz
@@ -55,7 +58,12 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
     # test if there is a only one peak on the TIS
     nLocalMax <- vapply(mzCalibRef, function(x) {
         spx <- sp[x - 0.4 < mz & mz < x + 0.4]
-        length(LocalMaximaSG(sp = spx, minPeakHeight = 0.2 * max(spx)))
+        localMax <- LocalMaximaSG(sp = spx, minPeakHeight = 0.2 * max(spx))
+        proxi<- diff(mz[x - 0.4 < mz & mz < x + 0.4][localMax])*10^6/x
+        if(!checkAroundPeakCalib & length(localMax)>1) {
+            localMax<-localMax[-which(proxi<200)]
+            }
+       length(localMax)
     }, FUN.VALUE = 0)
     badMass <- which(nLocalMax != 1)
     if (length(badMass) != 0) {

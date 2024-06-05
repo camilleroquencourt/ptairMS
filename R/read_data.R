@@ -240,7 +240,8 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
         resolution= c(0,0,0),primaryIon=0)
     rm(rawMn)
     if (calib) {
-        raw <- calibration(x = raw, mzCalibRef, calibrationPeriod = calibrationPeriod, 
+        raw <- calibration(x = raw, mzCalibRef, 
+                           calibrationPeriod = calibrationPeriod, 
             tol = tolCalibPpm)
     }
     
