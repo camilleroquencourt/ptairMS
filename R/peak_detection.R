@@ -1070,14 +1070,17 @@ GCV <- function(rawM, knots, t, timeLimit, stepSp = 0.01, d = 3) {
 deconv2d2linearIndependant <- function(rawM, time, peak.detect, raw, fctFit, 
                                        knots = NULL, 
     smoothPenalty = 0, l.shape = NULL) {
+    if(any(is.nan(rawM))) rawM[is.nan(rawM)]<-0 
     mzAxis <- as.numeric(row.names(rawM))
     mzNom <- round(peak.detect$Mz)[1]
     n.peak <- nrow(peak.detect)
     matRaw <- matrix(0, nrow = nrow(rawM), ncol = ncol(rawM))
+    #rownames(matRaw)<-rownames(rawM)
     matPeak <- matrix(0, ncol = n.peak, nrow = ncol(rawM))
     t1 <- Sys.time()
     for (i in seq_along(time)) {
         spectrum.m <- rawM[, i]
+        #ispectrum.m[is.nan(spectrum.m)]<-0
         # initialisation
         mz <- peak.detect$Mz
         lf <- peak.detect$parameter.1
@@ -1105,7 +1108,7 @@ deconv2d2linearIndependant <- function(rawM, time, peak.detect, raw, fctFit,
                 res
             })
         }
-        fit <- stats::lm(spectrum.m ~ model - 1)
+        fit <- stats::lm(spectrum.m ~ model -1)
         par_estimated <- fit$coefficients
         fit.peak <- fit$fitted.values
         matRaw[, i] <- fit.peak

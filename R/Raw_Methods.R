@@ -42,6 +42,9 @@ methods::setMethod(f = "calibration", signature = "ptrRaw", function(x, mzCalibR
     calibrationPeriod = 60, 
     tol = 70,checkAroundPeakCalib=FALSE,...) {
     object <- x
+    if(any(is.nan(object@rawM))) object@rawM[is.nan(object@rawM)]<-0
+    if(any(object@rawM<0)) object@rawM[object@rawM<0]<-0
+
     # get mz axis and average spectrum
     mz <- getRawInfo(object)$mz
     time <- c(getRawInfo(object)$time)

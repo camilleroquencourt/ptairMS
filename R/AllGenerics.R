@@ -222,6 +222,12 @@ setGeneric("mergedPtrSet", function(object,ptrSetNewfile,orderedFile){
 #' the ion mass values; [default: 'ion_mass']; this argument is not used when x 
 #' is a numeric vector
 #' @param ppm Numeric: tolerance
+#' @param extra_formula if TRUE, the calcMF function from MassTools package is
+#' used to calculate molecular formulas from a monoisotopic mass when no matches 
+#' are found with HBDB
+#' @param ppm_formula ppm tolerance of the calcMF function of the MassTools package 
+#' @param top_formula  maximum number of top formulas to be returned 
+#' (parameters of the calcMF function of the MassTools package)
 #' @param prefix Character: prefix for the new 'annotation' 
 #' columns [default: 'vocDB_']
 #' @param fields Characer vector: fields of the 'vocDB' database to be 
@@ -256,6 +262,9 @@ setGeneric("annotateVOC",
            function(x,
                     ionMassColname = "ion_mass",
                     ppm = 20,
+                    ppm_formula=30,
+                    top_formula=5,
+                    extra_formula=TRUE,
                     prefix = "vocDB_",
                     fields = c("ion_mass",
                                "ion_formula",

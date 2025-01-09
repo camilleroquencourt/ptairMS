@@ -4,7 +4,11 @@
 #' @export
 setMethod("annotateVOC", "ExpressionSet",
           function(x,
-                   ionMassColname = "ion_mass", ppm = 50, prefix = "vocDB_",
+                   ionMassColname = "ion_mass", ppm = 50, 
+                   ppm_formula=30,
+                   top_formula=5,
+                   extra_formula=TRUE,
+                   prefix = "vocDB_",
                    fields = c("ion_mass",
                               "ion_formula",
                               "formula",
@@ -32,8 +36,8 @@ setMethod("annotateVOC", "ExpressionSet",
             
             annotateDF <- .annotate(ion_mass = ion_mass.vn,
                                     ppm = ppm,
-                                    prefix = prefix,
-                                    fields = fields)
+                                    prefix = prefix,extra_formula=extra_formula,
+                                    fields = fields,ppm_formula=ppm_formula,top_formula=top_formula)
             
             for (annotateC in colnames(annotateDF))
               fdataDF[, annotateC] <- annotateDF[, annotateC]
@@ -54,7 +58,11 @@ setMethod("annotateVOC", "ExpressionSet",
 #' @export
 setMethod("annotateVOC", "data.frame",
           function(x,
-                   ionMassColname = "ion_mass", ppm = 50, prefix = "vocDB_",
+                   ionMassColname = "ion_mass", ppm = 50, 
+                   ppm_formula=30,
+                   top_formula=5,
+                   extra_formula=TRUE,
+                   prefix = "vocDB_",
                    fields = c("ion_mass",
                               "ion_formula",
                               "formula",
@@ -77,7 +85,12 @@ setMethod("annotateVOC", "data.frame",
             
             ion_mass.vn <- x[, ionMassColnameI]
             
-            annotateDF <- .annotate(ion_mass = ion_mass.vn)
+            annotateDF <- .annotate(ion_mass = ion_mass.vn,
+                                    prefix = prefix,
+                                    extra_formula=extra_formula,
+                                    fields = fields,
+                                    ppm_formula=ppm_formula,
+                                    top_formula=top_formula)
             
             for (annotateC in colnames(annotateDF))
               x[, annotateC] <- annotateDF[, annotateC]
@@ -94,6 +107,9 @@ setMethod("annotateVOC", "numeric",
           function(x,
                    ionMassColname = "",
                    ppm = 50,
+                   ppm_formula=30,
+                   top_formula=5,
+                   extra_formula=TRUE,
                    prefix = "vocDB_",
                    fields = c("ion_mass",
                               "ion_formula",
@@ -114,13 +130,19 @@ setMethod("annotateVOC", "numeric",
             .annotate(ion_mass = x,
                       ppm = ppm,
                       prefix = prefix,
-                      fields = fields)
+                      extra_formula=extra_formula,
+                      fields = fields,
+                      ppm_formula=ppm_formula,
+                      top_formula=top_formula)
             
             
           })
 
 .annotate <- function(ion_mass,
                       ppm = 30,
+                      ppm_formula=30,
+                      top_formula=5,
+                      extra_formula=TRUE,
                       prefix = "vocDB_",
                       fields = c("ion_mass",
                                  "ion_formula",
@@ -140,6 +162,7 @@ setMethod("annotateVOC", "numeric",
   
   
   vocdbDF <- .loadVocDB()
+  elements = c(Rdisop::initializeCHNOPS(),Rdisop::initializeElements(c("Cl","Br","F","I")))
   
   
   fielddbVl <- fields %in% colnames(vocdbDF)
@@ -188,12 +211,14 @@ setMethod("annotateVOC", "numeric",
       }
       
     } else {
-        # 
-        # formula<-MassTools::calcMF(massN, z=1,ppm=ppm,top=1) # M+H+
-        # if(!is.null(formula)){
-        #     annotateDF[i, paste0(prefix, "ion_mass")]<- paste(round(formula$mz,5),collapse = "/")
-        #     annotateDF[i, paste0(prefix, "ion_formula")]<- paste0("[",formula$MF,"+H]+")
-        # }
+        if(extra_formula){
+            formula<-MassTools::calcMF(massN- 1.0072765, z=0,ppm=ppm_formula,top=top_formula,elements = elements) # M+H+
+            if(!is.null(formula)){
+                annotateDF[i, paste0(prefix, "ion_mass")]<- paste(round(formula$mz,4 )+ 1.0072765,collapse = "/")
+                annotateDF[i, paste0(prefix, "ion_formula")]<- paste0("[",formula$MF,"+H]+",collapse = "/")
+            }
+        }
+       
     }
     
   }
@@ -435,11 +460,11 @@ isotopeMzMatching<-function(m,mzSub,ppm,max=1){
   
   
   isotopes<-isotopes[isotopes$abundance>0.001,]
-  anno<-annotateVOC(m,ppm=ppm)
-  if(anno[,"vocDB_ion_formula"] != ""){
-      element<-unique(isotopes$element)[vapply(unique(isotopes$element),function(e) grepl(pattern = e,x = anno[,"vocDB_ion_formula"]),FUN.VALUE = TRUE)]
-     isotopes<-isotopes[isotopes$element %in% element,]
-  }
+  # anno<-annotateVOC(m,ppm=ppm,extra_formula = FALSE)
+  # if(anno[,"vocDB_ion_formula"] != ""){
+  #     element<-unique(isotopes$element)[vapply(unique(isotopes$element),function(e) grepl(pattern = e,x = anno[,"vocDB_ion_formula"]),FUN.VALUE = TRUE)]
+  #    isotopes<-isotopes[isotopes$element %in% element,]
+  # }
   diff<-lapply(split(isotopes, isotopes$element),function(x) {
     if(nrow(x)>1) x$mass[-1]-x$mass[1] else return(NULL) })
   diff<-Reduce(c,diff)
@@ -464,14 +489,18 @@ validateGroup<-function(groupIso,X,ppm){
       rep(X[as.character(groupIso)[1],,drop=FALSE],
           length(as.character(groupIso)[-1])),
       nrow=length(as.character(groupIso)[-1]),byrow=TRUE)
-  anno<-.annotate(groupIso[1],ppm=ppm)
-  isotopes <- utils::read.table(system.file("extdata/reference_tables/atomic_isotopes.tsv",
-                                           package = "ptairMS"),
-                               header = TRUE,
-                               quote = "\"",
-                               sep = "\t",
-                               stringsAsFactors = FALSE)
+  anno<-.annotate(groupIso[1],ppm=ppm,extra_formula = FALSE)
+  # isotopes <- utils::read.table(system.file("extdata/reference_tables/atomic_isotopes.tsv",
+  #                                          package = "ptairMS"),
+  #                              header = TRUE,
+  #                              quote = "\"",
+  #                              sep = "\t",
+  #                              stringsAsFactors = FALSE)
+  
+  isotopes <- utils::read.table(system.file("extdata/reference_tables/enviPat_isotopes.tsv",
+                                package = "ptairMS"))
   #isotopes<-isotopes[!apply(isotopes,1,function(x) all(is.na(x[c(3,4,5)]))),]
+  #data(isotopes)
   if(anno[,"vocDB_ion_formula"] != ""){
     formula<-anno[,"vocDB_ion_formula"]
     isoDistrib<-enviPat::isopattern(isotopes,chemforms = formula,threshold = 0.1,

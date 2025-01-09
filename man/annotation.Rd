@@ -12,6 +12,9 @@ annotateVOC(
   x,
   ionMassColname = "ion_mass",
   ppm = 20,
+  ppm_formula = 30,
+  top_formula = 5,
+  extra_formula = TRUE,
   prefix = "vocDB_",
   fields = c("ion_mass", "ion_formula", "formula", "mass_monoiso", "name_iupac",
     "pubchem_cid", "inchi", "inchikey", "ref_year", "ref_pmid", "disease_name",
@@ -22,6 +25,9 @@ annotateVOC(
   x,
   ionMassColname = "ion_mass",
   ppm = 50,
+  ppm_formula = 30,
+  top_formula = 5,
+  extra_formula = TRUE,
   prefix = "vocDB_",
   fields = c("ion_mass", "ion_formula", "formula", "mass_monoiso", "name_iupac",
     "pubchem_cid", "inchi", "inchikey", "ref_year", "ref_pmid", "disease_name",
@@ -32,6 +38,9 @@ annotateVOC(
   x,
   ionMassColname = "ion_mass",
   ppm = 50,
+  ppm_formula = 30,
+  top_formula = 5,
+  extra_formula = TRUE,
   prefix = "vocDB_",
   fields = c("ion_mass", "ion_formula", "formula", "mass_monoiso", "name_iupac",
     "pubchem_cid", "inchi", "inchikey", "ref_year", "ref_pmid", "disease_name",
@@ -42,6 +51,9 @@ annotateVOC(
   x,
   ionMassColname = "",
   ppm = 50,
+  ppm_formula = 30,
+  top_formula = 5,
+  extra_formula = TRUE,
   prefix = "vocDB_",
   fields = c("ion_mass", "ion_formula", "formula", "mass_monoiso", "name_iupac",
     "pubchem_cid", "inchi", "inchikey", "ref_year", "ref_pmid", "disease_name",
@@ -60,6 +72,15 @@ the ion mass values; [default: 'ion_mass']; this argument is not used when x
 is a numeric vector}
 
 \item{ppm}{Numeric: tolerance}
+
+\item{ppm_formula}{ppm tolerance of the calcMF function of the MassTools package}
+
+\item{top_formula}{maximum number of top formulas to be returned 
+(parameters of the calcMF function of the MassTools package)}
+
+\item{extra_formula}{if TRUE, the calcMF function from MassTools package is
+used to calculate molecular formulas from a monoisotopic mass when no matches 
+are found with HBDB}
 
 \item{prefix}{Character: prefix for the new 'annotation' 
 columns [default: 'vocDB_']}

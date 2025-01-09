@@ -83,8 +83,7 @@ align <- function(peakTab, ppmGroup = 70, dmzGroup = 0.001) {
         }  # end of repeat
     }  # end of error
     return(groupPeakList)
-    
-}
+    }
 
 #' Use in align function. return a peak group thanks to kernel gaussian density 
 #' in a peak matrix.
