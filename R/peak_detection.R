@@ -58,7 +58,7 @@ utils::globalVariables("::<-")
 #' exhaledPtrset<-createPtrSet(dir=directory,setName="exhaledPtrset",
 #' mzCalibRef=c(21.022,59.049),
 #' fracMaxTIC=0.9,saveDir= NULL)
-#' exhaledPtrset  <- detectPeak(exhaledPtrset)
+#' exhaledPtrset  <- detectPeak(exhaledPtrset, parallelize=TRUE)
 #' peakListEset<-getPeakList(exhaledPtrset)
 #' Biobase::fData(peakListEset[[1]])
 #' Biobase::exprs(peakListEset[[1]])
@@ -156,7 +156,7 @@ setMethod(f = "detectPeak", signature = "ptrSet",
     } else fctFit <- getPeaksInfo(ptrset)$fctFit
     
     FUN <- function(x) {
-        test <- try(processFileTemporal(fullNamefile = x, 
+        test <- try(ptairMS:::processFileTemporal(fullNamefile = x, 
                                         massCalib = massCalib[[basename(x)]], 
             primaryIon = primaryIon[[basename(x)]], 
             indTimeLim = indTimeLim[[basename(x)]], 
@@ -173,10 +173,11 @@ setMethod(f = "detectPeak", signature = "ptrSet",
     
     # parallel peakLists<-BiocParallel::bplapply(files,FUN = FUN)
     if (parallelize) {
+
         cl <- parallel::makeCluster(nbCores)
         doParallel::registerDoParallel(cl)
         `%dopar%` <- foreach::`%dopar%`
-        peakLists <- foreach::foreach(file = files, .packages = c("data.table")) %dopar% 
+        peakLists <- foreach::foreach(file = files, .packages = c("data.table","ptairMS")) %dopar% 
             {
                 FUN(file)
             }
@@ -189,22 +190,26 @@ setMethod(f = "detectPeak", signature = "ptrSet",
                                      function(x) is.null(x$raw))))
     if (length(failed)) {
         peakLists <- peakLists[-failed]
-        warning(basename(files)[failed], "failed")
+        warning(basename(files)[failed], " failed")
         files<-files[-failed]
     }
     
-    
     # create an expression set for each file
     peakListsEset <- lapply(peakLists, function(x) {
+        #duplicated(colnames(assayMatrix))
         infoPeak <- grep("parameter", colnames(x$raw))
         colnames(x$raw)[infoPeak] <- c("parameterPeak.delta1", 
                                        "parameterPeak.delta2", 
                                        "parameterPeak.height")
         assayMatrix <- as.matrix(x$raw)[, -c(1, 2, 3, 4, infoPeak), drop = FALSE]
-        rownames(assayMatrix) <- round(x$raw$Mz, 4)
+        rownames(assayMatrix) <- round(x$raw$Mz, 6)
         featuresMatrix <- data.frame(cbind((as.matrix(x$raw)[, c(1, 2, 3, 4, infoPeak), 
             drop = FALSE]), (x$aligned[, -1])))
         rownames(featuresMatrix) <- rownames(assayMatrix)
+        
+        if(any(duplicated(colnames(assayMatrix)))){
+            assayMatrix<-assayMatrix[,!duplicated(colnames(assayMatrix))]
+        }
         Biobase::ExpressionSet(assayData = assayMatrix, 
                                featureData = Biobase::AnnotatedDataFrame(featuresMatrix))
     })

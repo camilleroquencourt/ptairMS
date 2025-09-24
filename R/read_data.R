@@ -152,13 +152,16 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
         NbrWriteMax <- maxTimePoint
         rhdf5::h5closeAll()
         
-       
         date_heure <- rhdf5::h5readAttributes(filePath,"/")$FileCreatedTimeSTR_LOCAL[1]
         timVn <- rhdf5::h5read(filePath, "/SPECdata/Times", bit64conversion = "bit64", 
                                index = list(NULL, seq_len(min(nbrWrite, NbrWriteMax))))[4,]
         rawMn <- rhdf5::h5read(filePath, "/SPECdata/Intensities", bit64conversion = "bit64", 
                                index = list(NULL, seq_len(min(nbrWrite, NbrWriteMax))))
       
+        # ionsPerExtractionMultiplier = (desc.SampleInterval * 1e9 / (desc.NbrWaveforms * desc.NbrSegments * desc.NbrBlocks * desc.NbrMemories * desc.SingleIonSignal)) ;
+        # ionsPerSecondMultiplier = ionsPerExtractionMultiplier / (desc.TofPeriod * 1e-9);
+        #     
+        #     
         reaction <- try(rhdf5::h5read(filePath, "/AddTraces/PTR-Instrument"))
         
         index <- try(sapply(c("Udrift_Act","p-Drift_Act","T-Drift_Act","E/N_Act","Udrift[Act]","p-Drift","Temp: T-Drift[Act]","E/N[Act]"), function(x) grep(x = reaction$Info,pattern = x,fixed = TRUE))) 

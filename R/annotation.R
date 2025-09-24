@@ -501,8 +501,8 @@ validateGroup<-function(groupIso,X,ppm){
                                 package = "ptairMS"))
   #isotopes<-isotopes[!apply(isotopes,1,function(x) all(is.na(x[c(3,4,5)]))),]
   #data(isotopes)
-  if(anno[,"vocDB_ion_formula"] != ""){
-    formula<-anno[,"vocDB_ion_formula"]
+  if( anno[,"vocDB_ion_formula"] != ""){
+    formula <- anno[,"vocDB_ion_formula"]
     isoDistrib<-enviPat::isopattern(isotopes,chemforms = formula,threshold = 0.1,
                                     verbose = FALSE,charge=FALSE,emass=0.00054858)[[1]]
     testRatio<- vapply(seq_len(nrow(ratio)),function(x){

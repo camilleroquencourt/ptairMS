@@ -869,7 +869,7 @@ methods::setMethod(f = "detectPeak", signature = "ptrRaw", function(x, ppm = 130
     
     # primary ion
     p <- PeakList(raw, mzNominal = round(21.022), ppm = 700, minIntensity = 50, maxIter = 1,
-                  fctFit = fctFit,resolutionRange =resolutionRange )
+                  fctFit = fctFit,resolutionRange =resolutionRange ,plotAll =  TRUE)
     raw@primaryIon<-p$peak$quanti_cps
     primaryIon <- list(primaryIon = p$peak$quanti_cps)
     # knot
@@ -887,6 +887,10 @@ methods::setMethod(f = "detectPeak", signature = "ptrRaw", function(x, ppm = 130
     featuresMatrix <- data.frame(cbind((as.matrix(x$raw)[, c(1, 2, 3, 4, infoPeak), 
         drop = FALSE]), (x$aligned[, -1])))
     rownames(featuresMatrix) <- rownames(assayMatrix)
+    if(any(duplicated(colnames(assayMatrix)))){
+        assayMatrix<-assayMatrix[,!duplicated(colnames(assayMatrix))]
+    }
+    
     peakLists <- Biobase::ExpressionSet(assayData = assayMatrix, featureData = Biobase::AnnotatedDataFrame(featuresMatrix))
     
     raw@peakList<-peakLists
