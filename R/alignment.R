@@ -644,9 +644,10 @@ imputeRaw <- function(X, raw, timeLimit,quanti="ppb") {
     # * 0.2 ns / 2.9 (single ion signal) if convert to cps
     
     # information for ppb convertion
-    reaction <- try(reaction <- rhdf5::h5read(filesFullName.j, "AddTraces/PTR-Reaction"))
-    transmission <- try(rhdf5::h5read(filesFullName.j, "PTR-Transmission"))
-    
+    #reaction <- try(reaction <- rhdf5::h5read(filesFullName.j, "AddTraces/PTR-Reaction"))
+    reaction <-raw@prtReaction
+    #transmission <- try(rhdf5::h5read(filesFullName.j, "PTR-Transmission"))
+    transmission<- raw@ptrTransmisison
  
     
     for (m in unique(round(mzMissing))) {
@@ -727,10 +728,10 @@ imputeRaw <- function(X, raw, timeLimit,quanti="ppb") {
         
         # convert to ppb or ncps if there is reaction ans transmission information
         if (quanti == "ppb") {
-            U <- c(reaction$TwData[1, , ])
-            Td <- c(reaction$TwData[3, , ])
-            pd <- c(reaction$TwData[2, , ])
-            quanti.m <- ppbConvert(peakList = list_peak, transmission = transmission$Data, 
+            U <- c(reaction$TwData[1, ])
+            Td <- c(reaction$TwData[3, ])
+            pd <- c(reaction$TwData[2, ])
+            quanti.m <- ppbConvert(peakList = list_peak, transmission = transmission, 
                                    U = U[indexExp], Td = Td[indexExp], pd = pd[indexExp])
             
         }

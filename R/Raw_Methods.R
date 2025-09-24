@@ -869,7 +869,7 @@ methods::setMethod(f = "detectPeak", signature = "ptrRaw", function(x, ppm = 130
     
     # primary ion
     p <- PeakList(raw, mzNominal = round(21.022), ppm = 700, minIntensity = 50, maxIter = 1,
-                  fctFit = fctFit,resolutionRange =resolutionRange ,plotAll =  TRUE)
+                  fctFit = fctFit,resolutionRange =resolutionRange)
     raw@primaryIon<-p$peak$quanti_cps
     primaryIon <- list(primaryIon = p$peak$quanti_cps)
     # knot
