@@ -15,7 +15,7 @@
 #' @param tol the maximum error tolerated in ppm. If more than \code{tol} 
 #' warnings. 
 #' @param checkAroundPeakCalib If FALSE it autorises that a pic could be close to less 
-#' than200 ppm for the calibration peaks 
+#' than 200 ppm for the calibration peaks 
 #' @return the same ptrRaw or ptrSet as in input, with the following modified 
 #' element:
 #' \itemize{
@@ -223,6 +223,7 @@ tofToMz <- function(tof, calibCoef) {
 mzToTof <- function(m, calibCoef) {
     m^(1/calibCoef["q", ]) * calibCoef["a", ] + calibCoef["b", ]
 }
+
 ## plotRaw ----
 #' @rdname plotRaw
 #' @export

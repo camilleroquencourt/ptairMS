@@ -467,6 +467,7 @@ isotopeMzMatching<-function(m,mzSub,ppm,max=1){
   # }
   diff<-lapply(split(isotopes, isotopes$element),function(x) {
     if(nrow(x)>1) x$mass[-1]-x$mass[1] else return(NULL) })
+  diff<-diff[names(diff) %in% c("C","O")]
   diff<-Reduce(c,diff)
   Iso <- Reduce(c,lapply(diff,function(d) mzSub[which(abs(mzSub-(m+d))*10^6/m < ppm*1.3)]))
   iso<-unique(Iso)
@@ -481,7 +482,7 @@ validateGroup<-function(groupIso,X,ppm){
                       function(y) stats::cor.test(X[as.character(groupIso)[1],],
                                                   X[y,],alternative = c("greater"))$estimate,1.1)
   
-  testCor<- testCorPval > 0.78
+  testCor<- testCorPval > 0.8
   
   #ratio
   ratio<-X[as.character(groupIso)[-1],]/

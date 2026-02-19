@@ -164,10 +164,10 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
         #     
         reaction <- try(rhdf5::h5read(filePath, "/AddTraces/PTR-Instrument"))
         
-        index <- try(sapply(c("Udrift_Act","p-Drift_Act","T-Drift_Act","E/N_Act","Udrift[Act]","p-Drift","Temp: T-Drift[Act]","E/N[Act]"), function(x) grep(x = reaction$Info,pattern = x,fixed = TRUE))) 
+        index <- try(sapply(c("Udrift_Act","p-Drift_Act","Press_Drift_Act","T-Drift_Act","E/N_Act","Udrift[Act]","p-Drift","Temp: T-Drift[Act]","E/N[Act]"), function(x) grep(x = reaction$Info,pattern = x,fixed = TRUE))) 
         index<-Reduce(c,index)
         
-        if(length(index)==0){
+        if(length(index)<3){
             reaction <- try(rhdf5::h5read(filePath, "/AddTraces/PTR-Reaction"))
             
             index <- try(sapply(c("Udrift","p-Drift","T-Drift","E/N"), function(x) grep(x = reaction$Info,pattern = x,fixed = TRUE))) 
