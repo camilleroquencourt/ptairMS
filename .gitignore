@@ -1,6 +1,7 @@
 figures/temp/
 .Rproj.user
 *.Rhistory
+*.RData
 *.rproj
 *.html
 .Ruserdata

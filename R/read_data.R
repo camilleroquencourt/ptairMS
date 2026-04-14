@@ -72,7 +72,7 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
         reaction <- try(rhdf5::h5read(filePath, "AddTraces/PTR-Reaction"))
         transmission <- try(rhdf5::h5read(filePath, "PTR-Transmission"))
         calibCoef <- try(rbind(rhdf5::h5read(filePath, "FullSpectra/MassCalibration", index = list(NULL, 
-                                                                                             1)),2))
+                                                                                             1)),2),silent = TRUE)
         attributCalib <- try(rhdf5::h5readAttributes(filePath, "/FullSpectra"))
         if (!is.null(attr(calibCoef, "condition")) & is.null(attr(attributCalib, "condition"))) {
             calibCoef <- matrix(c(attributCalib$`MassCalibration a`, attributCalib$`MassCalibration b`,2), 
