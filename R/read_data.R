@@ -32,7 +32,7 @@ readRaw <- function(filePath, calib = TRUE, mzCalibRef = c(21.022, 29.013424, 41
     60.0525, 203.943, 330.8495), calibrationPeriod = 60, tolCalibPpm = 70, maxTimePoint = 900) {
     
     if (is.null(filePath) | filePath == "") 
-        stop("filePath is empty")
+        stop("filePath")
     if (is.na(filePath)) 
         stop("filePath is empty")
     if (!is.character(filePath)) 
