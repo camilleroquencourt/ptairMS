@@ -46,6 +46,7 @@ utils::globalVariables("::<-")
 #' @param saveDir The directory where the ptrSet object will be saved as .RData. 
 #' If NULL, nothing will be saved
 #' @param funAggreg aggregation function for temporal profile
+#' @param adaptTimeLimit TRUE if the timeLimit should be adjusted for each VOC traces 
 #' @param ... may be used to pass parameters to the processFileTemporal function
 #' @return an S4 ptrSet object, that contains the input ptrSet completed with the 
 #' peakLists.
@@ -70,7 +71,7 @@ setMethod(f = "detectPeak", signature = "ptrSet",
                      minIntensityRate = 0.01, mzNominal = NULL, 
                      resolutionRange = NULL,fctFit = NULL, smoothPenalty = 0, 
                      parallelize = FALSE, nbCores = 2, saving = TRUE, 
-                     saveDir = getParameters(x)$saveDir, funAggreg = mean,...){
+                     saveDir = getParameters(x)$saveDir, funAggreg = mean,adaptTimeLimit=FALSE,...){
                 
     ptrset <- x
     
@@ -165,7 +166,7 @@ setMethod(f = "detectPeak", signature = "ptrSet",
             minIntensityRate = minIntensityRate, 
             knots = knots[[basename(x)]], smoothPenalty = smoothPenalty, 
             peakShape = peakShape[[basename(x)]],
-            funAggreg = funAggreg))
+            funAggreg = funAggreg,adaptTimeLimit=adaptTimeLimit))
         if (!is.null(attr(test, "condition"))) {
             return(list(raw = NULL, aligned = NULL))
         } else return(test)
@@ -236,7 +237,7 @@ processFileTemporal <- function(fullNamefile, massCalib,
                                 mzNominal, ppm, resolutionRange, 
                                 minIntensity, fctFit, minIntensityRate, 
                                 knots, peakShape, smoothPenalty = 0, 
-                                funAggreg = mean, ...) {
+                                funAggreg = mean,adaptTimeLimit=FALSE, ...) {
     if (is.character(fullNamefile)) {
         cat(basename(fullNamefile), ": ")
         # read file
@@ -251,17 +252,17 @@ processFileTemporal <- function(fullNamefile, massCalib,
     } else l.shape = list(NULL)
     
 # 
-#     p<-list()
-#     for(m in mzNominal){
-# 
-#         p[[m+1]]<-ptairMS:::processFileTemporalNominalMass(m = m,
-#                                                              raw = raw, mzNominal = mzNominal, ppm = ppm,
-#                                                              resolutionRange = resolutionRange,
-#                                                              minIntensity = minIntensity, fctFit = fctFit,
-#                                                              minIntensityRate = minIntensityRate,
-#                                                              knots = knots, smoothPenalty = smoothPenalty, l.shape = l.shape,
-#                                                              timeLimit = indTimeLim)
-#     }
+    # p<-list()
+    # for(m in mzNominal){
+    #     print(m)
+    #     p[[m+1]]<-ptairMS:::processFileTemporalNominalMass(m = m,
+    #                                                          raw = raw, mzNominal = mzNominal, ppm = ppm,
+    #                                                          resolutionRange = resolutionRange,
+    #                                                          minIntensity = minIntensity, fctFit = fctFit,
+    #                                                          minIntensityRate = minIntensityRate,
+    #                                                          knots = knots, smoothPenalty = smoothPenalty, l.shape = l.shape,
+    #                                                          timeLimit = indTimeLim)
+    # }
 
     process <- lapply(mzNominal, function(m) processFileTemporalNominalMass(m = m, 
         raw = raw, mzNominal = mzNominal, ppm = ppm, 
@@ -272,10 +273,12 @@ processFileTemporal <- function(fullNamefile, massCalib,
         timeLimit = indTimeLim))
     
     
+    
+    
     matPeak <- Reduce(rbind, process)
     ## agregate
     matPeakAg <- aggregateTemporalFile(time = getRawInfo(raw)$time, indTimeLim = indTimeLim, 
-        matPeak = matPeak, funAggreg = funAggreg)
+        matPeak = matPeak, funAggreg = funAggreg,adaptTimeLimit=adaptTimeLimit)
     indLim <- indTimeLim$exp
     indBg <- indTimeLim$backGround
     bg <- FALSE
@@ -871,7 +874,13 @@ computeTemporalFile <- function(raw, peak, baseline,
         # baseline correction (plan)
         rawM <- EIC[[j]]
         borneMz <- range(as.numeric(rownames(rawM)))
-        bl1D <- baseline
+        bornebaseline<-range(as.numeric(names(baseline)))
+        if(bornebaseline[2] < borneMz[2]) {
+            borneMz[2]<-bornebaseline[2]
+            rawM<-rawM[as.numeric(rownames(rawM)) >= borneMz[1] &as.numeric(rownames(rawM)) <=
+                           borneMz[2],]
+        } 
+        bl1D <- baseline 
         bl1D <- bl1D[as.numeric(names(bl1D)) >= borneMz[1] & as.numeric(names(bl1D)) <=
              borneMz[2]]
         BL <- matrix(rep(bl1D,ncol(rawM)), ncol = ncol(rawM), nrow = nrow(rawM))

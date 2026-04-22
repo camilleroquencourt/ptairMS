@@ -14,7 +14,8 @@ setGeneric("detectPeak",
                     nbCores=2,
                     saving=TRUE,
                     saveDir=getParameters(x)$saveDir, 
-                    funAggreg = mean,...){
+                    funAggreg = mean,
+                    adaptTimeLimit=FALSE,...){
              standardGeneric("detectPeak")
            })
 

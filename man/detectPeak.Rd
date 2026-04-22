@@ -21,6 +21,7 @@ detectPeak(
   saving = TRUE,
   saveDir = getParameters(x)$saveDir,
   funAggreg = mean,
+  adaptTimeLimit = FALSE,
   ...
 )
 
@@ -53,6 +54,7 @@ detectPeak(
   saving = TRUE,
   saveDir = getParameters(x)$saveDir,
   funAggreg = mean,
+  adaptTimeLimit = FALSE,
   ...
 )
 }
@@ -96,6 +98,8 @@ generalized cross validation (GCV) criteria}
 If NULL, nothing will be saved}
 
 \item{funAggreg}{aggregation function for temporal profile}
+
+\item{adaptTimeLimit}{TRUE if the timeLimit should be adjusted for each VOC traces}
 
 \item{...}{may be used to pass parameters to the processFileTemporal function}
 
@@ -149,7 +153,7 @@ directory <- system.file("extdata/exhaledAir",  package = "ptairData")
 exhaledPtrset<-createPtrSet(dir=directory,setName="exhaledPtrset",
 mzCalibRef=c(21.022,59.049),
 fracMaxTIC=0.9,saveDir= NULL)
-exhaledPtrset  <- detectPeak(exhaledPtrset)
+exhaledPtrset  <- detectPeak(exhaledPtrset, parallelize=TRUE)
 peakListEset<-getPeakList(exhaledPtrset)
 Biobase::fData(peakListEset[[1]])
 Biobase::exprs(peakListEset[[1]])

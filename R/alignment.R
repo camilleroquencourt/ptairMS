@@ -145,71 +145,120 @@ aggregate <- function(subGroupPeak, n.exp) {
 }
 
 
-aggregateTemporalFile <- function(time, indTimeLim, matPeak, funAggreg, dbl = 4) {
-    # agregation of expirations and bg
+quantiTrace<-function(x,indTimeLim,dbl=4,funAggreg=sum){
+    
     indLim <- indTimeLim$exp
     indBg <- indTimeLim$backGround
-    
-    XIC <- as.matrix(matPeak[, (ncol(matPeak) - length(time) + 1):ncol(matPeak), 
-                             drop = FALSE])
-    
-    if (!is.null(indBg)) {
-
-        ## baseline Corrected
-        XICbl <- t(apply(XIC, 1, function(x) {
-            lm <- stats::lm(cps ~ stats::poly(point, d = dbl), 
+    if (!is.null(indBg) & length(indBg)>8 & ncol(indLim)>0 ) {
+        
+        lm <- stats::lm(cps ~ stats::poly(point, d = dbl), 
                             data = data.frame(cps = x[indBg],
                                               point = indBg))
-            bl <- stats::predict(lm, newdata = data.frame(point = seq_along(time)))
-            x <- x - bl
-        }))
+        bl <- stats::predict(lm, newdata = data.frame(point = seq_along(x)))
         
+        xbl<-  x - bl
         
-        for(j in seq_len(nrow(XIC))){
-            x<-XIC[j,]
-            lm <- stats::lm(cps ~ stats::poly(point, d = dbl), 
-                            data = data.frame(cps = x[indBg],
-                                              point = indBg))
-            bl <- stats::predict(lm, newdata = data.frame(point = seq_along(time)))
-            x <- x - bl
-        }
-        
-        
-        # test significativité comparaison de moyenne normal
         indExp <- Reduce(c, apply(indLim, 2, function(x) seq(x[1], x[2])))
-        
-        pValGreater <- apply(XIC, 1, 
-                                function(x) stats::t.test(x[indExp],
-                                                            x[indBg],
-                                                            alternative = "greater")$p.value)
-        pValLess <- apply(XIC, 1, function(x) stats::t.test(x[indExp], x[indBg], 
-            alternative = "less")$p.value)
-        pValGreater <- stats::p.adjust(pValGreater, method = "fdr")
-        pValLess <- stats::p.adjust(pValLess, method = "fdr")
+        pValGreater <- stats::t.test(x[indExp],x[indBg],alternative = "greater")$p.value
+        pValLess <- stats::t.test(x[indExp], x[indBg], alternative = "less")$p.value
         
         ## aggregate
-        bgIn <- time[indBg]
-        exp <- time[indExp]
-        colnames(XIC) <- as.character(time)
-        quantiExp <- apply(XIC, 1, 
-                            function(x) funAggreg(x[colnames(XIC) %in% exp]))
-        quantiBg <- apply(XIC, 1, 
-                            function(x) funAggreg(x[colnames(XIC) %in% bgIn]))
+        quantiExp <- funAggreg(x[indExp])
+        quantiBg <- funAggreg(x[indBg])
+        quantiExpBl <- abs(funAggreg(xbl[indExp]))
         
-        colnames(XICbl) <- as.character(time)
-        quantiExpBl <- apply(XICbl, 1, 
-                                function(x) abs(funAggreg(x[colnames(XIC) %in% 
-                                                                exp])))
-        
-        matPeakAg <- cbind(matPeak[, 1], quanti_cps = quantiExp, 
-                            background_cps = quantiBg, 
-            diffAbs_cps = quantiExpBl, pValLess, pValGreater)
+        matPeakAg <- cbind(quanti_cps = quantiExp, 
+                           background_cps = quantiBg, 
+                           diffAbs_cps = quantiExpBl, pValLess, pValGreater)
     } else {
-        quantiExp <- apply(XIC, 1, function(x) mean(x))
-        matPeakAg <- cbind(matPeak[, 1], quanti_cps = quantiExp, 
-                            background_cps = NA, 
-            diffAbs_cps = NA)
+        quantiExp <- funAggreg(x)
+        matPeakAg <- cbind(quanti_cps = quantiExp, 
+                           background_cps = NA, 
+                           diffAbs_cps = NA , pValLess=1, pValGreater=1)
     }
+    return(matPeakAg)
+}
+
+
+aggregateTemporalFile <- function(time, indTimeLim, matPeak, funAggreg, dbl = 4, adaptTimeLimit=FALSE) {
+    XIC <- as.matrix(matPeak[, (ncol(matPeak) - length(time) + 1):ncol(matPeak), 
+                             drop = FALSE])
+    XIC[XIC<=0]<-0
+    if(adaptTimeLimit){
+        TIC <- apply(XIC,2,sum)
+        matPeakAgList <- apply(XIC, 1,function(x){
+            
+        #for(i in seq(1,nrow(XIC))){
+            #x<-XIC[i,]
+            if( cor(x,TIC) < -0.8 ){
+                indTimeLimA <- indTimeLim
+            }else{
+                indTimeLimA <-  suppressWarnings(ptairMS:::timeLimitFun(x,fracMaxTIC = 0.1,fracMaxTICBg = 0.1,
+                                                                        plotDel = FALSE,baseline = FALSE,minPoints =4))
+            } 
+            quantiTrace(x,indTimeLimA,dbl=dbl,funAggreg=funAggreg)
+            
+        })
+        matPeakAg <- cbind(matPeak[, 1],t(matPeakAgList))
+        colnames(matPeakAg) <- c("Mz","quanti_cps" , 
+                                "background_cps" , 
+                                "diffAbs_cps" , "pValLess", "pValGreater")
+        #matPeakAg[,"pValGreater"] <- stats::p.adjust( matPeakAg[,"pValGreater"], method = "fdr")
+        #matPeakAg[,"pValLess"] <- stats::p.adjust( matPeakAg[,"pValLess"], method = "fdr")
+        
+        }else{
+            indLim <- indTimeLim$exp
+            indBg <- indTimeLim$backGround
+            if (!is.null(indBg)) {
+        
+                ## baseline Corrected
+                XICbl <- t(apply(XIC, 1, function(x) {
+                    lm <- stats::lm(cps ~ stats::poly(point, d = dbl), 
+                                    data = data.frame(cps = x[indBg],
+                                                      point = indBg))
+                    bl <- stats::predict(lm, newdata = data.frame(point = seq_along(time)))
+                    x <- x - bl
+                }))
+                
+                # test significativité comparaison de moyenne normal
+                indExp <- Reduce(c, apply(indLim, 2, function(x) seq(x[1], x[2])))
+                
+                pValGreater <- apply(XIC, 1, 
+                                        function(x) stats::t.test(x[indExp],
+                                                                    x[indBg],
+                                                                    alternative = "greater")$p.value)
+                pValLess <- apply(XIC, 1, function(x) stats::t.test(x[indExp], x[indBg], 
+                    alternative = "less")$p.value)
+                pValGreater <- stats::p.adjust(pValGreater, method = "fdr")
+                pValLess <- stats::p.adjust(pValLess, method = "fdr")
+                
+                ## aggregate
+                bgIn <- time[indBg]
+                exp <- time[indExp]
+                colnames(XIC) <- as.character(time)
+                quantiExp <- apply(XIC, 1, 
+                                    function(x) funAggreg(x[colnames(XIC) %in% exp]))
+                quantiBg <- apply(XIC, 1, 
+                                    function(x) funAggreg(x[colnames(XIC) %in% bgIn]))
+                
+                colnames(XICbl) <- as.character(time)
+                quantiExpBl <- apply(XICbl, 1, 
+                                        function(x) abs(funAggreg(x[colnames(XIC) %in% 
+                                                                        exp])))
+                
+                matPeakAg <- cbind(matPeak[, 1], quanti_cps = quantiExp, 
+                                    background_cps = quantiBg, 
+                    diffAbs_cps = quantiExpBl, pValLess, pValGreater)
+                } else {
+                    quantiExp <- apply(XIC, 1, function(x) mean(x))
+                    matPeakAg <- cbind(matPeak[, 1], quanti_cps = quantiExp, 
+                                        background_cps = NA, 
+                        diffAbs_cps = NA)
+                }
+        }
+    
+    # multiplier par le pas de temps pour mettre en cps; et faire direct en ncps pour mettre en ppb
+    matPeakAg
     
     return(matPeakAg)
 }

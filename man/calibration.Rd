@@ -46,7 +46,7 @@ each sum spectrum of \code{calibrationPeriod} seconds}
 warnings.}
 
 \item{checkAroundPeakCalib}{If FALSE it autorises that a pic could be close to less 
-than200 ppm for the calibration peaks}
+than 200 ppm for the calibration peaks}
 
 \item{...}{" "}
 
